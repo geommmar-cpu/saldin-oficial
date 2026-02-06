@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Check, RefreshCw, Zap, MessageCircle, Loader2 } from "lucide-react";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useCreateIncome } from "@/hooks/useIncomes";
 import { useAuth } from "@/hooks/useAuth";
+import { parseCurrency } from "@/lib/currency";
 
 // Map to database income_type enum
 type IncomeTypeDB = "salary" | "freelance" | "investment" | "gift" | "other";
@@ -40,7 +42,7 @@ export const AddIncome = () => {
   const [selectedType, setSelectedType] = useState<IncomeTypeDB | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
 
-  const formatCurrency = (value: string) => {
+  const formatCurrencyDisplay = (value: string) => {
     const numericValue = value.replace(/\D/g, "");
     const number = parseInt(numericValue || "0", 10) / 100;
     return new Intl.NumberFormat("pt-BR", {
@@ -49,9 +51,9 @@ export const AddIncome = () => {
     }).format(number);
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "");
-    setAmount(value);
+  const handleAmountChange = (value: string) => {
+    // Store raw digits for parsing, but display formatted
+    setAmount(value.replace(/\D/g, ""));
   };
 
   const handleTypeSelect = (typeId: IncomeTypeDB, recurring: boolean) => {
@@ -64,8 +66,7 @@ export const AddIncome = () => {
       return;
     }
 
-    const numericAmount = parseInt(amount || "0", 10) / 100;
-    
+    const numericAmount = parseCurrency(amount) > 0 ? parseCurrency(amount) : parseInt(amount || "0", 10) / 100;
     if (numericAmount <= 0 || !description.trim() || !selectedType) {
       return;
     }
@@ -90,7 +91,7 @@ export const AddIncome = () => {
     window.open(whatsappUrl, "_blank");
   };
 
-  const canSave = amount && parseInt(amount, 10) > 0 && description.trim() && selectedType && !createIncome.isPending;
+  const canSave = amount && (parseInt(amount, 10) > 0 || parseCurrency(amount) > 0) && description.trim() && selectedType && !createIncome.isPending;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -109,13 +110,12 @@ export const AddIncome = () => {
         <FadeIn>
           <div className="text-center py-6">
             <p className="text-sm text-muted-foreground mb-2">Valor</p>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={amount ? formatCurrency(amount) : ""}
-              onChange={handleAmountChange}
-              placeholder="R$ 0,00"
-              className="text-center text-4xl font-serif font-semibold h-auto py-4 border-0 bg-transparent focus-visible:ring-0"
+            <CurrencyInput
+              value={amount}
+              onChange={setAmount}
+              inputSize="xl"
+              showPrefix={true}
+              className="text-center border-0 bg-transparent focus-visible:ring-0"
             />
           </div>
         </FadeIn>

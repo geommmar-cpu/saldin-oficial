@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Check, Loader2, Calendar as CalendarIcon, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useReceivableById, useUpdateReceivable } from "@/hooks/useReceivables";
 import { toast } from "sonner";
-import { formatCurrencyInput, parseCurrency, formatCurrency } from "@/lib/currency";
+import { parseCurrency, formatCurrency } from "@/lib/currency";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -96,10 +97,11 @@ export const EditReceivable = () => {
 
         <FadeIn delay={0.05} className="mb-6">
           <Label className="text-sm text-muted-foreground mb-2 block">Valor</Label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-            <Input type="text" inputMode="decimal" value={amount} onChange={(e) => setAmount(formatCurrencyInput(e.target.value))} className="pl-12 text-xl font-semibold h-12" placeholder="0,00" />
-          </div>
+          <CurrencyInput
+            value={amount}
+            onChange={setAmount}
+            inputSize="lg"
+          />
         </FadeIn>
 
         <FadeIn delay={0.1} className="mb-6">

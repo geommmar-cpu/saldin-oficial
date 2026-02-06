@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useIncomeById, useUpdateIncome } from "@/hooks/useIncomes";
 import { toast } from "sonner";
-import { formatCurrencyInput, parseCurrency, formatCurrency } from "@/lib/currency";
+import { parseCurrency, formatCurrency } from "@/lib/currency";
 
 export const EditIncome = () => {
   const navigate = useNavigate();
@@ -80,10 +80,11 @@ export const EditIncome = () => {
       <main className="flex-1 px-5 py-6 overflow-y-auto pb-32">
         <FadeIn className="mb-6">
           <Label className="text-sm text-muted-foreground mb-2 block">Valor</Label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-            <Input type="text" inputMode="decimal" value={amount} onChange={(e) => setAmount(formatCurrencyInput(e.target.value))} className="pl-12 text-2xl font-semibold h-14" placeholder="0,00" />
-          </div>
+          <CurrencyInput
+            value={amount}
+            onChange={setAmount}
+            inputSize="xl"
+          />
         </FadeIn>
 
         <FadeIn delay={0.05} className="mb-6">

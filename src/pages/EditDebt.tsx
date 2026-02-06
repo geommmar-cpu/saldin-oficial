@@ -3,12 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Check, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebtById, useUpdateDebt } from "@/hooks/useDebts";
 import { toast } from "sonner";
-import { formatCurrencyInput, parseCurrency, formatCurrency } from "@/lib/currency";
+import { parseCurrency, formatCurrency } from "@/lib/currency";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -99,10 +100,11 @@ export const EditDebt = () => {
 
         <FadeIn delay={0.05} className="mb-6">
           <Label className="text-sm text-muted-foreground mb-2 block">Valor total</Label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-            <Input type="text" inputMode="decimal" value={totalAmount} onChange={(e) => setTotalAmount(formatCurrencyInput(e.target.value))} className="pl-12 text-xl font-semibold h-12" placeholder="0,00" />
-          </div>
+          <CurrencyInput
+            value={totalAmount}
+            onChange={setTotalAmount}
+            inputSize="lg"
+          />
         </FadeIn>
 
         {!isRecurring && (
@@ -114,10 +116,10 @@ export const EditDebt = () => {
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground mb-2 block">Valor da parcela</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
-                  <Input type="text" inputMode="decimal" value={installmentAmount} onChange={(e) => setInstallmentAmount(formatCurrencyInput(e.target.value))} className="pl-10 h-12" placeholder="0,00" />
-                </div>
+                <CurrencyInput
+                  value={installmentAmount}
+                  onChange={setInstallmentAmount}
+                />
               </div>
             </div>
           </FadeIn>

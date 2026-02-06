@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Calendar as CalendarIcon, User, DollarSign, Loader2, AlertCircle } from "lucide-react";
@@ -15,7 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useCreateReceivable } from "@/hooks/useReceivables";
 import { useAuth } from "@/hooks/useAuth";
-import { parseCurrency, formatCurrencyInput, isValidCurrency } from "@/lib/currency";
+import { parseCurrency, isValidCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 
 const AddReceivable = () => {
@@ -80,8 +81,8 @@ const AddReceivable = () => {
     }
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(formatCurrencyInput(e.target.value));
+  const handleAmountChange = (value: string) => {
+    setAmount(value);
     setValidationError(null);
   };
 
@@ -142,20 +143,11 @@ const AddReceivable = () => {
             <Label htmlFor="amount" className="text-base">
               Valor
             </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                R$
-              </span>
-              <Input
-                id="amount"
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={amount}
-                onChange={handleAmountChange}
-                className="pl-11 h-12 text-base font-medium"
-              />
-            </div>
+            <CurrencyInput
+              value={amount}
+              onChange={handleAmountChange}
+              inputSize="lg"
+            />
           </div>
         </FadeIn>
 

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { FadeIn } from "@/components/ui/motion";
 import { 
   ArrowLeft, 
@@ -18,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCreateDebt } from "@/hooks/useDebts";
 import { useAuth } from "@/hooks/useAuth";
-import { parseCurrency, formatCurrencyInput, isValidCurrency } from "@/lib/currency";
+import { parseCurrency, isValidCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 
 type DebtType = "installment" | "recurring";
@@ -65,13 +66,13 @@ export const AddDebt = () => {
     }
   }, [totalAmount, installments, type]);
 
-  const handleTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTotalAmount(formatCurrencyInput(e.target.value));
+  const handleTotalChange = (value: string) => {
+    setTotalAmount(value);
     setValidationError(null);
   };
 
-  const handleInstallmentAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInstallmentAmount(formatCurrencyInput(e.target.value));
+  const handleInstallmentAmountChange = (value: string) => {
+    setInstallmentAmount(value);
     setValidationError(null);
   };
 
@@ -228,19 +229,10 @@ export const AddDebt = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="total">Valor total</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    R$
-                  </span>
-                  <Input
-                    id="total"
-                    value={totalAmount}
-                    onChange={handleTotalChange}
-                    placeholder="0,00"
-                    className="h-12 pl-9"
-                    inputMode="decimal"
-                  />
-                </div>
+                <CurrencyInput
+                  value={totalAmount}
+                  onChange={handleTotalChange}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="installments">Quantidade de parcelas</Label>
@@ -265,19 +257,10 @@ export const AddDebt = () => {
           ) : (
             <div className="space-y-2">
               <Label htmlFor="monthly">Valor mensal</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                  R$
-                </span>
-                <Input
-                  id="monthly"
-                  value={installmentAmount}
-                  onChange={handleInstallmentAmountChange}
-                  placeholder="0,00"
-                  className="h-12 pl-9"
-                  inputMode="decimal"
-                />
-              </div>
+              <CurrencyInput
+                value={installmentAmount}
+                onChange={handleInstallmentAmountChange}
+              />
             </div>
           )}
         </FadeIn>
