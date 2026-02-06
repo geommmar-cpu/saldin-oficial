@@ -28,6 +28,11 @@ export const useGoals = (status?: 'in_progress' | 'completed' | 'paused' | 'all'
       const { data, error } = await query;
 
       if (error) {
+        // Table doesn't exist yet - return empty array gracefully
+        if (error.code === "PGRST205") {
+          console.warn("Goals table not found. Please run the migration SQL.");
+          return [];
+        }
         console.error("Error fetching goals:", error);
         throw error;
       }
@@ -35,6 +40,12 @@ export const useGoals = (status?: 'in_progress' | 'completed' | 'paused' | 'all'
       return (data as unknown as Goal[]) || [];
     },
     enabled: !!user,
+    retry: (failureCount, error: any) => {
+      // Don't retry if table doesn't exist
+      if (error?.code === "PGRST205") return false;
+      return failureCount < 3;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
@@ -76,6 +87,16 @@ export const useGoalStats = () => {
         .select("current_amount, target_amount, status");
 
       if (error) {
+        // Table doesn't exist yet - return empty stats
+        if (error.code === "PGRST205") {
+          return {
+            totalSaved: 0,
+            totalTarget: 0,
+            activeCount: 0,
+            completedCount: 0,
+            totalCount: 0,
+          };
+        }
         console.error("Error fetching goal stats:", error);
         throw error;
       }
@@ -95,6 +116,11 @@ export const useGoalStats = () => {
       };
     },
     enabled: !!user,
+    retry: (failureCount, error: any) => {
+      if (error?.code === "PGRST205") return false;
+      return failureCount < 3;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 };
 
