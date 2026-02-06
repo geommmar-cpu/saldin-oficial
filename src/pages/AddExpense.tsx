@@ -113,7 +113,7 @@ export const AddExpense = () => {
         </FadeIn>
 
         {/* Continue Button */}
-        <FadeIn delay={0.3} className="pb-4">
+        <FadeIn delay={0.3} className="pb-4 space-y-2">
           <Button
             variant="warm"
             size="lg"
@@ -122,6 +122,14 @@ export const AddExpense = () => {
             disabled={parseCurrency(amount) <= 0}
           >
             Continuar
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            className="w-full"
+            onClick={() => navigate("/")}
+          >
+            Cancelar
           </Button>
         </FadeIn>
       </main>
