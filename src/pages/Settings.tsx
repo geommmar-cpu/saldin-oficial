@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { generateFinancialReport } from "@/lib/exportPdf";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useIncomes } from "@/hooks/useIncomes";
@@ -72,6 +72,16 @@ export const Settings = () => {
   
   const [editingAiName, setEditingAiName] = useState(false);
   const [tempAiName, setTempAiName] = useState(profile?.ai_name || preferences.aiName);
+
+  // Sync aiName from profile (DB) to local preferences when profile loads
+  const displayAiName = profile?.ai_name || preferences.aiName;
+  
+  // Keep localStorage in sync with DB value
+  useEffect(() => {
+    if (profile?.ai_name && profile.ai_name !== preferences.aiName) {
+      updatePreference("aiName", profile.ai_name);
+    }
+  }, [profile?.ai_name]);
   const [loggingOut, setLoggingOut] = useState(false);
   const [biometricActivating, setBiometricActivating] = useState(false);
   
@@ -252,11 +262,11 @@ export const Settings = () => {
             <SettingsItem
               icon={MessageCircle}
               label="Nome do gerenciador"
-              value={preferences.aiName}
+              value={displayAiName}
               action={
                 <button
                   onClick={() => {
-                    setTempAiName(preferences.aiName);
+                    setTempAiName(displayAiName);
                     setEditingAiName(true);
                   }}
                   className="p-1.5 rounded-full hover:bg-muted transition-colors"
@@ -283,7 +293,7 @@ export const Settings = () => {
                 size="sm"
                 className="flex-1 gap-2"
                 onClick={() => {
-                  setTempAiName(preferences.aiName);
+                  setTempAiName(displayAiName);
                   setEditingAiName(true);
                 }}
               >
