@@ -20,14 +20,17 @@ import EditExpense from "./pages/EditExpense";
 import ConfirmExpense from "./pages/ConfirmExpense";
 import Income from "./pages/Income";
 import AddIncome from "./pages/AddIncome";
+import ConfirmIncome from "./pages/ConfirmIncome";
 import IncomeDetail from "./pages/IncomeDetail";
 import EditIncome from "./pages/EditIncome";
 import Debts from "./pages/Debts";
 import AddDebt from "./pages/AddDebt";
+import ConfirmDebt from "./pages/ConfirmDebt";
 import DebtDetail from "./pages/DebtDetail";
 import EditDebt from "./pages/EditDebt";
 import Receivables from "./pages/Receivables";
 import AddReceivable from "./pages/AddReceivable";
+import ConfirmReceivable from "./pages/ConfirmReceivable";
 import ReceivableDetail from "./pages/ReceivableDetail";
 import EditReceivable from "./pages/EditReceivable";
 import Expenses from "./pages/Expenses";
@@ -70,18 +73,21 @@ const App = () => (
           {/* Income */}
           <Route path="/income" element={<OnboardingRoute><Income /></OnboardingRoute>} />
           <Route path="/income/add" element={<OnboardingRoute><AddIncome /></OnboardingRoute>} />
+          <Route path="/income/confirm" element={<OnboardingRoute><ConfirmIncome /></OnboardingRoute>} />
           <Route path="/income/:id" element={<OnboardingRoute><IncomeDetail /></OnboardingRoute>} />
           <Route path="/income/:id/edit" element={<OnboardingRoute><EditIncome /></OnboardingRoute>} />
           
           {/* Debts */}
           <Route path="/debts" element={<OnboardingRoute><Debts /></OnboardingRoute>} />
           <Route path="/debts/add" element={<OnboardingRoute><AddDebt /></OnboardingRoute>} />
+          <Route path="/debts/confirm" element={<OnboardingRoute><ConfirmDebt /></OnboardingRoute>} />
           <Route path="/debts/:id" element={<OnboardingRoute><DebtDetail /></OnboardingRoute>} />
           <Route path="/debts/:id/edit" element={<OnboardingRoute><EditDebt /></OnboardingRoute>} />
           
           {/* Receivables */}
           <Route path="/receivables" element={<OnboardingRoute><Receivables /></OnboardingRoute>} />
           <Route path="/receivables/add" element={<OnboardingRoute><AddReceivable /></OnboardingRoute>} />
+          <Route path="/receivables/confirm" element={<OnboardingRoute><ConfirmReceivable /></OnboardingRoute>} />
           <Route path="/receivables/:id" element={<OnboardingRoute><ReceivableDetail /></OnboardingRoute>} />
           <Route path="/receivables/:id/edit" element={<OnboardingRoute><EditReceivable /></OnboardingRoute>} />
           
