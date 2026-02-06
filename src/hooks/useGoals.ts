@@ -132,18 +132,30 @@ export const useCreateGoal = () => {
     mutationFn: async (goal: GoalInsert): Promise<Goal> => {
       if (!user) throw new Error("Usuário não autenticado");
 
+      const insertData = {
+        user_id: user.id,
+        name: goal.name,
+        target_amount: goal.target_amount,
+        current_amount: goal.current_amount || 0,
+        target_date: goal.target_date || null,
+        color: goal.color || 'green',
+        icon: goal.icon || 'target',
+        notes: goal.notes || null,
+        status: goal.status || 'in_progress',
+      };
+
+      console.log("Creating goal with data:", insertData);
+
       const { data, error } = await supabase
         .from("goals" as any)
-        .insert({
-          ...goal,
-          user_id: user.id,
-          current_amount: goal.current_amount || 0,
-          status: goal.status || 'in_progress',
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Goal creation error details:", JSON.stringify(error));
+        throw error;
+      }
       return data as unknown as Goal;
     },
     onSuccess: () => {
