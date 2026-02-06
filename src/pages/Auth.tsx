@@ -47,6 +47,21 @@ export const Auth = () => {
     userEmail: string;
   } | null>(null);
   
+  // Auto-trigger biometric login when page loads if enabled
+  const [biometricAutoTriggered, setBiometricAutoTriggered] = useState(false);
+
+  // Auto-trigger biometric authentication on mount if biometric is enabled
+  useEffect(() => {
+    // Only trigger once, when not loading, and biometric is available
+    if (!biometricAutoTriggered && !isBiometricLoading && isBiometricSupported && isBiometricEnabled && !authLoading && !user) {
+      setBiometricAutoTriggered(true);
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => {
+        handleAutoBiometricLogin();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isBiometricLoading, isBiometricSupported, isBiometricEnabled, authLoading, user, biometricAutoTriggered]);
 
   // Redirect is handled by PublicRoute wrapper in App.tsx
   // No need to redirect here - the route guards handle it
@@ -132,7 +147,51 @@ export const Auth = () => {
     // Navigation is handled by the auth state change in PublicRoute
   };
 
-  // Handle biometric login
+  // Handle biometric login - automatic flow (doesn't require password)
+  const handleAutoBiometricLogin = async () => {
+    if (!isBiometricSupported || !isBiometricEnabled) return;
+
+    setIsLoading(true);
+    
+    const result = await authenticateWithBiometric();
+    
+    if (result.success && result.userEmail && result.userId) {
+      // Biometric verified - refresh session using stored tokens
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // Session exists and is valid
+        toast({
+          title: "Login realizado",
+          description: "Bem-vindo de volta!",
+        });
+      } else {
+        // Try to restore session using refresh token from storage
+        const { data, error } = await supabase.auth.refreshSession();
+        
+        if (data?.session) {
+          toast({
+            title: "Login realizado", 
+            description: "Bem-vindo de volta!",
+          });
+        } else {
+          // No valid session - silently show login form
+          // User will need to login with password once
+          setEmail(result.userEmail);
+          setIsLoading(false);
+          return;
+        }
+      }
+    } else {
+      // Biometric failed - just show login form, no error toast for auto-trigger
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(false);
+  };
+
+  // Handle manual biometric login button click
   const handleBiometricLogin = async () => {
     if (!isBiometricSupported || !isBiometricEnabled) return;
 
@@ -140,15 +199,8 @@ export const Auth = () => {
     
     const result = await authenticateWithBiometric();
     
-    if (result.success && result.userEmail) {
-      // Get the stored password from secure storage or use a refresh token approach
-      // For now, we'll show a success message and rely on existing session
-      toast({
-        title: "Biometria verificada",
-        description: "Verificando sua sessão...",
-      });
-      
-      // Check if there's an existing session
+    if (result.success && result.userEmail && result.userId) {
+      // Biometric verified - check/refresh session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
@@ -157,12 +209,22 @@ export const Auth = () => {
           description: "Bem-vindo de volta!",
         });
       } else {
-        // No active session, need to enter password
-        setEmail(result.userEmail);
-        toast({
-          title: "Biometria verificada",
-          description: "Digite sua senha para continuar.",
-        });
+        // Try to restore session
+        const { data, error } = await supabase.auth.refreshSession();
+        
+        if (data?.session) {
+          toast({
+            title: "Login realizado",
+            description: "Bem-vindo de volta!",
+          });
+        } else {
+          // No valid session - user needs to re-authenticate with password
+          setEmail(result.userEmail);
+          toast({
+            title: "Sessão expirada",
+            description: "Digite sua senha para reconectar.",
+          });
+        }
       }
     } else {
       toast({
