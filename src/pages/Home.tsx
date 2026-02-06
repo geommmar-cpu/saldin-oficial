@@ -26,12 +26,15 @@ import {
   Lock,
   Wallet,
   Receipt,
+  Target,
+  PiggyBank,
 } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useExpenses, useExpensesByCategory } from "@/hooks/useExpenses";
 import { useDebts } from "@/hooks/useDebts";
 import { useReceivables } from "@/hooks/useReceivables";
 import { useIncomes } from "@/hooks/useIncomes";
+import { useGoalStats } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
 import { calculateBalances, formatCurrency, formatShortCurrency } from "@/lib/balanceCalculations";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval, isBefore, isAfter } from "date-fns";
@@ -91,8 +94,9 @@ export const Home = () => {
   const { data: debts = [], isLoading: debtLoading } = useDebts("active");
   const { data: receivables = [], isLoading: receivableLoading } = useReceivables("pending");
   const { data: incomes = [], isLoading: incomeLoading } = useIncomes();
+  const { data: goalStats, isLoading: goalLoading } = useGoalStats();
 
-  const isLoading = profileLoading || expenseLoading || categoryLoading || debtLoading || receivableLoading || incomeLoading;
+  const isLoading = profileLoading || expenseLoading || categoryLoading || debtLoading || receivableLoading || incomeLoading || goalLoading;
 
   // Calculate date range for selected month
   const monthStart = startOfMonth(selectedMonth);
@@ -178,11 +182,13 @@ export const Home = () => {
   const installmentDebts = filteredDebts.filter(d => d.is_installment);
   
   // Calculate the 3 balance types using the new calculation
+  // Pass goals saved amount to deduct from Saldo Livre
   const balanceBreakdown = calculateBalances(
     filteredIncomes,
     filteredExpenses,
     filteredDebts,
-    selectedMonth
+    selectedMonth,
+    goalStats?.totalSaved || 0
   );
 
   // Transactions for the list
@@ -487,6 +493,24 @@ export const Home = () => {
                     - {formatCurrency(balanceBreakdown.saldoComprometido)}
                   </p>
                 </div>
+                
+                {/* Guardado em Metas */}
+                {balanceBreakdown.saldoGuardado > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-essential/10 flex items-center justify-center">
+                        <PiggyBank className="w-4 h-4 text-essential" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Guardado em metas</p>
+                        <p className="text-xs text-muted-foreground">Separado para objetivos</p>
+                      </div>
+                    </div>
+                    <p className="font-semibold text-essential">
+                      {formatCurrency(balanceBreakdown.saldoGuardado)}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -523,6 +547,49 @@ export const Home = () => {
               </motion.button>
             </div>
           </div>
+        </FadeIn>
+
+        {/* Goals Summary Card */}
+        <FadeIn delay={0.15}>
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate("/goals")}
+            className="w-full p-4 rounded-2xl bg-essential/5 border-2 border-essential/20 text-left hover:bg-essential/10 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-essential/10 flex items-center justify-center">
+                <PiggyBank className="w-6 h-6 text-essential" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold">Metas</h3>
+                  {goalStats && goalStats.activeCount > 0 && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-essential/10 text-essential">
+                      {goalStats.activeCount} ativa{goalStats.activeCount !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                {goalStats && goalStats.totalSaved > 0 ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="text-essential font-semibold">{formatCurrency(goalStats.totalSaved)}</span>
+                      {' '}guardado
+                      {goalStats.totalTarget > 0 && (
+                        <span className="text-muted-foreground">
+                          {' '}de {formatCurrency(goalStats.totalTarget)}
+                        </span>
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Comece a guardar dinheiro em caixinhas
+                  </p>
+                )}
+              </div>
+              <Target className="w-5 h-5 text-muted-foreground" />
+            </div>
+          </motion.button>
         </FadeIn>
 
         {/* Commitments Section */}

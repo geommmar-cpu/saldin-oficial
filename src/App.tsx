@@ -34,6 +34,10 @@ import ConfirmReceivable from "./pages/ConfirmReceivable";
 import ReceivableDetail from "./pages/ReceivableDetail";
 import EditReceivable from "./pages/EditReceivable";
 import Expenses from "./pages/Expenses";
+import Goals from "./pages/Goals";
+import AddGoal from "./pages/AddGoal";
+import GoalDetail from "./pages/GoalDetail";
+import EditGoal from "./pages/EditGoal";
 import NotFound from "./pages/NotFound";
 import StyleGuide from "./pages/StyleGuide";
 import Categories from "./pages/Categories";
@@ -90,6 +94,12 @@ const App = () => (
           <Route path="/receivables/confirm" element={<OnboardingRoute><ConfirmReceivable /></OnboardingRoute>} />
           <Route path="/receivables/:id" element={<OnboardingRoute><ReceivableDetail /></OnboardingRoute>} />
           <Route path="/receivables/:id/edit" element={<OnboardingRoute><EditReceivable /></OnboardingRoute>} />
+          
+          {/* Goals */}
+          <Route path="/goals" element={<OnboardingRoute><Goals /></OnboardingRoute>} />
+          <Route path="/goals/add" element={<OnboardingRoute><AddGoal /></OnboardingRoute>} />
+          <Route path="/goals/:id" element={<OnboardingRoute><GoalDetail /></OnboardingRoute>} />
+          <Route path="/goals/:id/edit" element={<OnboardingRoute><EditGoal /></OnboardingRoute>} />
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />

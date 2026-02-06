@@ -6,26 +6,30 @@
  import { DebtRow } from "@/hooks/useDebts";
  import { startOfMonth, endOfMonth, isWithinInterval, isBefore, isAfter, addMonths } from "date-fns";
  
- export interface BalanceBreakdown {
-   // Saldo Bruto = Receitas - Gastos já pagos
-   saldoBruto: number;
-   
-   // Saldo Comprometido = Parcelas futuras + Dívidas ativas + Contas recorrentes
-   saldoComprometido: number;
-   
-   // Saldo Livre = Saldo Bruto - Saldo Comprometido
-   saldoLivre: number;
-   
-   // Detalhamento
-   detalhes: {
-     receitasTotal: number;
-     gastosTotal: number;
-     dividasAtivas: number;
-     parcelasFuturas: number;
-     contasRecorrentes: number;
-     valoresParaTerceiros: number;
-   };
- }
+export interface BalanceBreakdown {
+  // Saldo Bruto = Receitas - Gastos já pagos
+  saldoBruto: number;
+  
+  // Saldo Comprometido = Parcelas futuras + Dívidas ativas + Contas recorrentes
+  saldoComprometido: number;
+  
+  // Dinheiro guardado em metas
+  saldoGuardado: number;
+  
+  // Saldo Livre = Saldo Bruto - Saldo Comprometido - Saldo Guardado
+  saldoLivre: number;
+  
+  // Detalhamento
+  detalhes: {
+    receitasTotal: number;
+    gastosTotal: number;
+    dividasAtivas: number;
+    parcelasFuturas: number;
+    contasRecorrentes: number;
+    valoresParaTerceiros: number;
+    metasGuardadas: number;
+  };
+}
  
  export interface MonthlyProjection {
    month: Date;
@@ -36,11 +40,13 @@
  }
  
 // Calcular os 3 saldos para um período
+// Nota: goalsSaved é passado como parâmetro opcional para não acoplar a lib aos hooks
 export function calculateBalances(
   incomes: IncomeRow[],
   expenses: ExpenseRow[],
   debts: DebtRow[],
-  selectedMonth: Date
+  selectedMonth: Date,
+  goalsSaved: number = 0
 ): BalanceBreakdown {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
@@ -113,11 +119,13 @@ export function calculateBalances(
    // Cálculos principais
    const saldoBruto = receitasTotal - gastosTotal;
    const saldoComprometido = dividasAtivas + valoresParaTerceiros;
-   const saldoLivre = saldoBruto - saldoComprometido;
+   const saldoGuardado = goalsSaved;
+   const saldoLivre = saldoBruto - saldoComprometido - saldoGuardado;
    
    return {
      saldoBruto,
      saldoComprometido,
+     saldoGuardado,
      saldoLivre,
      detalhes: {
        receitasTotal,
@@ -126,6 +134,7 @@ export function calculateBalances(
        parcelasFuturas,
        contasRecorrentes,
        valoresParaTerceiros,
+       metasGuardadas: goalsSaved,
      },
    };
  }

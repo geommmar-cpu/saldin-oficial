@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, PlusCircle, History, Settings, ArrowDownCircle, ArrowUpCircle, X, CreditCard, HandCoins, Sparkles } from "lucide-react";
+import { Home, PlusCircle, History, Settings, ArrowDownCircle, ArrowUpCircle, X, CreditCard, HandCoins, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -8,7 +8,7 @@ const navItems = [
   { path: "/", icon: Home, label: "Início" },
   { path: "/history", icon: History, label: "Histórico" },
   { path: "#", icon: PlusCircle, label: "Registrar", isMain: true },
-  { path: "/insights", icon: Sparkles, label: "Insights" },
+  { path: "/goals", icon: Target, label: "Metas" },
   { path: "/settings", icon: Settings, label: "Config" },
 ];
 

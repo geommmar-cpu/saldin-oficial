@@ -1,53 +1,55 @@
- // Menu lateral reorganizado do Saldin
- 
- import { useState } from "react";
- import { Link, useLocation, useNavigate } from "react-router-dom";
- import {
-   Home,
-   History,
-   Calendar,
-   CreditCard,
-   HandCoins,
-   Tag,
-   Sparkles,
-   Settings,
-   MessageCircle,
-   Building2,
-   ChevronRight,
-   Menu,
-   X,
-   Clock,
- } from "lucide-react";
- import { cn } from "@/lib/utils";
- import { motion, AnimatePresence } from "framer-motion";
- import { Button } from "@/components/ui/button";
- import logoSaldin from "@/assets/logo-saldin-final.png";
- 
- interface NavItem {
-   path: string;
-   icon: React.ElementType;
-   label: string;
-   badge?: string;
-   comingSoon?: boolean;
- }
- 
- const mainNavItems: NavItem[] = [
-   { path: "/", icon: Home, label: "Home (Saldo)" },
-   { path: "/history", icon: History, label: "Movimentações" },
-   { path: "/overview", icon: Calendar, label: "Parcelas Futuras" },
-   { path: "/debts", icon: CreditCard, label: "Dívidas" },
-   { path: "/receivables", icon: HandCoins, label: "Valores a Receber" },
- ];
- 
- const secondaryNavItems: NavItem[] = [
-   { path: "/insights", icon: Sparkles, label: "Insights" },
-   { path: "/settings", icon: Settings, label: "Configurações" },
- ];
- 
- const comingSoonItems: NavItem[] = [
-   { path: "#", icon: MessageCircle, label: "WhatsApp", comingSoon: true },
-   { path: "#", icon: Building2, label: "Conectar Bancos", comingSoon: true },
- ];
+// Menu lateral reorganizado do Saldin
+
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Home,
+  History,
+  Calendar,
+  CreditCard,
+  HandCoins,
+  Tag,
+  Target,
+  Settings,
+  MessageCircle,
+  Building2,
+  ChevronRight,
+  Menu,
+  X,
+  Clock,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import logoSaldin from "@/assets/logo-saldin-final.png";
+
+interface NavItem {
+  path: string;
+  icon: React.ElementType;
+  label: string;
+  badge?: string;
+  comingSoon?: boolean;
+  highlight?: boolean;
+}
+
+const mainNavItems: NavItem[] = [
+  { path: "/", icon: Home, label: "Home (Saldo)" },
+  { path: "/history", icon: History, label: "Movimentações" },
+  { path: "/goals", icon: Target, label: "Metas", highlight: true },
+  { path: "/overview", icon: Calendar, label: "Parcelas Futuras" },
+  { path: "/debts", icon: CreditCard, label: "Dívidas" },
+  { path: "/receivables", icon: HandCoins, label: "Valores a Receber" },
+  { path: "/categories", icon: Tag, label: "Categorias" },
+];
+
+const secondaryNavItems: NavItem[] = [
+  { path: "/settings", icon: Settings, label: "Configurações" },
+];
+
+const comingSoonItems: NavItem[] = [
+  { path: "#", icon: MessageCircle, label: "WhatsApp", comingSoon: true },
+  { path: "#", icon: Building2, label: "Conectar Bancos", comingSoon: true },
+];
  
  export const Sidebar = () => {
    const [isOpen, setIsOpen] = useState(false);
@@ -124,22 +126,29 @@
                  const Icon = item.icon;
                  
                  return (
-                   <button
-                     key={item.path}
-                     onClick={() => handleNavClick(item)}
-                     className={cn(
-                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                       isActive
-                         ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                         : "text-sidebar-foreground hover:bg-sidebar-accent/50"
-                     )}
-                   >
-                     <Icon className="w-5 h-5" />
-                     <span className="flex-1 text-left">{item.label}</span>
-                     {isActive && (
-                       <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                     )}
-                   </button>
+                    <button
+                      key={item.path}
+                      onClick={() => handleNavClick(item)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : item.highlight
+                          ? "text-essential hover:bg-essential/10"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      )}
+                    >
+                      <Icon className={cn("w-5 h-5", item.highlight && !isActive && "text-essential")} />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.highlight && !isActive && (
+                        <span className="px-1.5 py-0.5 text-[10px] rounded bg-essential/10 text-essential font-medium">
+                          Novo
+                        </span>
+                      )}
+                      {isActive && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      )}
+                    </button>
                  );
                })}
  
