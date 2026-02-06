@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { WhatsAppChargeButton } from "@/components/WhatsAppChargeButton";
 import { FadeIn } from "@/components/ui/motion";
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useReceivables, useReceivableStats } from "@/hooks/useReceivables";
+import { startOfMonth, endOfMonth, isWithinInterval, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const statusConfig = {
   pending: { label: "Em aberto", color: "text-accent", icon: Clock },
@@ -27,10 +29,32 @@ const statusConfig = {
 
 const Receivables = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get selected month from navigation state, fallback to current month
+  const selectedMonth = useMemo(() => {
+    const stateMonth = location.state?.selectedMonth;
+    return stateMonth ? new Date(stateMonth) : new Date();
+  }, [location.state?.selectedMonth]);
+  
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
   
   // Fetch real data from Supabase
-  const { data: receivables = [], isLoading } = useReceivables("all");
+  const { data: allReceivables = [], isLoading } = useReceivables("all");
   const { data: stats } = useReceivableStats();
+  
+  // Filter receivables by due date in selected month
+  const receivables = useMemo(() => {
+    return allReceivables.filter(receivable => {
+      const dueDate = receivable.due_date ? new Date(receivable.due_date) : null;
+      if (!dueDate) return false;
+      return isWithinInterval(dueDate, { start: monthStart, end: monthEnd });
+    });
+  }, [allReceivables, monthStart, monthEnd]);
+
+  // Get month name from selected month
+  const currentMonth = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -46,14 +70,17 @@ const Receivables = () => {
     }).format(new Date(date));
   };
 
-  // Calculate totals from real data
+  // Calculate totals from filtered data
   const pendingReceivables = useMemo(
     () => receivables.filter((r) => r.status !== "received" && r.status !== "cancelled"),
     [receivables]
   );
 
-  const totalPending = stats?.totalPending ?? 0;
-  const overdueCount = stats?.overdueCount ?? 0;
+  const totalPending = pendingReceivables.reduce((sum, r) => sum + Number(r.amount), 0);
+  const overdueCount = pendingReceivables.filter(r => {
+    const dueDate = r.due_date ? new Date(r.due_date) : null;
+    return dueDate && dueDate < new Date();
+  }).length;
 
   if (isLoading) {
     return (

@@ -1,81 +1,102 @@
- import { useNavigate } from "react-router-dom";
- import { Button } from "@/components/ui/button";
- import { BottomNav } from "@/components/BottomNav";
- import { ExpenseList, Expense } from "@/components/ExpenseList";
- import { FadeIn } from "@/components/ui/motion";
- import { ArrowLeft, Plus, Receipt, MessageCircle, Loader2 } from "lucide-react";
- import { useExpenses } from "@/hooks/useExpenses";
- 
- // Emotion types from database
- type EmotionType = "essencial" | "impulso" | "pilar" | null;
- 
- export const Expenses = () => {
-   const navigate = useNavigate();
- 
-   // Fetch real data from Supabase
-   const { data: expenses = [], isLoading } = useExpenses("all");
- 
-   const openWhatsApp = () => {
-     window.open("https://wa.me/5511999999999", "_blank");
-   };
- 
-   const handleExpenseClick = (expense: Expense) => {
-     navigate(`/expenses/${expense.id}`);
-   };
- 
-   // Calculate totals
-   const totalSpent = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
- 
-   // Group by emotion category
-   const essentialExpenses = expenses.filter((e) => e.emotion === "essencial");
-   const obligationExpenses = expenses.filter((e) => e.emotion === "pilar");
-   const impulseExpenses = expenses.filter((e) => e.emotion === "impulso");
-   const otherExpenses = expenses.filter((e) => !e.emotion);
- 
-   const essentialTotal = essentialExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
-   const obligationTotal = obligationExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
-   const impulseTotal = impulseExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
-   const otherTotal = otherExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
- 
-   const formatCurrency = (value: number) =>
-     new Intl.NumberFormat("pt-BR", {
-       style: "currency",
-       currency: "BRL",
-     }).format(value);
- 
-   // Get current month name
-   const currentMonth = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
- 
-   if (isLoading) {
-     return (
-       <div className="min-h-screen bg-background flex items-center justify-center pb-24">
-         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-         <BottomNav />
-       </div>
-     );
-   }
- 
-   // Transform database expenses to ExpenseList format
-   const transformExpense = (e: typeof expenses[0]): Expense => ({
-     id: e.id,
-     amount: Number(e.amount),
-     description: e.description,
-     category: e.emotion === "essencial" ? "essential" 
-       : e.emotion === "pilar" ? "obligation" 
-       : e.emotion === "impulso" ? "impulse" 
-       : undefined,
-    wouldDoAgain: undefined,
-     source: (e.source as Expense["source"]) || "manual",
-    pending: e.status === "pending",
-     createdAt: new Date(e.date || e.created_at),
-    establishment: undefined,
-   });
- 
-   const transformedExpenses = expenses.map(transformExpense);
-   const transformedEssential = essentialExpenses.map(transformExpense);
-   const transformedObligation = obligationExpenses.map(transformExpense);
-   const transformedImpulse = impulseExpenses.map(transformExpense);
-   const transformedOther = otherExpenses.map(transformExpense);
+import { useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { BottomNav } from "@/components/BottomNav";
+import { ExpenseList, Expense } from "@/components/ExpenseList";
+import { FadeIn } from "@/components/ui/motion";
+import { ArrowLeft, Plus, Receipt, MessageCircle, Loader2 } from "lucide-react";
+import { useExpenses } from "@/hooks/useExpenses";
+import { startOfMonth, endOfMonth, isWithinInterval, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+// Emotion types from database
+type EmotionType = "essencial" | "impulso" | "pilar" | null;
+
+export const Expenses = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get selected month from navigation state, fallback to current month
+  const selectedMonth = useMemo(() => {
+    const stateMonth = location.state?.selectedMonth;
+    return stateMonth ? new Date(stateMonth) : new Date();
+  }, [location.state?.selectedMonth]);
+  
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
+
+  // Fetch real data from Supabase
+  const { data: allExpenses = [], isLoading } = useExpenses("all");
+  
+  // Filter expenses by selected month
+  const expenses = useMemo(() => {
+    return allExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date || expense.created_at);
+      return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+    });
+  }, [allExpenses, monthStart, monthEnd]);
+
+  const openWhatsApp = () => {
+    window.open("https://wa.me/5511999999999", "_blank");
+  };
+
+  const handleExpenseClick = (expense: Expense) => {
+    navigate(`/expenses/${expense.id}`);
+  };
+
+  // Calculate totals
+  const totalSpent = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
+
+  // Group by emotion category
+  const essentialExpenses = expenses.filter((e) => e.emotion === "essencial");
+  const obligationExpenses = expenses.filter((e) => e.emotion === "pilar");
+  const impulseExpenses = expenses.filter((e) => e.emotion === "impulso");
+  const otherExpenses = expenses.filter((e) => !e.emotion);
+
+  const essentialTotal = essentialExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
+  const obligationTotal = obligationExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
+  const impulseTotal = impulseExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
+  const otherTotal = otherExpenses.reduce((acc, e) => acc + Number(e.amount), 0);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+
+  // Get month name from selected month
+  const currentMonth = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-24">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // Transform database expenses to ExpenseList format
+  const transformExpense = (e: typeof expenses[0]): Expense => ({
+    id: e.id,
+    amount: Number(e.amount),
+    description: e.description,
+    category: e.emotion === "essencial" ? "essential" 
+      : e.emotion === "pilar" ? "obligation" 
+      : e.emotion === "impulso" ? "impulse" 
+      : undefined,
+   wouldDoAgain: undefined,
+    source: (e.source as Expense["source"]) || "manual",
+   pending: e.status === "pending",
+    createdAt: new Date(e.date || e.created_at),
+   establishment: undefined,
+  });
+
+  const transformedExpenses = expenses.map(transformExpense);
+  const transformedEssential = essentialExpenses.map(transformExpense);
+  const transformedObligation = obligationExpenses.map(transformExpense);
+  const transformedImpulse = impulseExpenses.map(transformExpense);
+  const transformedOther = otherExpenses.map(transformExpense);
  
    return (
      <div className="min-h-screen bg-background pb-24">

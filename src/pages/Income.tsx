@@ -1,10 +1,13 @@
-import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
 import { IncomeList } from "@/components/IncomeList";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Plus, Wallet, MessageCircle, Loader2 } from "lucide-react";
 import { useIncomes, useIncomeStats, IncomeRow } from "@/hooks/useIncomes";
+import { startOfMonth, endOfMonth, isWithinInterval, isBefore, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Map database income_type to display categories
 const isFixedType = (type: string) => ["salary"].includes(type);
@@ -12,10 +15,36 @@ const isVariableType = (type: string) => ["freelance", "investment", "gift", "ot
 
 export const Income = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get selected month from navigation state, fallback to current month
+  const selectedMonth = useMemo(() => {
+    const stateMonth = location.state?.selectedMonth;
+    return stateMonth ? new Date(stateMonth) : new Date();
+  }, [location.state?.selectedMonth]);
+  
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
 
   // Fetch real data from Supabase
-  const { data: incomes = [], isLoading } = useIncomes();
+  const { data: allIncomes = [], isLoading } = useIncomes();
   const { data: stats } = useIncomeStats();
+  
+  // Filter incomes by selected month (considering recurring)
+  const incomes = useMemo(() => {
+    return allIncomes.filter(income => {
+      const incomeDate = new Date(income.date || income.created_at);
+      
+      // For recurring incomes: show if the income started before or during this month
+      if (income.is_recurring) {
+        const incomeStart = startOfMonth(incomeDate);
+        return !isBefore(monthStart, incomeStart);
+      }
+      
+      // For non-recurring: only show in the month it was created
+      return isWithinInterval(incomeDate, { start: monthStart, end: monthEnd });
+    });
+  }, [allIncomes, monthStart, monthEnd]);
 
   const openWhatsApp = () => {
     window.open("https://wa.me/5511999999999", "_blank");
@@ -28,9 +57,9 @@ export const Income = () => {
   const fixedIncomes = incomes.filter((i) => isFixedType(i.type));
   const variableIncomes = incomes.filter((i) => isVariableType(i.type));
 
-  // Use stats or calculate from incomes
-  const totalFixed = stats?.fixedTotal ?? fixedIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
-  const totalVariable = stats?.variableTotal ?? variableIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
+  // Calculate totals from filtered incomes
+  const totalFixed = fixedIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
+  const totalVariable = variableIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
   
   const totalIncome = totalFixed + totalVariable;
 
@@ -40,8 +69,8 @@ export const Income = () => {
       currency: "BRL",
     }).format(value);
 
-  // Get current month name
-  const currentMonth = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
+  // Get month name from selected month
+  const currentMonth = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
 
   if (isLoading) {
     return (
