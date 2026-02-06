@@ -98,10 +98,19 @@ export const Home = () => {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
 
-  // Filter data by selected month
+  // Filter data by selected month (including installment expenses that fall in this month)
   const filteredExpenses = useMemo(() => {
     return expenses.filter(expense => {
       const expenseDate = new Date(expense.date || expense.created_at);
+      
+      // For installment expenses: calculate when THIS installment is due
+      if (expense.is_installment && expense.installment_number && expense.total_installments) {
+        // The expense.date represents when THIS specific installment is due
+        // (each installment should have its own date set when created)
+        return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+      }
+      
+      // For regular expenses: simple date filter
       return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
     });
   }, [expenses, monthStart, monthEnd]);
@@ -111,10 +120,12 @@ export const Home = () => {
     return incomes.filter(income => {
       const incomeDate = new Date(income.date || income.created_at);
       
-      // For recurring incomes: show if it started before or during this month
+      // For recurring incomes: show if the income started before or during this month
+      // AND the selected month is not before the start date
       if (income.is_recurring) {
-        // Recurring income appears every month after it was created
-        return isBefore(incomeDate, addMonths(monthEnd, 1));
+        const incomeStart = startOfMonth(incomeDate);
+        // Show in all months from the start date onwards
+        return !isBefore(monthStart, incomeStart);
       }
       
       // For non-recurring: only show in the month it was created

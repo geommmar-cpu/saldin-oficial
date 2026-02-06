@@ -35,47 +35,50 @@
    isNegative: boolean;
  }
  
- // Calcular os 3 saldos para um período
- export function calculateBalances(
-   incomes: IncomeRow[],
-   expenses: ExpenseRow[],
-   debts: DebtRow[],
-   selectedMonth: Date
- ): BalanceBreakdown {
-   const monthStart = startOfMonth(selectedMonth);
-   const monthEnd = endOfMonth(selectedMonth);
-   
-   // Filtrar receitas do mês (incluindo recorrentes)
-   const filteredIncomes = incomes.filter(income => {
-     const incomeDate = new Date(income.date || income.created_at);
-     
-     if (income.is_recurring) {
-       return isBefore(incomeDate, monthEnd) || isWithinInterval(incomeDate, { start: monthStart, end: monthEnd });
-     }
-     
-     return isWithinInterval(incomeDate, { start: monthStart, end: monthEnd });
-   });
-   
-   // Filtrar gastos do mês
-   const filteredExpenses = expenses.filter(expense => {
-     const expenseDate = new Date(expense.date || expense.created_at);
-     return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
-   });
-   
-   // Calcular dívidas ativas no mês
-   const activeDebts = debts.filter(debt => {
-     const debtStart = new Date(debt.created_at);
-     if (isAfter(debtStart, monthEnd)) return false;
-     
-     if (debt.is_installment && debt.total_installments) {
-       const monthsFromStart = Math.floor(
-         (monthStart.getTime() - debtStart.getTime()) / (30 * 24 * 60 * 60 * 1000)
-       );
-       return monthsFromStart < debt.total_installments;
-     }
-     
-     return true;
-   });
+// Calcular os 3 saldos para um período
+export function calculateBalances(
+  incomes: IncomeRow[],
+  expenses: ExpenseRow[],
+  debts: DebtRow[],
+  selectedMonth: Date
+): BalanceBreakdown {
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
+  
+  // Filtrar receitas do mês (incluindo recorrentes)
+  // Nota: já recebemos os dados filtrados, apenas garantimos a lógica aqui também
+  const filteredIncomes = incomes.filter(income => {
+    const incomeDate = new Date(income.date || income.created_at);
+    
+    if (income.is_recurring) {
+      // Show in all months from the start date onwards
+      const incomeStart = startOfMonth(incomeDate);
+      return !isBefore(monthStart, incomeStart);
+    }
+    
+    return isWithinInterval(incomeDate, { start: monthStart, end: monthEnd });
+  });
+  
+  // Filtrar gastos do mês (já vem filtrado, mas garantimos)
+  const filteredExpenses = expenses.filter(expense => {
+    const expenseDate = new Date(expense.date || expense.created_at);
+    return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
+  });
+  
+  // Calcular dívidas ativas no mês
+  const activeDebts = debts.filter(debt => {
+    const debtStart = new Date(debt.created_at);
+    if (isAfter(debtStart, monthEnd)) return false;
+    
+    if (debt.is_installment && debt.total_installments) {
+      const monthsFromStart = Math.floor(
+        (monthStart.getTime() - debtStart.getTime()) / (30 * 24 * 60 * 60 * 1000)
+      );
+      return monthsFromStart < debt.total_installments;
+    }
+    
+    return true;
+  });
    
    // Totais
    const receitasTotal = filteredIncomes.reduce((sum, i) => sum + Number(i.amount), 0);
