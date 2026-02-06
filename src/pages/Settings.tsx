@@ -1,5 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { generateFinancialReport } from "@/lib/exportPdf";
+import { useExpenses } from "@/hooks/useExpenses";
+import { useIncomes } from "@/hooks/useIncomes";
+import { useDebts } from "@/hooks/useDebts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -56,6 +60,10 @@ export const Settings = () => {
     getCredentialsForUser,
     isLoading: isBiometricLoading,
   } = useWebAuthn();
+
+  const { data: allExpenses } = useExpenses("confirmed");
+  const { data: allIncomes } = useIncomes();
+  const { data: allDebts } = useDebts("active");
   
   const [editingAiName, setEditingAiName] = useState(false);
   const [tempAiName, setTempAiName] = useState(profile?.ai_name || preferences.aiName);
@@ -135,6 +143,27 @@ export const Settings = () => {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      toast({ title: "Gerando relatório..." });
+      await generateFinancialReport({
+        incomes: allIncomes || [],
+        expenses: allExpenses || [],
+        debts: allDebts || [],
+        userName: user?.user_metadata?.full_name,
+        selectedMonth: new Date(),
+      });
+      toast({ title: "PDF gerado com sucesso!" });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast({
+        title: "Erro ao gerar PDF",
+        description: "Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -358,16 +387,9 @@ export const Settings = () => {
             <SettingsItem
               icon={FileText}
               label="Exportar PDF"
-              description="Relatório completo"
-              locked
-              onClick={() => {}}
-            />
-            <SettingsItem
-              icon={FileText}
-              label="Exportar Excel"
-              description="Dados detalhados"
-              locked
-              onClick={() => {}}
+              description="Relatório completo do mês"
+              onClick={handleExportPdf}
+              showArrow
             />
             <SettingsItem
               icon={History}
