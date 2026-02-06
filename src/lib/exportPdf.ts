@@ -159,7 +159,7 @@ export async function generateFinancialReport({
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(...accentColor);
-    doc.text("💰 Receitas", margin, y);
+    doc.text("Receitas", margin, y);
     y += 6;
 
     const incomeRows = incomes.map((i) => [
@@ -201,7 +201,7 @@ export async function generateFinancialReport({
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(...redColor);
-    doc.text("💸 Gastos", margin, y);
+    doc.text("Gastos", margin, y);
     y += 6;
 
     const expenseRows = expenses.map((e) => {
@@ -246,7 +246,7 @@ export async function generateFinancialReport({
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(180, 120, 30);
-    doc.text("📋 Dívidas", margin, y);
+    doc.text("Dividas", margin, y);
     y += 6;
 
     const debtRows = debts.map((d) => [
