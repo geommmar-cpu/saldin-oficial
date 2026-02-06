@@ -28,25 +28,39 @@ import {
   ChevronRight,
   Lock,
   Sun,
-  Moon
+  Moon,
+  Fingerprint,
+  Trash2
 } from "lucide-react";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { useWebAuthn } from "@/hooks/useWebAuthn";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export const Settings = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { preferences, updatePreference, resetPreferences } = useUserPreferences();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
   const queryClient = useQueryClient();
+  const { 
+    isSupported: isBiometricSupported, 
+    isEnabled: isBiometricEnabled,
+    registerBiometric,
+    removeAllCredentials,
+    getCredentialsForUser,
+    isLoading: isBiometricLoading,
+  } = useWebAuthn();
   
   const [editingAiName, setEditingAiName] = useState(false);
   const [tempAiName, setTempAiName] = useState(profile?.ai_name || preferences.aiName);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [biometricActivating, setBiometricActivating] = useState(false);
   
   // Mock WhatsApp status
   const whatsappStatus = {
@@ -57,6 +71,10 @@ export const Settings = () => {
   // Alert preferences (local state for demo)
   const [impulseAlerts, setImpulseAlerts] = useState(true);
   const [highSpendAlerts, setHighSpendAlerts] = useState(true);
+
+  // Get user's biometric credentials
+  const userCredentials = user?.id ? getCredentialsForUser(user.id) : [];
+  const hasBiometricEnabled = userCredentials.length > 0;
 
   const saveAiName = async () => {
     if (tempAiName.trim().length >= 2) {
@@ -86,6 +104,37 @@ export const Settings = () => {
       console.error("Erro ao sair:", error);
     } finally {
       setLoggingOut(false);
+    }
+  };
+
+  const handleToggleBiometric = async () => {
+    if (!user?.id || !user?.email) return;
+    
+    if (hasBiometricEnabled) {
+      // Remove biometric
+      removeAllCredentials(user.id);
+      toast({
+        title: "Biometria desativada",
+        description: "Você precisará usar email e senha para entrar.",
+      });
+    } else {
+      // Enable biometric
+      setBiometricActivating(true);
+      const success = await registerBiometric(user.id, user.email);
+      setBiometricActivating(false);
+      
+      if (success) {
+        toast({
+          title: "Biometria ativada!",
+          description: "Na próxima vez, use sua biometria para entrar.",
+        });
+      } else {
+        toast({
+          title: "Erro ao ativar",
+          description: "Não foi possível ativar a biometria.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -217,8 +266,40 @@ export const Settings = () => {
           </SettingsSection>
         </FadeIn>
 
-        {/* Bloco 3 - Aparência */}
+        {/* Bloco 3 - Segurança */}
         <FadeIn delay={0.1}>
+          <SettingsSection title="Segurança">
+            {isBiometricSupported && (
+              <SettingsItem
+                icon={Fingerprint}
+                iconColor={hasBiometricEnabled ? "text-essential" : "text-muted-foreground"}
+                label="Login por biometria"
+                description={hasBiometricEnabled 
+                  ? `Ativado • ${userCredentials[0]?.deviceName || "Dispositivo"}`
+                  : "Use impressão digital ou Face ID"
+                }
+                action={
+                  <Switch
+                    checked={hasBiometricEnabled}
+                    disabled={biometricActivating || isBiometricLoading}
+                    onCheckedChange={handleToggleBiometric}
+                  />
+                }
+              />
+            )}
+            {!isBiometricSupported && (
+              <SettingsItem
+                icon={Fingerprint}
+                iconColor="text-muted-foreground"
+                label="Login por biometria"
+                description="Seu dispositivo não suporta biometria"
+              />
+            )}
+          </SettingsSection>
+        </FadeIn>
+
+        {/* Bloco 4 - Aparência */}
+        <FadeIn delay={0.12}>
           <SettingsSection title="Aparência">
             <SettingsItem
               icon={preferences.darkMode ? Moon : Sun}

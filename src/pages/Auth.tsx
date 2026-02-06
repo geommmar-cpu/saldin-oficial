@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useWebAuthn } from "@/hooks/useWebAuthn";
 import { validatePassword } from "@/lib/passwordValidation";
 import { PasswordStrengthChecklist } from "@/components/PasswordStrengthChecklist";
+import { BiometricSetupDialog } from "@/components/auth/BiometricSetupDialog";
+import { supabase } from "@/lib/backendClient";
 import logoSaldin from "@/assets/logo-saldin-final.png";
 
 
@@ -18,6 +21,14 @@ export const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
+  const { 
+    isSupported: isBiometricSupported, 
+    isEnabled: isBiometricEnabled,
+    authenticateWithBiometric,
+    isEnabledForUser,
+    isLoading: isBiometricLoading,
+  } = useWebAuthn();
+  
   const [view, setView] = useState<AuthView>("login");
   
   // Form states
@@ -28,6 +39,13 @@ export const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Biometric states
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+  const [pendingBiometricUser, setPendingBiometricUser] = useState<{
+    userId: string;
+    userEmail: string;
+  } | null>(null);
   
 
   // Redirect is handled by PublicRoute wrapper in App.tsx
@@ -74,7 +92,7 @@ export const Auth = () => {
 
     setIsLoading(true);
     
-    const { error } = await signIn(email, password);
+    const { data, error } = await signIn(email, password);
     
     setIsLoading(false);
     
@@ -93,11 +111,68 @@ export const Auth = () => {
       return;
     }
 
+    // Check if we should offer biometric setup
+    const userId = data?.user?.id;
+    const userEmail = data?.user?.email;
+    
+    if (userId && userEmail && isBiometricSupported && !isEnabledForUser(userId)) {
+      // Check if user dismissed the prompt this session
+      const dismissed = sessionStorage.getItem("biometric_prompt_dismissed");
+      if (!dismissed) {
+        setPendingBiometricUser({ userId, userEmail });
+        setShowBiometricSetup(true);
+        return; // Don't show success toast yet, wait for biometric decision
+      }
+    }
+
     toast({
       title: "Login realizado",
       description: "Bem-vindo de volta!",
     });
     // Navigation is handled by the auth state change in PublicRoute
+  };
+
+  // Handle biometric login
+  const handleBiometricLogin = async () => {
+    if (!isBiometricSupported || !isBiometricEnabled) return;
+
+    setIsLoading(true);
+    
+    const result = await authenticateWithBiometric();
+    
+    if (result.success && result.userEmail) {
+      // Get the stored password from secure storage or use a refresh token approach
+      // For now, we'll show a success message and rely on existing session
+      toast({
+        title: "Biometria verificada",
+        description: "Verificando sua sessão...",
+      });
+      
+      // Check if there's an existing session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        toast({
+          title: "Login realizado",
+          description: "Bem-vindo de volta!",
+        });
+      } else {
+        // No active session, need to enter password
+        setEmail(result.userEmail);
+        toast({
+          title: "Biometria verificada",
+          description: "Digite sua senha para continuar.",
+        });
+      }
+    } else {
+      toast({
+        title: "Falha na autenticação",
+        description: "Não foi possível verificar sua biometria. Use email e senha.",
+        variant: "destructive",
+      });
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -247,6 +322,9 @@ export const Auth = () => {
               onSubmit={handleLogin}
               onForgotPassword={() => handleViewChange("recovery")}
               onCreateAccount={() => handleViewChange("signup")}
+              showBiometricButton={isBiometricSupported && isBiometricEnabled}
+              onBiometricLogin={handleBiometricLogin}
+              isBiometricLoading={isBiometricLoading}
             />
           )}
 
@@ -281,6 +359,32 @@ export const Auth = () => {
           )}
         </FadeIn>
       </main>
+
+      {/* Biometric Setup Dialog */}
+      {pendingBiometricUser && (
+        <BiometricSetupDialog
+          open={showBiometricSetup}
+          onOpenChange={(open) => {
+            setShowBiometricSetup(open);
+            if (!open) {
+              toast({
+                title: "Login realizado",
+                description: "Bem-vindo de volta!",
+              });
+              setPendingBiometricUser(null);
+            }
+          }}
+          userId={pendingBiometricUser.userId}
+          userEmail={pendingBiometricUser.userEmail}
+          onSuccess={() => {
+            toast({
+              title: "Login realizado",
+              description: "Bem-vindo de volta!",
+            });
+            setPendingBiometricUser(null);
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -297,6 +401,9 @@ interface LoginFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onForgotPassword: () => void;
   onCreateAccount: () => void;
+  showBiometricButton?: boolean;
+  onBiometricLogin?: () => void;
+  isBiometricLoading?: boolean;
 }
 
 const LoginForm = ({
@@ -310,6 +417,9 @@ const LoginForm = ({
   onSubmit,
   onForgotPassword,
   onCreateAccount,
+  showBiometricButton,
+  onBiometricLogin,
+  isBiometricLoading,
 }: LoginFormProps) => (
   <form onSubmit={onSubmit} className="space-y-6">
     <div className="text-center mb-8">
@@ -319,6 +429,35 @@ const LoginForm = ({
         Acesse seu painel de controle financeiro
       </p>
     </div>
+
+    {/* Biometric Login Button */}
+    {showBiometricButton && (
+      <div className="space-y-4">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-14 gap-3"
+          onClick={onBiometricLogin}
+          disabled={isBiometricLoading || isLoading}
+        >
+          <Fingerprint className="w-6 h-6" />
+          <span className="text-base">
+            {isBiometricLoading ? "Verificando..." : "Entrar com biometria"}
+          </span>
+        </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              ou
+            </span>
+          </div>
+        </div>
+      </div>
+    )}
 
     <div className="space-y-4">
       <div className="space-y-2">
