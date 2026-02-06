@@ -8,7 +8,7 @@ import { IncomeRow } from "@/hooks/useIncomes";
 import { DebtRow } from "@/hooks/useDebts";
 import { ReceivableRow } from "@/hooks/useReceivables";
 import type { Goal } from "@/types/goal";
-import logoSrc from "@/assets/logo-saldin-transparent.png";
+const logoSrc = "/logo-saldin-pdf.webp";
 
 // ── Colors (RGB) ──────────────────────────────────────────────
 const C = {
@@ -113,29 +113,28 @@ export async function generateFinancialReport({
   // ════════════════════════════════════════════════════════════
   // 1) HEADER WITH LOGO
   // ════════════════════════════════════════════════════════════
-  // Background bar
-  doc.setFillColor(...C.darkBg);
-  doc.rect(0, 0, pageWidth, 48, "F");
+  // Background bar - white/cream
+  doc.setFillColor(...C.bg);
+  doc.rect(0, 0, pageWidth, 52, "F");
 
   // Logo
   try {
     const logoBase64 = await loadImageAsBase64(logoSrc);
-    doc.addImage(logoBase64, "PNG", pageWidth / 2 - 14, 4, 28, 28);
+    doc.addImage(logoBase64, "PNG", pageWidth / 2 - 20, 4, 40, 28);
   } catch {
     // continue without logo
   }
 
-  // App name
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...C.white);
-  doc.text("Saldin", pageWidth / 2, 37, { align: "center" });
-
   // Subtitle
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(200, 200, 200);
-  doc.text("Relatorio Financeiro Mensal", pageWidth / 2, 42, { align: "center" });
+  doc.setFontSize(9);
+  doc.setTextColor(...C.gray);
+  doc.text("Relatorio Financeiro Mensal", pageWidth / 2, 38, { align: "center" });
+
+  // Decorative line
+  doc.setDrawColor(...C.terracota);
+  doc.setLineWidth(0.8);
+  doc.line(pageWidth / 2 - 30, 42, pageWidth / 2 + 30, 42);
 
   y = 55;
 
