@@ -363,9 +363,9 @@ export const Home = () => {
       <header className="px-5 pt-safe-top bg-background sticky top-0 z-10 border-b border-border">
         <div className="pt-4 pb-4">
           <FadeIn>
-            <div className="flex justify-center">
+            <button onClick={() => navigate("/")} className="flex justify-center w-full">
               <img src={logoSaldin} alt="Saldin" className="h-24 object-contain" />
-            </div>
+            </button>
           </FadeIn>
         </div>
 
