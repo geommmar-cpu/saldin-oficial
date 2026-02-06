@@ -403,14 +403,11 @@ export const Settings = () => {
         {/* Bloco 5 - Integrações */}
         <FadeIn delay={0.2}>
           <SettingsSection title="Integrações">
-            <SettingsItem
+             <SettingsItem
               icon={CreditCard}
               label="Bancos e cartões"
-              value={preferences.connectedBanks.length > 0 
-                ? `${preferences.connectedBanks.length} conectado${preferences.connectedBanks.length > 1 ? 's' : ''}`
-                : "Nenhum conectado"}
-              onClick={() => {}}
-              showArrow
+              value="Em breve"
+              valueColor="text-muted-foreground"
             />
             <SettingsItem
               icon={MessageCircle}
