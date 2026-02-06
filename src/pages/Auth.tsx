@@ -52,16 +52,53 @@ export const Auth = () => {
 
   // Auto-trigger biometric authentication on mount if biometric is enabled
   useEffect(() => {
+    const triggerAutoBiometric = async () => {
+      if (!isBiometricSupported || !isBiometricEnabled) return;
+
+      setIsLoading(true);
+      
+      const result = await authenticateWithBiometric();
+      
+      if (result.success && result.userEmail && result.userId) {
+        // Biometric verified - refresh session using stored tokens
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          toast({
+            title: "Login realizado",
+            description: "Bem-vindo de volta!",
+          });
+        } else {
+          // Try to restore session using refresh token from storage
+          const { data } = await supabase.auth.refreshSession();
+          
+          if (data?.session) {
+            toast({
+              title: "Login realizado", 
+              description: "Bem-vindo de volta!",
+            });
+          } else {
+            // No valid session - show login form with email prefilled
+            setEmail(result.userEmail);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
     // Only trigger once, when not loading, and biometric is available
     if (!biometricAutoTriggered && !isBiometricLoading && isBiometricSupported && isBiometricEnabled && !authLoading && !user) {
       setBiometricAutoTriggered(true);
       // Small delay to ensure UI is ready
       const timer = setTimeout(() => {
-        handleAutoBiometricLogin();
+        triggerAutoBiometric();
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [isBiometricLoading, isBiometricSupported, isBiometricEnabled, authLoading, user, biometricAutoTriggered]);
+  }, [isBiometricLoading, isBiometricSupported, isBiometricEnabled, authLoading, user, biometricAutoTriggered, authenticateWithBiometric, toast]);
 
   // Redirect is handled by PublicRoute wrapper in App.tsx
   // No need to redirect here - the route guards handle it
@@ -145,50 +182,6 @@ export const Auth = () => {
       description: "Bem-vindo de volta!",
     });
     // Navigation is handled by the auth state change in PublicRoute
-  };
-
-  // Handle biometric login - automatic flow (doesn't require password)
-  const handleAutoBiometricLogin = async () => {
-    if (!isBiometricSupported || !isBiometricEnabled) return;
-
-    setIsLoading(true);
-    
-    const result = await authenticateWithBiometric();
-    
-    if (result.success && result.userEmail && result.userId) {
-      // Biometric verified - refresh session using stored tokens
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // Session exists and is valid
-        toast({
-          title: "Login realizado",
-          description: "Bem-vindo de volta!",
-        });
-      } else {
-        // Try to restore session using refresh token from storage
-        const { data, error } = await supabase.auth.refreshSession();
-        
-        if (data?.session) {
-          toast({
-            title: "Login realizado", 
-            description: "Bem-vindo de volta!",
-          });
-        } else {
-          // No valid session - silently show login form
-          // User will need to login with password once
-          setEmail(result.userEmail);
-          setIsLoading(false);
-          return;
-        }
-      }
-    } else {
-      // Biometric failed - just show login form, no error toast for auto-trigger
-      setIsLoading(false);
-      return;
-    }
-    
-    setIsLoading(false);
   };
 
   // Handle manual biometric login button click
