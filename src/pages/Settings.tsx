@@ -435,19 +435,19 @@ export const Settings = () => {
             <SettingsItem
               icon={HelpCircle}
               label="Ajuda"
-              onClick={() => {}}
+              onClick={() => navigate("/help")}
               showArrow
             />
             <SettingsItem
               icon={FileQuestion}
               label="Termos de uso"
-              onClick={() => {}}
+              onClick={() => navigate("/terms")}
               showArrow
             />
             <SettingsItem
               icon={Shield}
               label="Política de privacidade"
-              onClick={() => {}}
+              onClick={() => navigate("/privacy")}
               showArrow
             />
             <SettingsItem

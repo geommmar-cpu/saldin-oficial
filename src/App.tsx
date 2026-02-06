@@ -41,6 +41,9 @@ import EditGoal from "./pages/EditGoal";
 import NotFound from "./pages/NotFound";
 import StyleGuide from "./pages/StyleGuide";
 import Categories from "./pages/Categories";
+import Help from "./pages/Help";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -103,6 +106,11 @@ const App = () => (
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />
+          
+          {/* Support & Legal */}
+          <Route path="/help" element={<OnboardingRoute><Help /></OnboardingRoute>} />
+          <Route path="/terms" element={<OnboardingRoute><Terms /></OnboardingRoute>} />
+          <Route path="/privacy" element={<OnboardingRoute><Privacy /></OnboardingRoute>} />
           
           {/* Style Guide - Public for development */}
           <Route path="/style-guide" element={<StyleGuide />} />
