@@ -1,7 +1,13 @@
+import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/backendClient";
+import { useWebAuthn } from "@/hooks/useWebAuthn";
+import { BiometricLockScreen } from "./BiometricLockScreen";
+
+// Session storage key to track if user unlocked with biometric this session
+const BIOMETRIC_UNLOCKED_KEY = "biometric_unlocked";
 
 // Loading component to avoid repetition
 const LoadingScreen = () => (
@@ -64,15 +70,25 @@ export const AuthRoute = ({ children }: { children: React.ReactNode }) => {
 
 /**
  * OnboardingRoute - Protects routes that require auth + completed onboarding
+ * Also handles biometric lock screen for returning users
  * Used for: All main app routes (/, /history, /settings, etc.)
  */
 export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
+  const { isEnabled: isBiometricEnabled, isEnabledForUser, isLoading: biometricLoading } = useWebAuthn();
+  
+  // Track if user has unlocked with biometric this session
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    return sessionStorage.getItem(BIOMETRIC_UNLOCKED_KEY) === "true";
+  });
   
   // IMPORTANT: Only fetch onboarding status when user.id is available
   const { data: onboardingCompleted, isLoading: onboardingLoading } = useOnboardingStatus(
     user?.id
   );
+
+  // Check if biometric is enabled for this specific user
+  const userHasBiometric = user?.id ? isEnabledForUser(user.id) : false;
 
   // Step 1: Wait for auth to initialize first
   if (authLoading) {
@@ -85,7 +101,7 @@ export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => 
   }
 
   // Step 3: User exists, but still checking onboarding status → show loading
-  if (onboardingLoading) {
+  if (onboardingLoading || biometricLoading) {
     return <LoadingScreen />;
   }
 
@@ -94,7 +110,24 @@ export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => 
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Step 5: All checks passed → render children
+  // Step 5: User has biometric enabled but hasn't unlocked this session → show lock screen
+  if (userHasBiometric && !isUnlocked) {
+    return (
+      <BiometricLockScreen
+        userEmail={user.email || ""}
+        onUnlock={() => {
+          sessionStorage.setItem(BIOMETRIC_UNLOCKED_KEY, "true");
+          setIsUnlocked(true);
+        }}
+        onUsePassword={() => {
+          // Sign out and redirect to login page for password entry
+          supabase.auth.signOut();
+        }}
+      />
+    );
+  }
+
+  // Step 6: All checks passed → render children
   return <>{children}</>;
 };
 

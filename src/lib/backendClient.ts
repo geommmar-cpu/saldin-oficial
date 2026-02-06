@@ -15,7 +15,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: sessionStorage, // Session clears when browser/app is closed
+    storage: localStorage, // Keep session persistent
     persistSession: true,
     autoRefreshToken: true,
   },

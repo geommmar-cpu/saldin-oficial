@@ -47,61 +47,9 @@ export const Auth = () => {
     userEmail: string;
   } | null>(null);
   
-  // Auto-trigger biometric login when page loads if enabled
-  const [biometricAutoTriggered, setBiometricAutoTriggered] = useState(false);
-
-  // Auto-trigger biometric authentication on mount if biometric is enabled
-  useEffect(() => {
-    const triggerAutoBiometric = async () => {
-      if (!isBiometricSupported || !isBiometricEnabled) return;
-
-      setIsLoading(true);
-      
-      const result = await authenticateWithBiometric();
-      
-      if (result.success && result.userEmail && result.userId) {
-        // Biometric verified - refresh session using stored tokens
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          toast({
-            title: "Login realizado",
-            description: "Bem-vindo de volta!",
-          });
-        } else {
-          // Try to restore session using refresh token from storage
-          const { data } = await supabase.auth.refreshSession();
-          
-          if (data?.session) {
-            toast({
-              title: "Login realizado", 
-              description: "Bem-vindo de volta!",
-            });
-          } else {
-            // No valid session - show login form with email prefilled
-            setEmail(result.userEmail);
-            setIsLoading(false);
-            return;
-          }
-        }
-      }
-      
-      setIsLoading(false);
-    };
-
-    // Only trigger once, when not loading, and biometric is available
-    if (!biometricAutoTriggered && !isBiometricLoading && isBiometricSupported && isBiometricEnabled && !authLoading && !user) {
-      setBiometricAutoTriggered(true);
-      // Small delay to ensure UI is ready
-      const timer = setTimeout(() => {
-        triggerAutoBiometric();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isBiometricLoading, isBiometricSupported, isBiometricEnabled, authLoading, user, biometricAutoTriggered, authenticateWithBiometric, toast]);
 
   // Redirect is handled by PublicRoute wrapper in App.tsx
-  // No need to redirect here - the route guards handle it
+  // Biometric lock screen is now handled by OnboardingRoute in RouteGuards.tsx
 
   const resetForm = () => {
     setEmail("");
