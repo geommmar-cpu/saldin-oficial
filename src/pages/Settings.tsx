@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { generateFinancialReport } from "@/lib/exportPdf";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useIncomes } from "@/hooks/useIncomes";
 import { useDebts } from "@/hooks/useDebts";
@@ -198,17 +199,19 @@ export const Settings = () => {
       </header>
 
       <main className="px-5 space-y-5">
-        {/* AI Name Editor Modal */}
-        {editingAiName && (
-          <FadeIn>
-            <div className="p-4 rounded-xl bg-card border border-border shadow-medium">
-              <p className="text-sm font-medium mb-3">Nome do gerenciador</p>
+        {/* AI Name Editor Dialog */}
+        <Dialog open={editingAiName} onOpenChange={setEditingAiName}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-base">Nome do gerenciador</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
               <Input
                 value={tempAiName}
                 onChange={(e) => setTempAiName(e.target.value)}
                 placeholder="Ex: Luna, Max, Cris..."
                 maxLength={20}
-                className="mb-3"
+                autoFocus
               />
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setEditingAiName(false)} className="flex-1">
@@ -219,8 +222,8 @@ export const Settings = () => {
                 </Button>
               </div>
             </div>
-          </FadeIn>
-        )}
+          </DialogContent>
+        </Dialog>
 
         {/* Bloco 1 - Conta */}
         <FadeIn>
