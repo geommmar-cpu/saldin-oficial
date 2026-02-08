@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
 import { FilterSheet } from "@/components/FilterSheet";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, ArrowDownCircle, AlertCircle, CreditCard, Loader2, Receipt } from "lucide-react";
+import { ArrowLeft, ArrowDownCircle, AlertCircle, CreditCard, Loader2, Receipt, Banknote, HandCoins } from "lucide-react";
 import { PeriodFilter, SourceFilter, EmotionFilter, ItemTypeFilter } from "@/types/expense";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek } from "date-fns";
+import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useExpenses, ExpenseRow } from "@/hooks/useExpenses";
 import { useIncomes, IncomeRow } from "@/hooks/useIncomes";
 import { useDebts, DebtRow } from "@/hooks/useDebts";
+import { useCardInstallmentsByMonth } from "@/hooks/useCreditCards";
 
 // Emotion category type based on database enum
 type EmotionCategory = "pilar" | "essencial" | "impulso";
@@ -20,10 +21,13 @@ type EmotionCategory = "pilar" | "essencial" | "impulso";
 // Combined type for list items
 interface HistoryItem {
   id: string;
-  type: "expense" | "income" | "debt";
+  type: "expense" | "income" | "debt" | "credit_card";
   amount: number;
   description: string;
   category?: EmotionCategory;
+  categoryName?: string;
+  cardName?: string;
+  invoiceMonth?: string;
   incomeType?: string;
   source: "manual" | "whatsapp" | "integration";
   pending: boolean;
@@ -68,12 +72,16 @@ interface HistoryItemCardProps {
 const HistoryItemCard = ({ item, onClick }: HistoryItemCardProps) => {
   const isIncome = item.type === "income";
   const isDebt = item.type === "debt";
+  const isCreditCard = item.type === "credit_card";
   const needsCompletion = item.type === "expense" && !item.category && !item.pending;
 
   const formattedAmount = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(item.amount);
+
+  const typeLabel = isIncome ? "Receita" : isDebt ? "Dívida" : isCreditCard ? "Cartão" : null;
+  const typeLabelColor = isIncome ? "text-essential bg-essential/10" : isDebt ? "text-impulse bg-impulse/10" : isCreditCard ? "text-obligation bg-obligation/10" : "";
 
   return (
     <motion.button
@@ -85,7 +93,7 @@ const HistoryItemCard = ({ item, onClick }: HistoryItemCardProps) => {
       className={cn(
         "w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200",
         "bg-card border shadow-soft hover:shadow-medium",
-        isIncome ? "border-essential/30" : isDebt ? "border-impulse/20" : "border-border",
+        isIncome ? "border-essential/30" : isDebt ? "border-impulse/20" : isCreditCard ? "border-obligation/20" : "border-border",
         item.pending && "border-accent border-2 bg-accent/5"
       )}
     >
@@ -93,13 +101,15 @@ const HistoryItemCard = ({ item, onClick }: HistoryItemCardProps) => {
       <div
         className={cn(
           "flex h-10 w-10 items-center justify-center rounded-full text-lg flex-shrink-0",
-          isIncome ? "bg-essential/15" : isDebt ? "bg-impulse/10" : "bg-muted"
+          isIncome ? "bg-essential/15" : isDebt ? "bg-impulse/10" : isCreditCard ? "bg-obligation/10" : "bg-muted"
         )}
       >
         {isIncome ? (
-          <ArrowDownCircle className="w-5 h-5 text-essential" />
+          <Banknote className="w-5 h-5 text-essential" />
         ) : isDebt ? (
           <CreditCard className="w-5 h-5 text-impulse" />
+        ) : isCreditCard ? (
+          <CreditCard className="w-5 h-5 text-obligation" />
         ) : (
           <Receipt className="w-5 h-5 text-muted-foreground" />
         )}
@@ -111,21 +121,32 @@ const HistoryItemCard = ({ item, onClick }: HistoryItemCardProps) => {
           <p className="font-medium text-sm truncate">
             {item.description}
           </p>
-          {isIncome && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-essential/10 text-essential font-medium">
-              Receita
-            </span>
-          )}
-          {isDebt && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-impulse/10 text-impulse font-medium">
-              Dívida
+          {typeLabel && (
+            <span className={cn("text-xs px-1.5 py-0.5 rounded font-medium shrink-0", typeLabelColor)}>
+              {typeLabel}
             </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
           {formatDistanceToNow(item.createdAt, { addSuffix: true, locale: ptBR })}
-          <span className="mx-1">·</span>
-          {sourceLabels[item.source] || item.source}
+          {item.cardName && (
+            <>
+              <span className="mx-1">·</span>
+              {item.cardName}
+            </>
+          )}
+          {item.invoiceMonth && (
+            <>
+              <span className="mx-1">·</span>
+              Fatura {item.invoiceMonth}
+            </>
+          )}
+          {!item.cardName && !item.invoiceMonth && (
+            <>
+              <span className="mx-1">·</span>
+              {sourceLabels[item.source] || item.source}
+            </>
+          )}
         </p>
       </div>
 
@@ -136,10 +157,11 @@ const HistoryItemCard = ({ item, onClick }: HistoryItemCardProps) => {
             "font-semibold text-sm tabular-nums",
             isIncome && "text-essential",
             isDebt && "text-impulse",
+            isCreditCard && "text-obligation",
             item.category === "impulso" && "text-impulse"
           )}
         >
-          {isIncome ? "+" : "-"} {formattedAmount}
+          {isIncome ? "+" : "−"} {formattedAmount}
         </p>
         {item.pending && (
           <span className="text-xs text-accent font-medium">Pendente</span>
@@ -169,8 +191,9 @@ export const History = () => {
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses("all");
   const { data: incomes = [], isLoading: incomesLoading } = useIncomes();
   const { data: debts = [], isLoading: debtsLoading } = useDebts("active");
+  const { data: ccInstallments = [], isLoading: ccLoading } = useCardInstallmentsByMonth(new Date());
 
-  const isLoading = expensesLoading || incomesLoading || debtsLoading;
+  const isLoading = expensesLoading || incomesLoading || debtsLoading || ccLoading;
 
   // Transform data to HistoryItem format
   const historyItems = useMemo(() => {
@@ -204,7 +227,7 @@ export const History = () => {
       });
     });
 
-    // Add active debts (show as monthly payments)
+    // Add active debts
     debts.forEach((debt: DebtRow) => {
       items.push({
         id: debt.id,
@@ -217,14 +240,37 @@ export const History = () => {
       });
     });
 
+    // Add credit card purchases (installments)
+    ccInstallments.forEach((inst: any) => {
+      const purchase = inst.purchase;
+      const card = purchase?.card;
+      const refMonth = inst.reference_month
+        ? format(new Date(inst.reference_month), "MMM/yy", { locale: ptBR })
+        : undefined;
+
+      items.push({
+        id: inst.id,
+        type: "credit_card",
+        amount: Number(inst.amount),
+        description: purchase?.description || "Compra no cartão",
+        cardName: card?.card_name,
+        invoiceMonth: refMonth,
+        source: "manual" as const,
+        pending: inst.status === "open",
+        createdAt: new Date(purchase?.purchase_date || inst.created_at),
+      });
+    });
+
     return items;
-  }, [expenses, incomes, debts]);
+  }, [expenses, incomes, debts, ccInstallments]);
 
   const handleItemClick = (item: HistoryItem) => {
     if (item.type === "income") {
       navigate(`/income/${item.id}`);
     } else if (item.type === "debt") {
       navigate(`/debts/${item.id}`);
+    } else if (item.type === "credit_card") {
+      navigate("/credit-cards");
     } else if (item.pending || !item.category) {
       navigate(`/confirm/${item.id}`);
     } else {
@@ -242,10 +288,12 @@ export const History = () => {
   // Apply filters
   const filteredItems = historyItems.filter((item) => {
     // Type filter
-    if (typeFilter !== "all" && item.type !== typeFilter) {
-      return false;
+    if (typeFilter !== "all") {
+      if (typeFilter === "expense" && item.type !== "expense" && item.type !== "credit_card") return false;
+      if (typeFilter === "income" && item.type !== "income") return false;
+      if (typeFilter === "debt" && item.type !== "debt") return false;
     }
-    // Source filter - map filter values to source types
+    // Source filter
     if (sourceFilter !== "all") {
       const sourceMap: Record<string, string> = {
         manual: "manual",
@@ -254,12 +302,9 @@ export const History = () => {
         photo: "manual",
         audio: "manual",
       };
-      if (item.source !== sourceMap[sourceFilter]) {
-        return false;
-      }
+      if (item.source !== sourceMap[sourceFilter]) return false;
     }
     // Emotion filter (only for expenses)
-    // Map old filter values to new database enum values
     if (emotionFilter !== "all" && item.type === "expense") {
       const emotionMap: Record<string, string> = {
         essential: "essencial",
@@ -268,16 +313,12 @@ export const History = () => {
         impulse: "impulso",
       };
       const mappedEmotion = emotionMap[emotionFilter] || emotionFilter;
-      if (item.category !== mappedEmotion) {
-        return false;
-      }
+      if (item.category !== mappedEmotion) return false;
     }
     // Period filter
     if (periodFilter === "week") {
       const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      if (item.createdAt.getTime() < weekAgo) {
-        return false;
-      }
+      if (item.createdAt.getTime() < weekAgo) return false;
     }
     return true;
   });
@@ -299,6 +340,9 @@ export const History = () => {
     .reduce((acc, e) => acc + e.amount, 0);
   const totalDebt = filteredItems
     .filter((i) => i.type === "debt")
+    .reduce((acc, e) => acc + e.amount, 0);
+  const totalCreditCard = filteredItems
+    .filter((i) => i.type === "credit_card")
     .reduce((acc, e) => acc + e.amount, 0);
 
   const formatCurrency = (value: number) =>
@@ -350,7 +394,7 @@ export const History = () => {
       <main className="px-5">
         {/* Compact Summary */}
         <FadeIn className="mb-4">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="p-3 rounded-xl bg-card border border-border shadow-soft">
               <p className="text-xs text-muted-foreground">Gastos</p>
               <p className="font-semibold text-sm">{formatCurrency(totalExpenses)}</p>
@@ -362,6 +406,10 @@ export const History = () => {
             <div className="p-3 rounded-xl bg-impulse/5 border border-impulse/20 shadow-soft">
               <p className="text-xs text-muted-foreground">Dívidas</p>
               <p className="font-semibold text-sm text-impulse">{formatCurrency(totalDebt)}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-obligation/5 border border-obligation/20 shadow-soft">
+              <p className="text-xs text-muted-foreground">Cartão</p>
+              <p className="font-semibold text-sm text-obligation">{formatCurrency(totalCreditCard)}</p>
             </div>
           </div>
         </FadeIn>

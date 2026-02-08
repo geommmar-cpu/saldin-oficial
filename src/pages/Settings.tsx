@@ -6,6 +6,7 @@ import { useExpenses } from "@/hooks/useExpenses";
 import { useIncomes } from "@/hooks/useIncomes";
 import { useDebts } from "@/hooks/useDebts";
 import { useReceivables } from "@/hooks/useReceivables";
+import { useCardInstallmentsByMonth } from "@/hooks/useCreditCards";
 import { useGoals, useGoalStats } from "@/hooks/useGoals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +71,7 @@ export const Settings = () => {
   const { data: allReceivables } = useReceivables("pending");
   const { data: allGoals } = useGoals("all");
   const { data: goalStats } = useGoalStats();
+  const { data: ccInstallments = [] } = useCardInstallmentsByMonth(new Date());
   
   const [editingAiName, setEditingAiName] = useState(false);
   const [tempAiName, setTempAiName] = useState(profile?.ai_name || preferences.aiName);
@@ -171,6 +173,7 @@ export const Settings = () => {
         debts: allDebts || [],
         receivables: allReceivables || [],
         goals: allGoals || [],
+        creditCardInstallments: ccInstallments as any,
         userName: user?.user_metadata?.full_name || profile?.full_name,
         selectedMonth: new Date(),
         goalsSaved: goalStats?.totalSaved || 0,

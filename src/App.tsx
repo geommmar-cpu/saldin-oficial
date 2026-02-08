@@ -111,6 +111,9 @@ const App = () => (
           <Route path="/cards" element={<OnboardingRoute><CreditCards /></OnboardingRoute>} />
           <Route path="/cards/add" element={<OnboardingRoute><AddCreditCard /></OnboardingRoute>} />
           <Route path="/cards/:id" element={<OnboardingRoute><CreditCardDetail /></OnboardingRoute>} />
+          {/* Aliases for /credit-cards */}
+          <Route path="/credit-cards" element={<OnboardingRoute><CreditCards /></OnboardingRoute>} />
+          <Route path="/credit-cards/:id" element={<OnboardingRoute><CreditCardDetail /></OnboardingRoute>} />
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />

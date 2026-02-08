@@ -8,6 +8,7 @@ import { IncomeRow } from "@/hooks/useIncomes";
 import { DebtRow } from "@/hooks/useDebts";
 import { ReceivableRow } from "@/hooks/useReceivables";
 import type { Goal } from "@/types/goal";
+import type { CreditCardInstallment, CreditCardPurchase, CreditCard } from "@/types/creditCard";
 const logoSrc = "/logo-saldin-pdf.webp";
 
 // ── Colors (RGB) ──────────────────────────────────────────────
@@ -44,12 +45,17 @@ function loadImageAsBase64(src: string): Promise<string> {
 }
 
 // ── Types ─────────────────────────────────────────────────────
+interface CreditCardInstallmentWithPurchase extends CreditCardInstallment {
+  purchase: CreditCardPurchase & { card: CreditCard };
+}
+
 interface ExportData {
   incomes: IncomeRow[];
   expenses: ExpenseRow[];
   debts: DebtRow[];
   receivables: ReceivableRow[];
   goals: Goal[];
+  creditCardInstallments?: CreditCardInstallmentWithPurchase[];
   userName?: string;
   selectedMonth: Date;
   goalsSaved: number;
@@ -102,6 +108,7 @@ export async function generateFinancialReport({
   debts,
   receivables,
   goals,
+  creditCardInstallments = [],
   userName,
   selectedMonth,
   goalsSaved,
@@ -163,7 +170,8 @@ export async function generateFinancialReport({
   // ════════════════════════════════════════════════════════════
   // 2) FINANCIAL SUMMARY (the hero section)
   // ════════════════════════════════════════════════════════════
-  const balances = calculateBalances(incomes, expenses, debts, selectedMonth, goalsSaved);
+  const totalCCInstallments = creditCardInstallments.reduce((s, i) => s + Number(i.amount), 0);
+  const balances = calculateBalances(incomes, expenses, debts, selectedMonth, goalsSaved, totalCCInstallments);
   const totalReceivables = receivables
     .filter(r => r.status === "pending")
     .reduce((s, r) => s + Number(r.amount), 0);
@@ -174,9 +182,9 @@ export async function generateFinancialReport({
   const colW = (pageWidth - margin * 2 - 6) / 2;
   const summaryItems = [
     { label: "Total de Receitas", value: formatCurrency(balances.detalhes.receitasTotal), color: C.green },
-    { label: "Total de Gastos", value: formatCurrency(balances.detalhes.gastosTotal), color: C.red },
-    { label: "Contas Fixas (Essenciais)", value: formatCurrency(balances.detalhes.contasRecorrentes), color: C.blue },
-    { label: "Parcelas / Compromissos", value: formatCurrency(balances.detalhes.dividasAtivas), color: C.amber },
+    { label: "Total de Gastos (a vista)", value: formatCurrency(balances.detalhes.gastosTotal), color: C.red },
+    { label: "Total em Cartao", value: formatCurrency(totalCCInstallments), color: C.blue },
+    { label: "Parcelas / Dividas", value: formatCurrency(balances.detalhes.dividasAtivas), color: C.amber },
     { label: "Valores a Receber", value: formatCurrency(totalReceivables), color: C.gray },
     { label: "Total Guardado em Metas", value: formatCurrency(goalsSaved), color: C.terracota },
   ];
@@ -368,6 +376,78 @@ export async function generateFinancialReport({
   doc.text("Total de Gastos", margin + 5, y + 7);
   doc.text(formatCurrency(balances.detalhes.gastosTotal), pageWidth - margin - 5, y + 7, { align: "right" });
   y += 16;
+
+  y = drawDivider(doc, y);
+
+  // ════════════════════════════════════════════════════════════
+  // 4b) CREDIT CARD PURCHASES
+  // ════════════════════════════════════════════════════════════
+  y = drawSectionTitle(doc, "Compras no Cartao de Credito", y, C.blue);
+
+  if (creditCardInstallments.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(...C.gray);
+    doc.text("Nenhuma compra no cartao neste periodo.", margin, y);
+    y += 8;
+  } else {
+    const byCard = new Map<string, CreditCardInstallmentWithPurchase[]>();
+    creditCardInstallments.forEach(inst => {
+      const cardName = inst.purchase?.card?.card_name || "Cartao";
+      if (!byCard.has(cardName)) byCard.set(cardName, []);
+      byCard.get(cardName)!.push(inst);
+    });
+
+    for (const [cardName, installments] of byCard) {
+      y = pageCheck(doc, y, 14);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...C.blue);
+      doc.text(cardName.toUpperCase(), margin, y);
+      y += 4;
+
+      const ccRows = installments.map(inst => {
+        const purchase = inst.purchase;
+        const refMonth = inst.reference_month
+          ? new Date(inst.reference_month).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
+          : "--";
+        return [
+          purchase?.description || "--",
+          new Date(purchase?.purchase_date || inst.created_at).toLocaleDateString("pt-BR"),
+          `${inst.installment_number}/${purchase?.total_installments || 1}`,
+          refMonth,
+          formatCurrency(Number(inst.amount)),
+        ];
+      });
+
+      const cardTotal = installments.reduce((s, i) => s + Number(i.amount), 0);
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Descricao", "Data Compra", "Parcela", "Fatura", "Valor"]],
+        body: ccRows,
+        foot: [["", "", "", "Total", formatCurrency(cardTotal)]],
+        margin: { left: margin, right: margin },
+        theme: "grid",
+        headStyles: { fillColor: [...C.blue], textColor: C.white, fontStyle: "bold", fontSize: 8 },
+        bodyStyles: { fontSize: 8, textColor: C.primary },
+        footStyles: { fillColor: [235, 240, 248], textColor: C.blue, fontStyle: "bold", fontSize: 9 },
+        alternateRowStyles: { fillColor: [245, 248, 252] },
+        columnStyles: { 4: { halign: "right", fontStyle: "bold" } },
+      });
+      y = (doc as any).lastAutoTable.finalY + 5;
+    }
+
+    y = pageCheck(doc, y, 10);
+    doc.setFillColor(235, 240, 248);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 10, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...C.blue);
+    doc.text("Total no Cartao", margin + 5, y + 7);
+    doc.text(formatCurrency(totalCCInstallments), pageWidth - margin - 5, y + 7, { align: "right" });
+    y += 16;
+  }
 
   y = drawDivider(doc, y);
 
@@ -586,6 +666,34 @@ export async function generateFinancialReport({
   });
 
   y += insightBoxH + 10;
+
+  // ════════════════════════════════════════════════════════════
+  // 9) LEGENDA
+  // ════════════════════════════════════════════════════════════
+  y = drawDivider(doc, y);
+  y = drawSectionTitle(doc, "Legenda", y, C.gray);
+  y = pageCheck(doc, y, 28);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...C.gray);
+
+  const legendItems = [
+    "Gasto a vista: reduz o saldo bruto imediatamente no mes em que ocorre.",
+    "Compra no cartao: NAO reduz o saldo imediatamente. Entra como valor comprometido ate a fatura ser paga.",
+    "Saldo Livre = Receitas - Gastos a vista - Dividas ativas - Parcelas de cartao - Metas guardadas.",
+    "O valor comprometido inclui dividas, parcelas e faturas de cartao de credito abertas.",
+  ];
+
+  legendItems.forEach(text => {
+    y = pageCheck(doc, y, 6);
+    doc.setFillColor(...C.gray);
+    doc.circle(margin + 4, y - 1, 0.8, "F");
+    doc.text(text, margin + 8, y);
+    y += 5;
+  });
+
+  y += 5;
 
   // ════════════════════════════════════════════════════════════
   // FOOTER

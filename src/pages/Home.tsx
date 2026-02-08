@@ -107,13 +107,17 @@ export const Home = () => {
   const totalIncome = filteredIncomes.reduce((sum, i) => sum + Number(i.amount), 0);
   const totalPendingReceivables = receivables.reduce((sum, r) => sum + Number(r.amount), 0);
 
-  // Balance calculation
+  // Total de parcelas de cartão no mês (valor comprometido)
+  const totalCCInstallments = ccInstallments.reduce((sum, inst) => sum + Number(inst.amount), 0);
+
+  // Balance calculation (incluindo cartão como comprometido)
   const balanceBreakdown = calculateBalances(
     filteredIncomes,
     filteredExpenses,
     filteredDebts,
     selectedMonth,
-    goalStats?.totalSaved || 0
+    goalStats?.totalSaved || 0,
+    totalCCInstallments
   );
 
   // Navigation
