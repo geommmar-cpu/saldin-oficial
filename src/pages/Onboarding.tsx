@@ -108,7 +108,8 @@ export const Onboarding = () => {
     if (isLastStep) {
       const success = await saveProfileToSupabase();
       if (success) {
-        await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
+        // Set the cache data directly to prevent race condition
+        queryClient.setQueryData(["onboarding-status", user?.id], true);
         navigate("/");
       }
     } else {
@@ -132,7 +133,8 @@ export const Onboarding = () => {
         })
         .eq("user_id", user.id);
       
-      await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
+      // Set the cache data directly to prevent race condition
+      queryClient.setQueryData(["onboarding-status", user.id], true);
     } catch (error) {
       console.error("Error skipping onboarding:", error);
     } finally {
@@ -142,11 +144,15 @@ export const Onboarding = () => {
   };
 
   const handleImportNow = async () => {
-    // Save profile first, then redirect to import
+    // Save profile first, then redirect to add card
     const success = await saveProfileToSupabase();
     if (success) {
-      await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
-      navigate("/cards/add", { state: { fromOnboarding: true } });
+      // Set the cache data directly instead of invalidating to prevent race condition
+      queryClient.setQueryData(["onboarding-status", user?.id], true);
+      // Small delay to ensure state is updated before navigation
+      setTimeout(() => {
+        navigate("/cards/add", { state: { fromOnboarding: true } });
+      }, 100);
     }
   };
 
