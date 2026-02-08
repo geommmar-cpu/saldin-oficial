@@ -38,6 +38,9 @@ import Goals from "./pages/Goals";
 import AddGoal from "./pages/AddGoal";
 import GoalDetail from "./pages/GoalDetail";
 import EditGoal from "./pages/EditGoal";
+import CreditCards from "./pages/CreditCards";
+import AddCreditCard from "./pages/AddCreditCard";
+import CreditCardDetail from "./pages/CreditCardDetail";
 import NotFound from "./pages/NotFound";
 import StyleGuide from "./pages/StyleGuide";
 import Categories from "./pages/Categories";
@@ -103,6 +106,11 @@ const App = () => (
           <Route path="/goals/add" element={<OnboardingRoute><AddGoal /></OnboardingRoute>} />
           <Route path="/goals/:id" element={<OnboardingRoute><GoalDetail /></OnboardingRoute>} />
           <Route path="/goals/:id/edit" element={<OnboardingRoute><EditGoal /></OnboardingRoute>} />
+          
+          {/* Credit Cards */}
+          <Route path="/cards" element={<OnboardingRoute><CreditCards /></OnboardingRoute>} />
+          <Route path="/cards/add" element={<OnboardingRoute><AddCreditCard /></OnboardingRoute>} />
+          <Route path="/cards/:id" element={<OnboardingRoute><CreditCardDetail /></OnboardingRoute>} />
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />

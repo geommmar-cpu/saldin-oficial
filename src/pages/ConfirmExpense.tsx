@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCreateExpense } from "@/hooks/useExpenses";
+import { useCreateCreditCardPurchase, useCreditCards } from "@/hooks/useCreditCards";
 import { useCreateReceivable } from "@/hooks/useReceivables";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -75,6 +76,8 @@ export const ConfirmExpense = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const createExpense = useCreateExpense();
+  const createCreditCardPurchase = useCreateCreditCardPurchase();
+  const { data: creditCards = [] } = useCreditCards();
   const createReceivable = useCreateReceivable();
   
   const amount = location.state?.amount || 67.50;
@@ -89,6 +92,7 @@ export const ConfirmExpense = () => {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string | undefined>();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>();
+  const [selectedCardId, setSelectedCardId] = useState<string | undefined>();
   
   // Layer 2 - Time behavior
   const [isRecurring, setIsRecurring] = useState<boolean | undefined>();
@@ -137,10 +141,16 @@ export const ConfirmExpense = () => {
   };
 
   const canContinueExpense = () => {
-    return description.trim() && category && paymentMethod;
+    if (!description.trim() || !category || !paymentMethod) return false;
+    if (paymentMethod === "credit" && !selectedCardId) return false;
+    return true;
   };
 
   const canContinueRecurring = () => {
+    if (paymentMethod === "credit") {
+      // For credit card, installments default to 1 (à vista) if empty
+      return true;
+    }
     if (isRecurring === undefined) return false;
     if (isRecurring === true && (!installments || parseInt(installments) < 1)) return false;
     return true;
@@ -158,19 +168,34 @@ export const ConfirmExpense = () => {
     setIsSubmitting(true);
     
     try {
-      // 1. Create the expense in the database
-      await createExpense.mutateAsync({
-        amount,
-        description: description || selectedCategory?.name || "Gasto registrado",
-        emotion: selectedEmotion,
-        status: "confirmed",
-        source: "manual",
-        is_installment: isRecurring || false,
-        total_installments: isRecurring && installments ? parseInt(installments) : undefined,
-        installment_number: 1,
-      });
+      const isCreditCard = paymentMethod === "credit" && selectedCardId;
 
-      // 2. If there's a reimbursement, create a receivable
+      if (isCreditCard) {
+        // CARTÃO DE CRÉDITO: Criar compra + parcelas (NÃO criar gasto)
+        const totalInstallments = isRecurring && installments ? parseInt(installments) : 1;
+        await createCreditCardPurchase.mutateAsync({
+          card_id: selectedCardId,
+          description: description || selectedCategory?.name || "Compra no cartão",
+          total_amount: amount,
+          total_installments: totalInstallments,
+          category_id: category || undefined,
+          purchase_date: new Date().toISOString().split("T")[0],
+        });
+      } else {
+        // GASTO NORMAL: Criar expense
+        await createExpense.mutateAsync({
+          amount,
+          description: description || selectedCategory?.name || "Gasto registrado",
+          emotion: selectedEmotion,
+          status: "confirmed",
+          source: "manual",
+          is_installment: isRecurring || false,
+          total_installments: isRecurring && installments ? parseInt(installments) : undefined,
+          installment_number: 1,
+        });
+      }
+
+      // Se há reembolso, criar receivable em ambos os casos
       if (isForOtherPerson && reimbursementPersonName) {
         const today = new Date();
         const dueDate = new Date(today.setMonth(today.getMonth() + 1)).toISOString().split("T")[0];
@@ -184,11 +209,11 @@ export const ConfirmExpense = () => {
         });
       }
 
-      toast.success("Gasto confirmado com sucesso!");
+      toast.success(isCreditCard ? "Compra registrada no cartão!" : "Gasto confirmado com sucesso!");
       navigate("/", { state: { success: true } });
     } catch (error) {
-      console.error("Failed to save expense:", error);
-      toast.error("Erro ao salvar gasto. Tente novamente.");
+      console.error("Failed to save:", error);
+      toast.error("Erro ao salvar. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -407,7 +432,10 @@ export const ConfirmExpense = () => {
                   <motion.button
                     key={opt.value}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setPaymentMethod(opt.value)}
+                    onClick={() => {
+                      setPaymentMethod(opt.value);
+                      if (opt.value !== "credit") setSelectedCardId(undefined);
+                    }}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-xl border transition-all",
                       paymentMethod === opt.value
@@ -421,6 +449,62 @@ export const ConfirmExpense = () => {
                 ))}
               </div>
             </div>
+
+            {/* Credit Card Selector (only when credit is selected) */}
+            {paymentMethod === "credit" && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mb-5"
+              >
+                <label className="text-sm text-muted-foreground mb-3 block">
+                  Qual cartão? *
+                </label>
+                {creditCards.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed border-border text-center">
+                    <p className="text-sm text-muted-foreground mb-2">Nenhum cartão cadastrado</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/cards/add")}
+                    >
+                      Cadastrar cartão
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {creditCards.map((card) => (
+                      <motion.button
+                        key={card.id}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setSelectedCardId(card.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
+                          selectedCardId === card.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border bg-card hover:bg-secondary"
+                        )}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: card.color + "30" }}
+                        >
+                          <CreditCardIcon className="w-4 h-4" style={{ color: card.color }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{card.card_name}</p>
+                          {card.last_four_digits && (
+                            <p className="text-xs text-muted-foreground">
+                              •••• {card.last_four_digits}
+                            </p>
+                          )}
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
           </FadeIn>
         )}
 
@@ -428,99 +512,140 @@ export const ConfirmExpense = () => {
         {step === "recurring" && (
           <FadeIn key="recurring" className="flex-1 flex flex-col">
             <h2 className="text-center text-xl font-medium mb-2">
-              Esse gasto se repete?
+              {paymentMethod === "credit" ? "Quantas parcelas?" : "Esse gasto se repete?"}
             </h2>
             <p className="text-center text-sm text-muted-foreground mb-8">
-              Ex: academia, streaming, financiamento
+              {paymentMethod === "credit" 
+                ? "Informe o número de parcelas da compra" 
+                : "Ex: academia, streaming, financiamento"}
             </p>
 
-            {/* Yes/No Options */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setIsRecurring(true)}
-                className={cn(
-                  "p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all",
-                  isRecurring === true
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card hover:border-muted-foreground/30"
-                )}
-              >
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center",
-                  isRecurring === true ? "bg-primary/20" : "bg-muted"
-                )}>
-                  <RefreshCw className={cn(
-                    "w-6 h-6",
-                    isRecurring === true ? "text-primary" : "text-muted-foreground"
-                  )} />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold">Sim</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Gasto recorrente
-                  </p>
-                </div>
-              </motion.button>
-
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setIsRecurring(false)}
-                className={cn(
-                  "p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all",
-                  isRecurring === false
-                    ? "border-muted-foreground bg-secondary"
-                    : "border-border bg-card hover:border-muted-foreground/30"
-                )}
-              >
-                <div className={cn(
-                  "w-12 h-12 rounded-full flex items-center justify-center",
-                  isRecurring === false ? "bg-muted-foreground/20" : "bg-muted"
-                )}>
-                  <Calendar className={cn(
-                    "w-6 h-6",
-                    isRecurring === false ? "text-muted-foreground" : "text-muted-foreground"
-                  )} />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold">Não</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Gasto único
-                  </p>
-                </div>
-              </motion.button>
-            </div>
-
-            {/* Installments (only if recurring) */}
-            {isRecurring === true && (
+            {/* For credit card: just show installments input directly */}
+            {paymentMethod === "credit" ? (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4"
               >
                 <label className="text-sm text-muted-foreground mb-3 block text-center">
-                  Por quantos meses esse gasto se repete?
+                  Número de parcelas
                 </label>
                 <div className="flex justify-center">
                   <div className="w-32">
                     <Input
                       type="number"
                       inputMode="numeric"
-                      placeholder="Ex: 12"
+                      placeholder="Ex: 3"
                       min={1}
-                      max={120}
+                      max={48}
                       value={installments}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 120)) {
+                        if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 48)) {
                           setInstallments(val);
                         }
                       }}
                       className="h-12 text-base text-center"
+                      autoFocus
                     />
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  {installments && parseInt(installments) > 0
+                    ? `${installments}x de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount / parseInt(installments))}`
+                    : "1x (à vista)"}
+                </p>
               </motion.div>
+            ) : (
+              <>
+                {/* Yes/No Options for recurring */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsRecurring(true)}
+                    className={cn(
+                      "p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all",
+                      isRecurring === true
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-card hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      isRecurring === true ? "bg-primary/20" : "bg-muted"
+                    )}>
+                      <RefreshCw className={cn(
+                        "w-6 h-6",
+                        isRecurring === true ? "text-primary" : "text-muted-foreground"
+                      )} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold">Sim</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Gasto recorrente
+                      </p>
+                    </div>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsRecurring(false)}
+                    className={cn(
+                      "p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all",
+                      isRecurring === false
+                        ? "border-muted-foreground bg-secondary"
+                        : "border-border bg-card hover:border-muted-foreground/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-full flex items-center justify-center",
+                      isRecurring === false ? "bg-muted-foreground/20" : "bg-muted"
+                    )}>
+                      <Calendar className={cn(
+                        "w-6 h-6",
+                        isRecurring === false ? "text-muted-foreground" : "text-muted-foreground"
+                      )} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold">Não</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Gasto único
+                      </p>
+                    </div>
+                  </motion.button>
+                </div>
+
+                {/* Installments (only if recurring) */}
+                {isRecurring === true && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4"
+                  >
+                    <label className="text-sm text-muted-foreground mb-3 block text-center">
+                      Por quantos meses esse gasto se repete?
+                    </label>
+                    <div className="flex justify-center">
+                      <div className="w-32">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="Ex: 12"
+                          min={1}
+                          max={120}
+                          value={installments}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 120)) {
+                              setInstallments(val);
+                            }
+                          }}
+                          className="h-12 text-base text-center"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </>
             )}
           </FadeIn>
         )}

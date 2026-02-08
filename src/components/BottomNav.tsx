@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, PlusCircle, History, Settings, ArrowDownCircle, ArrowUpCircle, X, CreditCard, HandCoins, Target } from "lucide-react";
+import { Home, PlusCircle, History, Settings, ArrowDownCircle, ArrowUpCircle, X, CreditCard, HandCoins, Target, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -136,6 +136,24 @@ export const BottomNav = () => {
                     <p className="font-medium">Registrar valor a receber</p>
                     <p className="text-xs text-muted-foreground">
                       Valores que devem para você
+                    </p>
+                  </div>
+                </motion.button>
+
+                {/* Credit Cards Option */}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleOptionClick("/cards")}
+                  className="w-full p-3 rounded-xl bg-muted/50 border border-border flex items-center gap-3 text-left hover:bg-muted transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Meus Cartões</p>
+                    <p className="text-xs text-muted-foreground">
+                      Gerenciar cartões e faturas
                     </p>
                   </div>
                 </motion.button>

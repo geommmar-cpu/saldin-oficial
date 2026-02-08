@@ -1,0 +1,236 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { FadeIn } from "@/components/ui/motion";
+import { BottomNav } from "@/components/BottomNav";
+import {
+  ArrowLeft, ChevronLeft, ChevronRight, CreditCard as CreditCardIcon,
+  Trash2, Settings, Loader2,
+} from "lucide-react";
+import { useCreditCardById, useCardStatementData, useCardUsedLimit, useDeleteCreditCard } from "@/hooks/useCreditCards";
+import { cn } from "@/lib/utils";
+import { format, addMonths, subMonths, startOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { getCategoryById } from "@/lib/categories";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const formatCurrency = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const CARD_COLORS: Record<string, string> = {
+  "#8B5CF6": "from-violet-500 to-purple-700",
+  "#3B82F6": "from-blue-500 to-indigo-700",
+  "#10B981": "from-emerald-500 to-teal-700",
+  "#F59E0B": "from-amber-500 to-orange-700",
+  "#EF4444": "from-red-500 to-rose-700",
+  "#EC4899": "from-pink-500 to-fuchsia-700",
+  "#6366F1": "from-indigo-500 to-violet-700",
+  "#14B8A6": "from-teal-500 to-cyan-700",
+};
+
+export default function CreditCardDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { data: card, isLoading } = useCreditCardById(id);
+  const { data: usedLimit = 0 } = useCardUsedLimit(id);
+  const deleteCard = useDeleteCreditCard();
+
+  const [selectedMonth, setSelectedMonth] = useState(startOfMonth(new Date()));
+  const { data: statementItems = [] } = useCardStatementData(id, selectedMonth);
+
+  const statementTotal = statementItems.reduce((s, i) => s + Number(i.amount), 0);
+  const availableLimit = (card?.credit_limit || 0) - usedLimit;
+
+  const handleDelete = async () => {
+    if (!id) return;
+    await deleteCard.mutateAsync(id);
+    navigate("/cards");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!card) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-5">
+        <p className="text-muted-foreground">Cartão não encontrado</p>
+        <Button variant="outline" className="mt-4" onClick={() => navigate("/cards")}>
+          Voltar
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <header className="px-5 pt-safe-top">
+        <div className="pt-4 pb-2 flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/cards")}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="font-serif text-xl font-semibold flex-1">{card.card_name}</h1>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O cartão será desativado. Compras e parcelas existentes serão mantidas.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </header>
+
+      <main className="px-5 py-4 space-y-6">
+        {/* Card Summary */}
+        <FadeIn>
+          <div className={cn(
+            "rounded-2xl p-5 text-white bg-gradient-to-br shadow-lg relative overflow-hidden",
+            CARD_COLORS[card.color] || "from-violet-500 to-purple-700"
+          )}>
+            <div className="absolute top-4 right-4 opacity-20">
+              <CreditCardIcon className="w-16 h-16" />
+            </div>
+            <div className="relative z-10">
+              <p className="text-sm opacity-80">{card.card_brand || "Cartão"}</p>
+              <h3 className="text-xl font-bold">{card.card_name}</h3>
+              {card.last_four_digits && (
+                <p className="text-sm opacity-70 font-mono mt-2">•••• {card.last_four_digits}</p>
+              )}
+              <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <p className="text-xs opacity-60">Limite</p>
+                  <p className="font-semibold">{formatCurrency(card.credit_limit)}</p>
+                </div>
+                <div>
+                  <p className="text-xs opacity-60">Usado</p>
+                  <p className="font-semibold">{formatCurrency(usedLimit)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs opacity-60">Disponível</p>
+                  <p className="font-semibold">{formatCurrency(availableLimit)}</p>
+                </div>
+              </div>
+              {/* Limit bar */}
+              <div className="mt-3 h-2 rounded-full bg-white/20">
+                <div
+                  className="h-full rounded-full bg-white/80 transition-all"
+                  style={{ width: `${Math.min((usedLimit / (card.credit_limit || 1)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Month Selector */}
+        <FadeIn delay={0.1}>
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={() => setSelectedMonth(m => subMonths(m, 1))}>
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <h2 className="font-serif text-lg font-semibold capitalize">
+              {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
+            </h2>
+            <Button variant="ghost" size="icon" onClick={() => setSelectedMonth(m => addMonths(m, 1))}>
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </FadeIn>
+
+        {/* Statement Summary */}
+        <FadeIn delay={0.15}>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Fatura do mês</p>
+                <p className="text-2xl font-serif font-bold">{formatCurrency(statementTotal)}</p>
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                <p>Fecha dia {card.closing_day}</p>
+                <p>Vence dia {card.due_day}</p>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Installments List */}
+        <FadeIn delay={0.2}>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+            Lançamentos ({statementItems.length})
+          </h3>
+          {statementItems.length === 0 ? (
+            <div className="text-center py-8">
+              <span className="text-3xl mb-2 block">📭</span>
+              <p className="text-sm text-muted-foreground">Nenhuma parcela neste mês</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {statementItems.map((item, i) => {
+                const cat = item.purchase?.category_id
+                  ? getCategoryById(item.purchase.category_id)
+                  : undefined;
+                const CatIcon = cat?.icon;
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border"
+                  >
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      cat ? "bg-muted/50" : "bg-muted"
+                    )}>
+                      {CatIcon ? (
+                        <CatIcon className={cn("w-5 h-5", cat?.color)} />
+                      ) : (
+                        <CreditCardIcon className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {item.purchase?.description || "Compra"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.installment_number}/{item.purchase?.total_installments || 1}
+                        {" · "}
+                        {item.status === "paid" ? "Paga" : "Aberta"}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-sm tabular-nums">
+                      {formatCurrency(item.amount)}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </FadeIn>
+      </main>
+
+      <BottomNav />
+    </div>
+  );
+}
