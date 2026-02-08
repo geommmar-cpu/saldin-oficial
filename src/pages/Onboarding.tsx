@@ -109,7 +109,7 @@ export const Onboarding = () => {
       const success = await saveProfileToSupabase();
       if (success) {
         queryClient.setQueryData(["onboarding-status", user?.id], true);
-        sessionStorage.setItem("onboarding_completed_override", "true");
+        sessionStorage.setItem(`onboarding_override_${user?.id}`, "true");
         navigate("/");
       }
     } else {
@@ -134,7 +134,7 @@ export const Onboarding = () => {
         .eq("user_id", user.id);
       
       queryClient.setQueryData(["onboarding-status", user.id], true);
-      sessionStorage.setItem("onboarding_completed_override", "true");
+      sessionStorage.setItem(`onboarding_override_${user.id}`, "true");
     } catch (error) {
       console.error("Error skipping onboarding:", error);
     } finally {
@@ -148,7 +148,7 @@ export const Onboarding = () => {
     await saveProfileToSupabase();
     // Mark onboarding as complete in cache AND sessionStorage to survive refetches
     queryClient.setQueryData(["onboarding-status", user?.id], true);
-    sessionStorage.setItem("onboarding_completed_override", "true");
+    sessionStorage.setItem(`onboarding_override_${user?.id}`, "true");
     navigate("/cards/add", { state: { fromOnboarding: true } });
   };
 
