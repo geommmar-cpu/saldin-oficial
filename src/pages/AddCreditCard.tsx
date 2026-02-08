@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
@@ -11,6 +11,8 @@ import { BANK_LIST, BRAND_LIST, detectBank } from "@/lib/cardBranding";
 
 export default function AddCreditCard() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromOnboarding = (location.state as any)?.fromOnboarding === true;
   const createCard = useCreateCreditCard();
 
   const [cardName, setCardName] = useState("");
@@ -48,7 +50,11 @@ export default function AddCreditCard() {
       due_day: parseInt(dueDay),
       color: cardColor,
     });
-    navigate("/cards");
+    if (fromOnboarding) {
+      navigate("/cards/import", { replace: true });
+    } else {
+      navigate("/cards");
+    }
   };
 
   return (
