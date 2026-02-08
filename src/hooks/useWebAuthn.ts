@@ -205,7 +205,7 @@ export function useWebAuthn() {
       const allowCredentials: PublicKeyCredentialDescriptor[] = credentials.map(cred => ({
         id: base64ToBuffer(cred.rawId),
         type: "public-key",
-        transports: ["internal"],
+        transports: ["internal", "hybrid"] as AuthenticatorTransport[],
       }));
 
       const publicKeyCredentialRequestOptions: PublicKeyCredentialRequestOptions = {
