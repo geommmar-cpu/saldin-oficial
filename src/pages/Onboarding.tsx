@@ -61,12 +61,12 @@ export const Onboarding = () => {
     try {
       await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
           ai_name: aiName || "Luna",
           full_name: user.email?.split("@")[0] || "Usuário",
           onboarding_completed: true,
-        })
-        .eq("user_id", user.id);
+        }, { onConflict: "user_id" });
 
       // Create income records only if user chose to inform
       if (incomeType !== "later") {
@@ -127,11 +127,11 @@ export const Onboarding = () => {
     try {
       await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
           full_name: user.email?.split("@")[0] || "Usuário",
           onboarding_completed: true,
-        })
-        .eq("user_id", user.id);
+        }, { onConflict: "user_id" });
       
       // Set the cache data directly to prevent race condition
       queryClient.setQueryData(["onboarding-status", user.id], true);
