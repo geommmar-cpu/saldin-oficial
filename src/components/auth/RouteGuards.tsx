@@ -24,8 +24,8 @@ const useOnboardingStatus = (userId: string | undefined) => {
     queryFn: async (): Promise<boolean> => {
       if (!userId) return false;
 
-      // Check sessionStorage override (set during onboarding import flow)
-      if (sessionStorage.getItem("onboarding_completed_override") === "true") {
+      // Check sessionStorage override (set during onboarding import flow, scoped to user)
+      if (sessionStorage.getItem(`onboarding_override_${userId}`) === "true") {
         return true;
       }
 
