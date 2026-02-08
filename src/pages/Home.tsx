@@ -224,7 +224,7 @@ export const Home = () => {
         </FadeIn>
 
         {/* Empty State */}
-        {totalIncome === 0 && totalSpent === 0 && (
+        {totalIncome === 0 && totalSpent === 0 && totalCCInstallments === 0 && (
           <FadeIn delay={0.1}>
             <div className="text-center py-8 px-4">
               <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">

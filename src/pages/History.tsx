@@ -434,7 +434,7 @@ export const History = () => {
           <div className="grid grid-cols-2 gap-2">
             <div className="p-3 rounded-xl bg-card border border-border shadow-soft">
               <p className="text-xs text-muted-foreground">Gastos</p>
-              <p className="font-semibold text-sm">{formatCurrency(totalExpenses)}</p>
+              <p className="font-semibold text-sm">{formatCurrency(totalExpenses + totalCreditCard)}</p>
             </div>
             <div className="p-3 rounded-xl bg-essential/5 border border-essential/20 shadow-soft">
               <p className="text-xs text-muted-foreground">Receitas</p>
