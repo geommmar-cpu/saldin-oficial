@@ -41,6 +41,7 @@ import EditGoal from "./pages/EditGoal";
 import CreditCards from "./pages/CreditCards";
 import AddCreditCard from "./pages/AddCreditCard";
 import CreditCardDetail from "./pages/CreditCardDetail";
+import ImportStatement from "./pages/ImportStatement";
 import NotFound from "./pages/NotFound";
 import StyleGuide from "./pages/StyleGuide";
 import Categories from "./pages/Categories";
@@ -114,6 +115,7 @@ const App = () => (
           {/* Aliases for /credit-cards */}
           <Route path="/credit-cards" element={<OnboardingRoute><CreditCards /></OnboardingRoute>} />
           <Route path="/credit-cards/:id" element={<OnboardingRoute><CreditCardDetail /></OnboardingRoute>} />
+          <Route path="/cards/import" element={<OnboardingRoute><ImportStatement /></OnboardingRoute>} />
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />

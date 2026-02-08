@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
 import { FilterSheet } from "@/components/FilterSheet";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, ArrowDownCircle, AlertCircle, CreditCard, Loader2, Receipt, Banknote, HandCoins } from "lucide-react";
+import { ArrowLeft, ArrowDownCircle, AlertCircle, CreditCard, Loader2, Receipt, Banknote, HandCoins, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { PeriodFilter, SourceFilter, EmotionFilter, ItemTypeFilter } from "@/types/expense";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format } from "date-fns";
+import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format, startOfMonth, endOfMonth, isWithinInterval, isBefore, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useExpenses, ExpenseRow } from "@/hooks/useExpenses";
 import { useIncomes, IncomeRow } from "@/hooks/useIncomes";
@@ -180,27 +180,40 @@ const HistoryItemCard = ({ item, onClick }: HistoryItemCardProps) => {
 export const History = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const initialTypeFilter = (searchParams.get("type") as ItemTypeFilter) || "all";
+  
+  // Accept selectedMonth from navigation state or default to current month
+  const navState = location.state as { selectedMonth?: string } | null;
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    if (navState?.selectedMonth) return new Date(navState.selectedMonth);
+    return new Date();
+  });
   
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("month");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [emotionFilter, setEmotionFilter] = useState<EmotionFilter>("all");
   const [typeFilter, setTypeFilter] = useState<ItemTypeFilter>(initialTypeFilter);
 
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
+
   // Fetch real data from Supabase
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses("all");
   const { data: incomes = [], isLoading: incomesLoading } = useIncomes();
   const { data: debts = [], isLoading: debtsLoading } = useDebts("active");
-  const { data: ccInstallments = [], isLoading: ccLoading } = useCardInstallmentsByMonth(new Date());
+  const { data: ccInstallments = [], isLoading: ccLoading } = useCardInstallmentsByMonth(selectedMonth);
 
   const isLoading = expensesLoading || incomesLoading || debtsLoading || ccLoading;
 
-  // Transform data to HistoryItem format
+  // Transform data to HistoryItem format — filter by selectedMonth
   const historyItems = useMemo(() => {
     const items: HistoryItem[] = [];
 
-    // Add expenses
+    // Add expenses — filter by month
     expenses.forEach((expense: ExpenseRow) => {
+      const expDate = new Date(expense.date || expense.created_at);
+      if (!isWithinInterval(expDate, { start: monthStart, end: monthEnd })) return;
       items.push({
         id: expense.id,
         type: "expense",
@@ -209,12 +222,19 @@ export const History = () => {
         category: expense.emotion as EmotionCategory | undefined,
         source: expense.source as HistoryItem["source"],
         pending: expense.status === "pending",
-        createdAt: new Date(expense.created_at),
+        createdAt: expDate,
       });
     });
 
-    // Add incomes
+    // Add incomes — filter by month (including recurring)
     incomes.forEach((income: IncomeRow) => {
+      const incomeDate = new Date(income.date || income.created_at);
+      const isRecurring = income.is_recurring;
+      if (isRecurring) {
+        if (isBefore(monthStart, startOfMonth(incomeDate))) return;
+      } else {
+        if (!isWithinInterval(incomeDate, { start: monthStart, end: monthEnd })) return;
+      }
       items.push({
         id: income.id,
         type: "income",
@@ -223,12 +243,16 @@ export const History = () => {
         incomeType: income.type,
         source: "manual" as const,
         pending: false,
-        createdAt: new Date(income.created_at),
+        createdAt: isRecurring 
+          ? new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), incomeDate.getDate())
+          : incomeDate,
       });
     });
 
     // Add active debts
     debts.forEach((debt: DebtRow) => {
+      const debtDate = new Date(debt.created_at);
+      if (!isWithinInterval(debtDate, { start: monthStart, end: monthEnd }) && !isBefore(debtDate, monthStart)) return;
       items.push({
         id: debt.id,
         type: "debt",
@@ -236,11 +260,11 @@ export const History = () => {
         description: `${debt.creditor_name} - ${debt.current_installment || 0}/${debt.total_installments || 1}`,
         source: "manual" as const,
         pending: false,
-        createdAt: new Date(debt.created_at),
+        createdAt: debtDate,
       });
     });
 
-    // Add credit card purchases (installments)
+    // Add credit card installments (already filtered by selectedMonth via hook)
     ccInstallments.forEach((inst: any) => {
       const purchase = inst.purchase;
       const card = purchase?.card;
@@ -262,7 +286,7 @@ export const History = () => {
     });
 
     return items;
-  }, [expenses, incomes, debts, ccInstallments]);
+  }, [expenses, incomes, debts, ccInstallments, monthStart, monthEnd, selectedMonth]);
 
   const handleItemClick = (item: HistoryItem) => {
     if (item.type === "income") {
@@ -351,8 +375,8 @@ export const History = () => {
       currency: "BRL",
     }).format(value);
 
-  // Get current month name
-  const currentMonth = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
+  const monthLabel = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
+  const isCurrentMonth = format(selectedMonth, "yyyy-MM") === format(new Date(), "yyyy-MM");
 
   if (isLoading) {
     return (
@@ -367,15 +391,12 @@ export const History = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10">
-        <div className="pt-4 pb-3 flex items-center justify-between">
+        <div className="pt-4 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div>
-              <h1 className="font-serif text-xl font-semibold">Histórico</h1>
-              <p className="text-xs text-muted-foreground capitalize">{currentMonth}</p>
-            </div>
+            <h1 className="font-serif text-xl font-semibold">Histórico</h1>
           </div>
           <FilterSheet
             periodFilter={periodFilter}
@@ -388,6 +409,22 @@ export const History = () => {
             onTypeChange={setTypeFilter}
             onReset={resetFilters}
           />
+        </div>
+        {/* Month selector */}
+        <div className="flex items-center justify-between py-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}>
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium capitalize text-sm">{monthLabel}</span>
+            {isCurrentMonth && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">Atual</span>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}>
+            <ChevronRight className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 

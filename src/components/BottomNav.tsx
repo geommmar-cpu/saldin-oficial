@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Shield,
   FileCheck,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,6 +33,7 @@ const navItems = [
 
 const moreItems = [
   { icon: Wallet, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
+  { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar CSV de fatura" },
   { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
   { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
   { icon: Settings, label: "Configurações", path: "/settings", desc: "Conta e preferências" },
