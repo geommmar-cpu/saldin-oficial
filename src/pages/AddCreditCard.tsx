@@ -7,17 +7,7 @@ import { ArrowLeft, CreditCard as CreditCardIcon, Check, Loader2 } from "lucide-
 import { cn } from "@/lib/utils";
 import { useCreateCreditCard } from "@/hooks/useCreditCards";
 import { formatCurrencyInput, parseCurrency } from "@/lib/currency";
-
-const CARD_COLORS = [
-  { value: "#8B5CF6", label: "Roxo", class: "bg-violet-500" },
-  { value: "#3B82F6", label: "Azul", class: "bg-blue-500" },
-  { value: "#10B981", label: "Verde", class: "bg-emerald-500" },
-  { value: "#F59E0B", label: "Amarelo", class: "bg-amber-500" },
-  { value: "#EF4444", label: "Vermelho", class: "bg-red-500" },
-  { value: "#EC4899", label: "Rosa", class: "bg-pink-500" },
-  { value: "#6366F1", label: "Índigo", class: "bg-indigo-500" },
-  { value: "#14B8A6", label: "Teal", class: "bg-teal-500" },
-];
+import { BANK_LIST, BRAND_LIST, detectBank } from "@/lib/cardBranding";
 
 export default function AddCreditCard() {
   const navigate = useNavigate();
@@ -29,9 +19,23 @@ export default function AddCreditCard() {
   const [limit, setLimit] = useState("");
   const [closingDay, setClosingDay] = useState("");
   const [dueDay, setDueDay] = useState("");
-  const [color, setColor] = useState("#8B5CF6");
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
+
+  const bankTheme = selectedBank
+    ? BANK_LIST.find(b => b.key === selectedBank)
+    : detectBank(cardName);
+
+  const cardColor = bankTheme?.color || "#8B5CF6";
 
   const canSubmit = cardName.trim() && closingDay && dueDay;
+
+  const handleBankSelect = (bankKey: string) => {
+    setSelectedBank(bankKey);
+    const bank = BANK_LIST.find(b => b.key === bankKey);
+    if (bank && !cardName) {
+      setCardName(bank.name);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -42,7 +46,7 @@ export default function AddCreditCard() {
       credit_limit: parseCurrency(limit),
       closing_day: parseInt(closingDay),
       due_day: parseInt(dueDay),
-      color,
+      color: cardColor,
     });
     navigate("/cards");
   };
@@ -61,16 +65,22 @@ export default function AddCreditCard() {
       <main className="flex-1 px-5 py-6 space-y-5 overflow-y-auto">
         <FadeIn>
           {/* Card Preview */}
-          <div className={cn(
-            "rounded-2xl p-5 text-white mb-6 shadow-lg relative overflow-hidden",
-            "bg-gradient-to-br",
-            CARD_COLORS.find(c => c.value === color)?.class || "bg-violet-500",
-          )} style={{ background: `linear-gradient(135deg, ${color}, ${color}dd)` }}>
+          <div
+            className="rounded-2xl p-5 text-white mb-6 shadow-lg relative overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${cardColor}, ${cardColor}cc)` }}
+          >
             <div className="absolute top-4 right-4 opacity-20">
               <CreditCardIcon className="w-16 h-16" />
             </div>
             <div className="relative z-10">
-              <p className="text-sm opacity-80">{cardBrand || "Cartão"}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-xs font-bold">
+                    {(bankTheme?.name || "C").charAt(0)}
+                  </span>
+                </div>
+                <p className="text-sm opacity-80">{cardBrand || bankTheme?.name || "Cartão"}</p>
+              </div>
               <h3 className="text-xl font-bold mt-1">{cardName || "Nome do cartão"}</h3>
               {lastFour && (
                 <p className="text-sm opacity-70 font-mono mt-3">•••• •••• •••• {lastFour}</p>
@@ -88,11 +98,47 @@ export default function AddCreditCard() {
             </div>
           </div>
 
+          {/* Bank Selector */}
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground">Banco emissor</label>
+            <div className="flex gap-2 flex-wrap">
+              {BANK_LIST.filter(b => b.key !== "outros").slice(0, 12).map(bank => (
+                <button
+                  key={bank.key}
+                  onClick={() => handleBankSelect(bank.key)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                    selectedBank === bank.key
+                      ? "border-foreground bg-foreground text-background scale-105"
+                      : "border-border bg-card text-foreground hover:border-foreground/30"
+                  )}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full shrink-0"
+                    style={{ backgroundColor: bank.color }}
+                  />
+                  {bank.name}
+                </button>
+              ))}
+              <button
+                onClick={() => handleBankSelect("outros")}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                  selectedBank === "outros"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-card text-foreground hover:border-foreground/30"
+                )}
+              >
+                Outro
+              </button>
+            </div>
+          </div>
+
           {/* Name */}
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">Nome do cartão *</label>
             <Input
-              placeholder="Ex: Nubank, Itaú, Inter..."
+              placeholder="Ex: Nubank – Compras, Itaú – Viagens"
               value={cardName}
               onChange={e => setCardName(e.target.value)}
               maxLength={30}
@@ -102,12 +148,22 @@ export default function AddCreditCard() {
           {/* Brand */}
           <div className="space-y-2">
             <label className="text-sm text-muted-foreground">Bandeira</label>
-            <Input
-              placeholder="Ex: Visa, Mastercard, Elo..."
-              value={cardBrand}
-              onChange={e => setCardBrand(e.target.value)}
-              maxLength={20}
-            />
+            <div className="flex gap-2 flex-wrap">
+              {BRAND_LIST.map(brand => (
+                <button
+                  key={brand.key}
+                  onClick={() => setCardBrand(brand.name)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                    cardBrand === brand.name
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-card text-foreground hover:border-foreground/30"
+                  )}
+                >
+                  {brand.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Last 4 digits */}
@@ -166,26 +222,6 @@ export default function AddCreditCard() {
                 inputMode="numeric"
                 maxLength={2}
               />
-            </div>
-          </div>
-
-          {/* Color */}
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Cor do cartão</label>
-            <div className="flex gap-2 flex-wrap">
-              {CARD_COLORS.map(c => (
-                <button
-                  key={c.value}
-                  onClick={() => setColor(c.value)}
-                  className={cn(
-                    "w-10 h-10 rounded-full transition-all",
-                    c.class,
-                    color === c.value
-                      ? "ring-2 ring-offset-2 ring-foreground scale-110"
-                      : "opacity-60 hover:opacity-100"
-                  )}
-                />
-              ))}
             </div>
           </div>
         </FadeIn>

@@ -6,19 +6,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { ArrowLeft, Plus, CreditCard as CreditCardIcon, ChevronRight } from "lucide-react";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { cn } from "@/lib/utils";
-
-const CARD_COLORS: Record<string, string> = {
-  "#8B5CF6": "from-violet-500 to-purple-700",
-  "#3B82F6": "from-blue-500 to-indigo-700",
-  "#10B981": "from-emerald-500 to-teal-700",
-  "#F59E0B": "from-amber-500 to-orange-700",
-  "#EF4444": "from-red-500 to-rose-700",
-  "#EC4899": "from-pink-500 to-fuchsia-700",
-  "#6366F1": "from-indigo-500 to-violet-700",
-  "#14B8A6": "from-teal-500 to-cyan-700",
-};
-
-const getGradient = (color: string) => CARD_COLORS[color] || "from-violet-500 to-purple-700";
+import { detectBank, detectBrand, getCardColor } from "@/lib/cardBranding";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -46,7 +34,7 @@ export default function CreditCards() {
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2].map(i => (
-              <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />
+              <div key={i} className="h-44 rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : cards.length === 0 ? (
@@ -64,49 +52,73 @@ export default function CreditCards() {
             </Button>
           </FadeIn>
         ) : (
-          cards.map((card, index) => (
-            <motion.button
-              key={card.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08 }}
-              onClick={() => navigate(`/cards/${card.id}`)}
-              className="w-full text-left"
-            >
-              <div className={cn(
-                "relative overflow-hidden rounded-2xl p-5 text-white bg-gradient-to-br shadow-lg",
-                getGradient(card.color)
-              )}>
-                {/* Card chip decoration */}
-                <div className="absolute top-4 right-4 opacity-20">
-                  <CreditCardIcon className="w-16 h-16" />
-                </div>
+          cards.map((card, index) => {
+            const bankTheme = detectBank(card.card_name);
+            const brand = detectBrand(card.card_brand);
+            const cardColor = getCardColor(card.color, card.card_name);
 
-                <div className="relative z-10">
-                  <p className="text-sm opacity-80 mb-1">{card.card_brand || "Cartão"}</p>
-                  <h3 className="text-xl font-bold mb-4">{card.card_name}</h3>
+            return (
+              <motion.button
+                key={card.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.08 }}
+                onClick={() => navigate(`/cards/${card.id}`)}
+                className="w-full text-left"
+              >
+                <div
+                  className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${cardColor}, ${cardColor}cc)`,
+                  }}
+                >
+                  {/* Brand badge */}
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    {brand && (
+                      <span className="text-xs font-bold bg-white/20 backdrop-blur-sm px-2 py-1 rounded-md">
+                        {brand.abbr}
+                      </span>
+                    )}
+                    <CreditCardIcon className="w-10 h-10 opacity-20" />
+                  </div>
 
-                  {card.last_four_digits && (
-                    <p className="text-sm opacity-70 font-mono mb-3">
-                      •••• •••• •••• {card.last_four_digits}
-                    </p>
-                  )}
-
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-xs opacity-60">Limite</p>
-                      <p className="text-lg font-semibold">{formatCurrency(card.credit_limit)}</p>
+                  <div className="relative z-10">
+                    {/* Bank icon */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                        <span className="text-xs font-bold">
+                          {bankTheme.name.charAt(0)}
+                        </span>
+                      </div>
+                      <p className="text-sm opacity-80 font-medium">
+                        {card.card_brand || bankTheme.name}
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs opacity-60">Vencimento</p>
-                      <p className="text-sm font-medium">Dia {card.due_day}</p>
+
+                    <h3 className="text-xl font-bold mb-3">{card.card_name}</h3>
+
+                    {card.last_four_digits && (
+                      <p className="text-sm opacity-70 font-mono mb-3">
+                        •••• •••• •••• {card.last_four_digits}
+                      </p>
+                    )}
+
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-xs opacity-60">Limite</p>
+                        <p className="text-lg font-semibold">{formatCurrency(card.credit_limit)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs opacity-60">Vencimento</p>
+                        <p className="text-sm font-medium">Dia {card.due_day}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 opacity-60" />
                     </div>
-                    <ChevronRight className="w-5 h-5 opacity-60" />
                   </div>
                 </div>
-              </div>
-            </motion.button>
-          ))
+              </motion.button>
+            );
+          })
         )}
       </main>
 

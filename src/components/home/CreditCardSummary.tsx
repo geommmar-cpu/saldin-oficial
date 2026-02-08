@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/balanceCalculations";
 import type { CreditCard as CreditCardType, CreditCardInstallment, CreditCardPurchase } from "@/types/creditCard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { detectBank, detectBrand, getCardColor } from "@/lib/cardBranding";
 
 interface CreditCardSummaryProps {
   cards: CreditCardType[];
@@ -59,12 +60,19 @@ export const CreditCardSummary = ({ cards, installments, selectedMonth }: Credit
         >
           {/* Card header with color bar */}
           <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: statement.card.color + "20" }}
-            >
-              <CreditCard className="w-5 h-5" style={{ color: statement.card.color }} />
-            </div>
+            {(() => {
+              const bankTheme = detectBank(statement.card.card_name);
+              const brand = detectBrand(statement.card.card_brand);
+              const color = getCardColor(statement.card.color, statement.card.card_name);
+              return (
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                  style={{ backgroundColor: color }}
+                >
+                  {brand ? brand.abbr : bankTheme.name.charAt(0)}
+                </div>
+              );
+            })()}
             <div className="flex-1 text-left min-w-0">
               <div className="flex items-center gap-2">
                 <p className="font-medium text-sm truncate">{statement.card.card_name}</p>

@@ -10,11 +10,7 @@ import {
   TrendingUp,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
-  HandCoins,
   Loader2,
-  Plus,
-  X,
   Calendar,
   Wallet,
 } from "lucide-react";
@@ -40,7 +36,6 @@ import { QuickActions } from "@/components/home/QuickActions";
 
 export const Home = () => {
   const navigate = useNavigate();
-  const [fabOpen, setFabOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
 
   // Fetch data
@@ -253,56 +248,6 @@ export const Home = () => {
         )}
       </main>
 
-      {/* FAB */}
-      <div className="fixed bottom-24 right-5 z-20">
-        <AnimatePresence>
-          {fabOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              className="absolute bottom-16 right-0 space-y-2"
-            >
-              {[
-                { icon: TrendingDown, label: "Gasto", path: "/expenses/add", color: "bg-foreground" },
-                { icon: TrendingUp, label: "Receita", path: "/income/add", color: "bg-essential" },
-                { icon: CreditCard, label: "Dívida", path: "/debts/add", color: "bg-impulse" },
-                { icon: HandCoins, label: "A receber", path: "/receivables/add", color: "bg-pleasure" },
-              ].map((item, index) => (
-                <motion.button
-                  key={item.path}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => { setFabOpen(false); navigate(item.path); }}
-                  className="flex items-center gap-2 ml-auto"
-                >
-                  <span className="px-3 py-1.5 rounded-full bg-card border border-border shadow-medium text-sm font-medium whitespace-nowrap">
-                    {item.label}
-                  </span>
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shadow-medium", item.color)}>
-                    <item.icon className="w-5 h-5 text-white" />
-                  </div>
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setFabOpen(!fabOpen)}
-          className={cn(
-            "w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-colors",
-            fabOpen ? "bg-muted" : "bg-primary"
-          )}
-        >
-          <motion.div animate={{ rotate: fabOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
-            {fabOpen ? <X className="w-6 h-6 text-foreground" /> : <Plus className="w-6 h-6 text-primary-foreground" />}
-          </motion.div>
-        </motion.button>
-      </div>
 
       <BottomNav />
     </div>
