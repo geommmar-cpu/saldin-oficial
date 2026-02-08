@@ -4,11 +4,10 @@ import {
   Home,
   PlusCircle,
   Target,
-  BarChart3,
+  CreditCard,
   MoreHorizontal,
   ArrowDownCircle,
   ArrowUpCircle,
-  CreditCard,
   HandCoins,
   X,
   Wallet,
@@ -19,20 +18,20 @@ import {
   Shield,
   FileCheck,
   Upload,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { path: "/", icon: Home, label: "Início" },
-  { path: "/insights", icon: BarChart3, label: "Visão" },
-  { path: "#", icon: PlusCircle, label: "Registrar", isMain: true },
+  { path: "/history", icon: Clock, label: "Histórico" },
   { path: "/goals", icon: Target, label: "Metas" },
+  { path: "/cards", icon: CreditCard, label: "Cartões" },
   { path: "#more", icon: MoreHorizontal, label: "Mais", isMore: true },
 ];
 
 const moreItems = [
-  { icon: Wallet, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
   { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
   { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
   { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
@@ -48,7 +47,7 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
-  const handleMainButtonClick = () => {
+  const handleFabClick = () => {
     setIsMoreOpen(false);
     setIsSheetOpen(true);
   };
@@ -71,7 +70,17 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
 
   return (
     <>
-      {/* Bottom Sheet Overlay — Register */}
+      {/* FAB - Floating Action Button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleFabClick}
+        className="fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full gradient-warm shadow-large"
+      >
+        <PlusCircle className="h-7 w-7 text-primary-foreground" />
+      </motion.button>
+
+      {/* Bottom Sheet — Register */}
       <AnimatePresence>
         {isSheetOpen && (
           <>
@@ -141,7 +150,7 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
         )}
       </AnimatePresence>
 
-      {/* Bottom Sheet Overlay — More */}
+      {/* Bottom Sheet — More */}
       <AnimatePresence>
         {isMoreOpen && (
           <>
@@ -187,7 +196,7 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
               </div>
               {/* Lista com scroll */}
               <div className="px-6 pb-6 space-y-2 max-h-[50vh] overflow-y-auto overscroll-contain">
-                {moreItems.filter(item => item.label !== "Voltar ao Início").map((item) => (
+                {moreItems.map((item) => (
                   <motion.button
                     key={item.path + item.label}
                     whileTap={{ scale: 0.98 }}
@@ -213,22 +222,11 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border pb-safe-bottom">
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {navItems.map((item) => {
-            const isActive = !item.isMain && !item.isMore && location.pathname === item.path;
+            const isActive = !item.isMore && location.pathname === item.path;
+            const isCardsActive = item.path === "/cards" && (location.pathname.startsWith("/cards") || location.pathname.startsWith("/credit-cards"));
+            const isHistoryActive = item.path === "/history" && location.pathname === "/history";
+            const active = isActive || isCardsActive || isHistoryActive;
             const Icon = item.icon;
-
-            if (item.isMain) {
-              return (
-                <button key={item.label} onClick={handleMainButtonClick} className="relative -mt-6">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex h-14 w-14 items-center justify-center rounded-full gradient-warm shadow-large"
-                  >
-                    <Icon className="h-7 w-7 text-primary-foreground" />
-                  </motion.div>
-                </button>
-              );
-            }
 
             if (item.isMore) {
               return (
@@ -248,13 +246,13 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 transition-colors duration-200",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "relative flex flex-col items-center gap-1 px-3 py-2 transition-colors duration-200",
+                  active ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-xs font-medium">{item.label}</span>
-                {isActive && (
+                {active && (
                   <motion.div
                     layoutId="activeTab"
                     className="absolute -bottom-0.5 h-0.5 w-8 rounded-full bg-primary"

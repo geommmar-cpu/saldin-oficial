@@ -17,8 +17,8 @@ export default function CreditCards() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="px-5 pt-safe-top">
-        <div className="pt-4 pb-2 flex items-center gap-4">
+      <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
+        <div className="pt-4 pb-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>

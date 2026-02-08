@@ -94,7 +94,7 @@ const Receivables = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="px-5 pt-safe-top">
+      <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-4">
           <FadeIn>
             <div className="flex items-center gap-3 mb-4">

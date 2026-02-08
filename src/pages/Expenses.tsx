@@ -163,23 +163,8 @@ export const Expenses = () => {
           </div>
         </FadeIn>
 
-        {/* Context Text */}
-        <FadeIn delay={0.05}>
-          <p className="text-sm text-muted-foreground text-center px-4">
-            Acompanhe seus gastos para manter o controle financeiro.
-          </p>
-        </FadeIn>
-
-        {/* WhatsApp Tip - Discrete */}
-        <FadeIn delay={0.1}>
-          <button
-            onClick={openWhatsApp}
-            className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-          >
-            <MessageCircle className="w-4 h-4 text-[#25D366]" />
-            <span>Também pode registrar via WhatsApp</span>
-          </button>
-        </FadeIn>
+        {/* Separator */}
+        <div className="h-px bg-border" />
 
         {/* Essential Expenses */}
         {essentialItems.length > 0 && (

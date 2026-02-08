@@ -72,24 +72,23 @@ export default function Goals() {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="px-5 pt-safe-top bg-background sticky top-0 z-10 border-b border-border">
-        <div className="py-4">
+        <div className="py-4 flex items-center justify-between">
           <FadeIn>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="font-serif text-2xl font-bold">Metas</h1>
-                <p className="text-sm text-muted-foreground">
-                  Organize seu dinheiro em caixinhas
-                </p>
-              </div>
-              <Button 
-                onClick={() => navigate("/goals/add")}
-                className="gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Nova meta
-              </Button>
+            <div>
+              <h1 className="font-serif text-2xl font-bold">Metas</h1>
+              <p className="text-sm text-muted-foreground">
+                Organize seu dinheiro em caixinhas
+              </p>
             </div>
           </FadeIn>
+          <Button 
+            onClick={() => navigate("/goals/add")}
+            size="sm"
+            className="gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            Nova
+          </Button>
         </div>
       </header>
 

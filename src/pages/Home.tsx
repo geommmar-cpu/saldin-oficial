@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import logoSaldin from "@/assets/logo-saldin-final.png";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
@@ -21,7 +21,6 @@ import { useReceivables } from "@/hooks/useReceivables";
 import { useIncomes } from "@/hooks/useIncomes";
 import { useGoals, useGoalStats } from "@/hooks/useGoals";
 import { useCreditCards, useCardInstallmentsByMonth } from "@/hooks/useCreditCards";
-import { cn } from "@/lib/utils";
 import { calculateBalances, formatCurrency } from "@/lib/balanceCalculations";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval, isBefore, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -127,111 +126,113 @@ export const Home = () => {
     );
   }
 
+  const hasData = totalIncome > 0 || totalSpent > 0 || totalCCInstallments > 0;
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="px-5 pt-safe-top bg-background sticky top-0 z-10 border-b border-border">
-        <div className="pt-3 pb-3">
-          <FadeIn>
-            <button onClick={() => navigate("/")} className="flex justify-center w-full">
-              <img src={logoSaldin} alt="Saldin" className="h-16 object-contain" />
-            </button>
-          </FadeIn>
-        </div>
-
-        {/* Month Selector */}
-        <FadeIn delay={0.05}>
-          <div className="flex items-center justify-between py-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}>
-              <ChevronLeft className="w-5 h-5" />
+        <div className="pt-3 pb-2 flex items-center justify-between">
+          <button onClick={() => navigate("/")} className="flex items-center">
+            <img src={logoSaldin} alt="Saldin" className="h-10 object-contain" />
+          </button>
+          {/* Month Selector - Inline */}
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}>
+              <ChevronLeft className="w-4 h-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
+            <button
+              onClick={() => setSelectedMonth(new Date())}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-muted transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="font-medium capitalize text-sm">{monthLabel}</span>
               {isCurrentMonth && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
                   Atual
                 </span>
               )}
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}>
-              <ChevronRight className="w-5 h-5" />
+            </button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}>
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
-        </FadeIn>
+        </div>
       </header>
 
-      <main className="px-5 space-y-5 pt-4">
-        {/* 1. SALDO LIVRE - Hero */}
-        <FadeIn delay={0.1}>
-          <BalanceHero
-            balance={balanceBreakdown}
-            totalIncome={totalIncome}
-            totalSpent={totalSpent}
-          />
-        </FadeIn>
+      <main className="px-5 space-y-4 pt-4">
+        {hasData ? (
+          <>
+            {/* 1. SALDO LIVRE - Hero */}
+            <FadeIn delay={0.05}>
+              <BalanceHero
+                balance={balanceBreakdown}
+                totalIncome={totalIncome}
+                totalSpent={totalSpent}
+              />
+            </FadeIn>
 
-        {/* Quick action cards */}
-        <FadeIn delay={0.12}>
-          <QuickActions
-            totalIncome={totalIncome}
-            totalSpent={totalSpent}
-            totalCardInstallments={totalCCInstallments}
-            totalReceivables={totalPendingReceivables}
-            selectedMonth={selectedMonth}
-          />
-        </FadeIn>
+            {/* Quick action cards */}
+            <FadeIn delay={0.08}>
+              <QuickActions
+                totalIncome={totalIncome}
+                totalSpent={totalSpent}
+                totalCardInstallments={totalCCInstallments}
+                totalReceivables={totalPendingReceivables}
+                selectedMonth={selectedMonth}
+              />
+            </FadeIn>
 
-        {/* 2. ALERTAS */}
-        <FadeIn delay={0.15}>
-          <AlertsSection
-            debts={filteredDebts}
-            goals={goals}
-            creditCards={creditCards}
-            installments={ccInstallments}
-            selectedMonth={selectedMonth}
-          />
-        </FadeIn>
+            {/* 2. ALERTAS */}
+            <FadeIn delay={0.1}>
+              <AlertsSection
+                debts={filteredDebts}
+                goals={goals}
+                creditCards={creditCards}
+                installments={ccInstallments}
+                selectedMonth={selectedMonth}
+              />
+            </FadeIn>
 
-        {/* 3. CARTÃO DE CRÉDITO - Fatura Atual */}
-        <FadeIn delay={0.18}>
-          <CreditCardSummary
-            cards={creditCards}
-            installments={ccInstallments}
-            selectedMonth={selectedMonth}
-          />
-        </FadeIn>
+            {/* 3. CARTÃO DE CRÉDITO - Fatura Atual */}
+            <FadeIn delay={0.12}>
+              <CreditCardSummary
+                cards={creditCards}
+                installments={ccInstallments}
+                selectedMonth={selectedMonth}
+              />
+            </FadeIn>
 
-        {/* 4. METAS */}
-        <FadeIn delay={0.2}>
-          <GoalsSummary
-            goals={goals}
-            totalSaved={goalStats?.totalSaved || 0}
-            totalTarget={goalStats?.totalTarget || 0}
-          />
-        </FadeIn>
+            {/* 4. METAS */}
+            <FadeIn delay={0.14}>
+              <GoalsSummary
+                goals={goals}
+                totalSaved={goalStats?.totalSaved || 0}
+                totalTarget={goalStats?.totalTarget || 0}
+              />
+            </FadeIn>
 
-        {/* 5. MOVIMENTAÇÕES */}
-        <FadeIn delay={0.22}>
-          <TransactionsSection
-            expenses={filteredExpenses}
-            incomes={filteredIncomes}
-            debts={filteredDebts}
-            receivables={filteredReceivables}
-            creditCardInstallments={ccInstallments}
-            selectedMonth={selectedMonth}
-          />
-        </FadeIn>
-
-        {/* Empty State */}
-        {totalIncome === 0 && totalSpent === 0 && totalCCInstallments === 0 && (
+            {/* 5. MOVIMENTAÇÕES */}
+            <FadeIn delay={0.16}>
+              <TransactionsSection
+                expenses={filteredExpenses}
+                incomes={filteredIncomes}
+                debts={filteredDebts}
+                receivables={filteredReceivables}
+                creditCardInstallments={ccInstallments}
+                selectedMonth={selectedMonth}
+              />
+            </FadeIn>
+          </>
+        ) : (
+          /* Empty State */
           <FadeIn delay={0.1}>
-            <div className="text-center py-8 px-4">
+            <div className="text-center py-12 px-4">
               <div className="w-16 h-16 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
                 <Wallet className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="font-serif text-lg font-semibold mb-2">Comece a organizar</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-6">
                 Adicione suas receitas e gastos para ter uma visão clara das suas finanças
               </p>
               <div className="flex gap-3 justify-center">
@@ -248,7 +249,6 @@ export const Home = () => {
           </FadeIn>
         )}
       </main>
-
 
       <BottomNav />
     </div>
