@@ -10,7 +10,7 @@ export interface Expense {
   description: string;
   category?: EmotionCategory;
   wouldDoAgain?: boolean;
-  source: "manual" | "bank" | "photo" | "whatsapp" | "audio";
+  source: "manual" | "bank" | "photo" | "whatsapp" | "audio" | "cartao";
   pending: boolean;
   createdAt: Date;
   establishment?: string;
@@ -34,6 +34,7 @@ const sourceLabels: Record<Expense["source"], string> = {
   photo: "Foto",
   whatsapp: "WhatsApp",
   audio: "Áudio",
+  cartao: "Cartão",
 };
 
 export const ExpenseItem = ({ expense, onClick }: ExpenseItemProps) => {
