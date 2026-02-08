@@ -61,12 +61,12 @@ export const Onboarding = () => {
     try {
       await supabase
         .from("profiles")
-        .upsert({
-          user_id: user.id,
+        .update({
           ai_name: aiName || "Luna",
           full_name: user.email?.split("@")[0] || "Usuário",
           onboarding_completed: true,
-        }, { onConflict: "user_id" });
+        })
+        .eq("user_id", user.id);
 
       // Create income records only if user chose to inform
       if (incomeType !== "later") {
@@ -108,8 +108,8 @@ export const Onboarding = () => {
     if (isLastStep) {
       const success = await saveProfileToSupabase();
       if (success) {
-        // Set the cache data directly to prevent race condition
         queryClient.setQueryData(["onboarding-status", user?.id], true);
+        sessionStorage.setItem("onboarding_completed_override", "true");
         navigate("/");
       }
     } else {
@@ -127,14 +127,14 @@ export const Onboarding = () => {
     try {
       await supabase
         .from("profiles")
-        .upsert({
-          user_id: user.id,
+        .update({
           full_name: user.email?.split("@")[0] || "Usuário",
           onboarding_completed: true,
-        }, { onConflict: "user_id" });
+        })
+        .eq("user_id", user.id);
       
-      // Set the cache data directly to prevent race condition
       queryClient.setQueryData(["onboarding-status", user.id], true);
+      sessionStorage.setItem("onboarding_completed_override", "true");
     } catch (error) {
       console.error("Error skipping onboarding:", error);
     } finally {
@@ -145,15 +145,11 @@ export const Onboarding = () => {
 
   const handleImportNow = async () => {
     // Save profile first, then redirect to add card
-    const success = await saveProfileToSupabase();
-    if (success) {
-      // Set the cache data directly instead of invalidating to prevent race condition
-      queryClient.setQueryData(["onboarding-status", user?.id], true);
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => {
-        navigate("/cards/add", { state: { fromOnboarding: true } });
-      }, 100);
-    }
+    await saveProfileToSupabase();
+    // Mark onboarding as complete in cache AND sessionStorage to survive refetches
+    queryClient.setQueryData(["onboarding-status", user?.id], true);
+    sessionStorage.setItem("onboarding_completed_override", "true");
+    navigate("/cards/add", { state: { fromOnboarding: true } });
   };
 
   const openWhatsApp = async () => {
