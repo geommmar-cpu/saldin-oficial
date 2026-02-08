@@ -24,6 +24,11 @@ const useOnboardingStatus = (userId: string | undefined) => {
     queryFn: async (): Promise<boolean> => {
       if (!userId) return false;
 
+      // Check sessionStorage override (set during onboarding import flow)
+      if (sessionStorage.getItem("onboarding_completed_override") === "true") {
+        return true;
+      }
+
       const { data, error } = await supabase
         .from("profiles")
         .select("onboarding_completed")
