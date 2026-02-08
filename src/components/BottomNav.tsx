@@ -32,7 +32,6 @@ const navItems = [
 ];
 
 const moreItems = [
-  { icon: Home, label: "Voltar ao Início", path: "/", desc: "Ir para a tela principal" },
   { icon: Wallet, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
   { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
   { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
@@ -170,8 +169,25 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
-              <div className="px-6 pb-6 space-y-2">
-                {moreItems.map((item) => (
+              {/* Botão Voltar ao Início */}
+              <div className="px-6 pb-3">
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleOptionClick("/")}
+                  className="w-full p-3 rounded-xl bg-primary/10 border-2 border-primary/30 flex items-center gap-3 text-left hover:bg-primary/15 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <Home className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-primary">Voltar ao Início</p>
+                    <p className="text-xs text-muted-foreground">Ir para a tela principal</p>
+                  </div>
+                </motion.button>
+              </div>
+              {/* Lista com scroll */}
+              <div className="px-6 pb-6 space-y-2 max-h-[50vh] overflow-y-auto overscroll-contain">
+                {moreItems.filter(item => item.label !== "Voltar ao Início").map((item) => (
                   <motion.button
                     key={item.path + item.label}
                     whileTap={{ scale: 0.98 }}
