@@ -176,6 +176,7 @@ export const Home = () => {
           <QuickActions
             totalIncome={totalIncome}
             totalSpent={totalSpent}
+            totalCardInstallments={totalCCInstallments}
             totalReceivables={totalPendingReceivables}
             selectedMonth={selectedMonth}
           />

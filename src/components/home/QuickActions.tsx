@@ -6,11 +6,13 @@ import { formatCurrency } from "@/lib/balanceCalculations";
 interface QuickActionsProps {
   totalIncome: number;
   totalSpent: number;
+  totalCardInstallments: number;
   totalReceivables: number;
   selectedMonth: Date;
 }
 
-export const QuickActions = ({ totalIncome, totalSpent, totalReceivables, selectedMonth }: QuickActionsProps) => {
+export const QuickActions = ({ totalIncome, totalSpent, totalCardInstallments, totalReceivables, selectedMonth }: QuickActionsProps) => {
+  const totalExpenses = totalSpent + totalCardInstallments;
   const navigate = useNavigate();
 
   return (
@@ -32,7 +34,7 @@ export const QuickActions = ({ totalIncome, totalSpent, totalReceivables, select
       >
         <Receipt className="w-4 h-4 text-foreground mb-1" />
         <p className="text-[10px] text-muted-foreground">Gastos</p>
-        <p className="font-semibold text-xs tabular-nums">{formatCurrency(totalSpent)}</p>
+        <p className="font-semibold text-xs tabular-nums">{formatCurrency(totalExpenses)}</p>
       </motion.button>
 
       <motion.button

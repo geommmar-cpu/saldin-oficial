@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Coins, ChevronDown, ChevronUp, Wallet, Lock, PiggyBank, Info } from "lucide-react";
+import { Coins, ChevronDown, ChevronUp, Wallet, Lock, PiggyBank, Info, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BalanceBreakdown, formatCurrency } from "@/lib/balanceCalculations";
 import {
@@ -169,6 +169,14 @@ export const BalanceHero = ({ balance, totalIncome, totalSpent }: BalanceHeroPro
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Dívidas ativas</span>
                   <span className="text-impulse">− {formatCurrency(balance.detalhes.dividasAtivas)}</span>
+                </div>
+              )}
+              {(balance.saldoComprometido - balance.detalhes.dividasAtivas) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5" /> Parcelas cartão
+                  </span>
+                  <span className="text-obligation">− {formatCurrency(balance.saldoComprometido - balance.detalhes.dividasAtivas - balance.detalhes.valoresParaTerceiros)}</span>
                 </div>
               )}
             </div>

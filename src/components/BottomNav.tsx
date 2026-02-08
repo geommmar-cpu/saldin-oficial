@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -43,7 +43,7 @@ const moreItems = [
   { icon: Shield, label: "Privacidade", path: "/privacy", desc: "Política de dados" },
 ];
 
-export const BottomNav = () => {
+export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -251,7 +251,8 @@ export const BottomNav = () => {
       </nav>
     </>
   );
-};
+});
+BottomNav.displayName = "BottomNav";
 
 // ─── Register Option subcomponent ───────────────────────
 
