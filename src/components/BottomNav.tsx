@@ -32,8 +32,9 @@ const navItems = [
 ];
 
 const moreItems = [
+  { icon: Home, label: "Voltar ao Início", path: "/", desc: "Ir para a tela principal" },
   { icon: Wallet, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
-  { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar CSV de fatura" },
+  { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
   { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
   { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
   { icon: Settings, label: "Configurações", path: "/settings", desc: "Conta e preferências" },

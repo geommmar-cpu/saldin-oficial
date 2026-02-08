@@ -3,69 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronRight, Brain, MessageCircle, Smartphone, Check, Wallet, Loader2 } from "lucide-react";
+import { ChevronRight, Brain, MessageCircle, Smartphone, Check, Wallet, Loader2, CreditCard, Upload, SkipForward } from "lucide-react";
 import { supabase } from "@/lib/backendClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+
+type IncomeType = "fixed" | "variable" | "later";
 
 const onboardingSteps = [
-  {
-    id: "welcome",
-    title: "Consciência Financeira",
-    subtitle: "Não é sobre organizar números.",
-    description: "É sobre mudar sua relação com o dinheiro, um gasto por vez.",
-    icon: Brain,
-  },
-  {
-    id: "concept",
-    title: "Como funciona",
-    subtitle: "Dois ambientes, um propósito",
-    cards: [
-      {
-        icon: MessageCircle,
-        title: "WhatsApp",
-        description: "Você conversa com sua IA. Envia gastos por texto, áudio ou foto. Ela extrai tudo automaticamente.",
-        color: "essential",
-      },
-      {
-        icon: Smartphone,
-        title: "App",
-        description: "Você encara a verdade. Vê padrões, confirma emoções e entende pra onde vai seu dinheiro.",
-        color: "accent",
-      },
-    ],
-    tagline: "Você fala com a IA. Você encara a verdade no app.",
-  },
-  {
-    id: "ai-name",
-    title: "Dê um nome pra sua IA",
-    subtitle: "Como você quer chamar seu assistente financeiro?",
-    placeholder: "Ex: Luna, Max, Cris...",
-  },
-  {
-    id: "income",
-    title: "Sua renda mensal",
-    subtitle: "Quanto entra na sua conta todo mês?",
-    description: "Isso nos ajuda a mostrar o quanto você já comprometeu.",
-  },
-  {
-    id: "problem",
-    title: "Qual seu maior desafio?",
-    subtitle: "Escolha o que mais te incomoda hoje",
-    options: [
-      { emoji: "💸", label: "Gasto sem pensar" },
-      { emoji: "📊", label: "Não sei pra onde vai" },
-      { emoji: "🎯", label: "Não consigo guardar" },
-      { emoji: "😰", label: "Vivo no vermelho" },
-    ],
-  },
-  {
-    id: "connect",
-    title: "Conecte com sua IA",
-    subtitle: "Comece a conversar agora",
-    description: "Sua IA está pronta. Clique no botão abaixo para iniciar a conversa no WhatsApp.",
-  },
+  { id: "welcome" },
+  { id: "concept" },
+  { id: "ai-name" },
+  { id: "income" },
+  { id: "problem" },
+  { id: "import-prompt" },
+  { id: "connect" },
 ];
 
 export const Onboarding = () => {
@@ -75,6 +29,7 @@ export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedProblem, setSelectedProblem] = useState<string | null>(null);
   const [aiName, setAiName] = useState("");
+  const [incomeType, setIncomeType] = useState<IncomeType | null>(null);
   const [fixedIncome, setFixedIncome] = useState("");
   const [variableIncome, setVariableIncome] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -104,8 +59,7 @@ export const Onboarding = () => {
 
     setIsSaving(true);
     try {
-      // Update profile with AI name, full_name, and mark onboarding as complete
-      const { error: profileError } = await supabase
+      await supabase
         .from("profiles")
         .update({
           ai_name: aiName || "Luna",
@@ -114,30 +68,30 @@ export const Onboarding = () => {
         })
         .eq("user_id", user.id);
 
-      if (profileError) throw profileError;
+      // Create income records only if user chose to inform
+      if (incomeType !== "later") {
+        const totalFixedIncome = parseInt(fixedIncome || "0", 10) / 100;
+        const totalVariableIncome = parseInt(variableIncome || "0", 10) / 100;
 
-      // Create initial income record if provided
-      const totalFixedIncome = parseInt(fixedIncome || "0", 10) / 100;
-      const totalVariableIncome = parseInt(variableIncome || "0", 10) / 100;
+        if (totalFixedIncome > 0) {
+          await supabase.from("incomes").insert({
+            user_id: user.id,
+            amount: totalFixedIncome,
+            description: "Receita fixa mensal",
+            type: "salary",
+            is_recurring: true,
+          });
+        }
 
-      if (totalFixedIncome > 0) {
-        await supabase.from("incomes").insert({
-          user_id: user.id,
-          amount: totalFixedIncome,
-          description: "Receita fixa mensal",
-          type: "salary",
-          is_recurring: true,
-        });
-      }
-
-      if (totalVariableIncome > 0) {
-        await supabase.from("incomes").insert({
-          user_id: user.id,
-          amount: totalVariableIncome,
-          description: "Receita variável mensal",
-          type: "freelance",
-          is_recurring: false,
-        });
+        if (totalVariableIncome > 0) {
+          await supabase.from("incomes").insert({
+            user_id: user.id,
+            amount: totalVariableIncome,
+            description: "Receita variável mensal",
+            type: "freelance",
+            is_recurring: false,
+          });
+        }
       }
 
       return true;
@@ -154,7 +108,6 @@ export const Onboarding = () => {
     if (isLastStep) {
       const success = await saveProfileToSupabase();
       if (success) {
-        // Invalidate onboarding cache so RouteGuards sees the new status
         await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
         navigate("/");
       }
@@ -171,7 +124,6 @@ export const Onboarding = () => {
     
     setIsSaving(true);
     try {
-      // Mark onboarding as complete
       await supabase
         .from("profiles")
         .update({
@@ -180,7 +132,6 @@ export const Onboarding = () => {
         })
         .eq("user_id", user.id);
       
-      // Invalidate onboarding cache so RouteGuards sees the new status
       await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
     } catch (error) {
       console.error("Error skipping onboarding:", error);
@@ -190,8 +141,16 @@ export const Onboarding = () => {
     }
   };
 
+  const handleImportNow = async () => {
+    // Save profile first, then redirect to import
+    const success = await saveProfileToSupabase();
+    if (success) {
+      await queryClient.invalidateQueries({ queryKey: ["onboarding-status"] });
+      navigate("/cards/add", { state: { fromOnboarding: true } });
+    }
+  };
+
   const openWhatsApp = async () => {
-    // Placeholder WhatsApp link - will be configured per user
     const whatsappUrl = "https://wa.me/5511999999999?text=Olá! Quero começar a usar o app de consciência financeira.";
     window.open(whatsappUrl, "_blank");
     await handleNext();
@@ -200,9 +159,37 @@ export const Onboarding = () => {
   const canProceed = () => {
     if (step.id === "problem") return !!selectedProblem;
     if (step.id === "ai-name") return aiName.trim().length >= 2;
-    if (step.id === "income") return fixedIncome && parseInt(fixedIncome, 10) > 0;
+    if (step.id === "income") {
+      if (!incomeType) return false;
+      if (incomeType === "later") return true;
+      if (incomeType === "fixed") return fixedIncome && parseInt(fixedIncome, 10) > 0;
+      if (incomeType === "variable") return variableIncome && parseInt(variableIncome, 10) > 0;
+      return true;
+    }
     return true;
   };
+
+  const problemOptions = [
+    { emoji: "💸", label: "Gasto sem pensar" },
+    { emoji: "📊", label: "Não sei pra onde vai" },
+    { emoji: "🎯", label: "Não consigo guardar" },
+    { emoji: "😰", label: "Vivo no vermelho" },
+  ];
+
+  const conceptCards = [
+    {
+      icon: MessageCircle,
+      title: "WhatsApp",
+      description: "Você conversa com sua IA. Envia gastos por texto, áudio ou foto. Ela extrai tudo automaticamente.",
+      color: "essential",
+    },
+    {
+      icon: Smartphone,
+      title: "App",
+      description: "Você encara a verdade. Vê padrões, confirma emoções e entende pra onde vai seu dinheiro.",
+      color: "accent",
+    },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -241,14 +228,10 @@ export const Onboarding = () => {
                 >
                   <Brain className="w-12 h-12 text-primary-foreground" />
                 </motion.div>
-                <h1 className="font-serif text-4xl font-semibold mb-3">
-                  {step.title}
-                </h1>
-                <p className="text-xl text-primary font-medium mb-4">
-                  {step.subtitle}
-                </p>
+                <h1 className="font-serif text-4xl font-semibold mb-3">Consciência Financeira</h1>
+                <p className="text-xl text-primary font-medium mb-4">Não é sobre organizar números.</p>
                 <p className="text-muted-foreground text-lg max-w-xs">
-                  {step.description}
+                  É sobre mudar sua relação com o dinheiro, um gasto por vez.
                 </p>
               </div>
             )}
@@ -256,13 +239,11 @@ export const Onboarding = () => {
             {step.id === "concept" && (
               <div className="flex-1 flex flex-col">
                 <div className="text-center mb-6">
-                  <h1 className="font-serif text-3xl font-semibold mb-2">
-                    {step.title}
-                  </h1>
-                  <p className="text-muted-foreground">{step.subtitle}</p>
+                  <h1 className="font-serif text-3xl font-semibold mb-2">Como funciona</h1>
+                  <p className="text-muted-foreground">Dois ambientes, um propósito</p>
                 </div>
                 <div className="space-y-4 mb-6">
-                  {step.cards?.map((card, index) => (
+                  {conceptCards.map((card, index) => (
                     <motion.div
                       key={card.title}
                       initial={{ opacity: 0, y: 20 }}
@@ -271,33 +252,23 @@ export const Onboarding = () => {
                       className="p-5 rounded-xl bg-card border border-border shadow-soft"
                     >
                       <div className="flex items-start gap-4">
-                        <div 
+                        <div
                           className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{ backgroundColor: `hsl(var(--${card.color}) / 0.15)` }}
                         >
-                          <card.icon 
-                            className="w-6 h-6" 
-                            style={{ color: `hsl(var(--${card.color}))` }}
-                          />
+                          <card.icon className="w-6 h-6" style={{ color: `hsl(var(--${card.color}))` }} />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg mb-1">{card.title}</h3>
-                          <p className="text-muted-foreground text-sm leading-relaxed">
-                            {card.description}
-                          </p>
+                          <p className="text-muted-foreground text-sm leading-relaxed">{card.description}</p>
                         </div>
                       </div>
                     </motion.div>
                   ))}
                 </div>
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-center"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-center">
                   <p className="text-lg font-medium text-primary italic">
-                    "{step.tagline}"
+                    "Você fala com a IA. Você encara a verdade no app."
                   </p>
                 </motion.div>
               </div>
@@ -312,15 +283,13 @@ export const Onboarding = () => {
                 >
                   <MessageCircle className="w-10 h-10 text-essential" />
                 </motion.div>
-                <h1 className="font-serif text-3xl font-semibold mb-2 text-center">
-                  {step.title}
-                </h1>
+                <h1 className="font-serif text-3xl font-semibold mb-2 text-center">Dê um nome pra sua IA</h1>
                 <p className="text-muted-foreground text-center mb-8 max-w-xs">
-                  {step.subtitle}
+                  Como você quer chamar seu assistente financeiro?
                 </p>
                 <Input
                   type="text"
-                  placeholder={step.placeholder}
+                  placeholder="Ex: Luna, Max, Cris..."
                   value={aiName}
                   onChange={(e) => setAiName(e.target.value)}
                   className="max-w-xs text-center text-xl h-14 font-medium"
@@ -341,82 +310,163 @@ export const Onboarding = () => {
                 >
                   <Wallet className="w-10 h-10 text-essential" />
                 </motion.div>
-                <h1 className="font-serif text-3xl font-semibold mb-2 text-center">
-                  {step.title}
-                </h1>
-                <p className="text-muted-foreground text-center mb-8 max-w-xs">
-                  {step.subtitle}
+                <h1 className="font-serif text-3xl font-semibold mb-2 text-center">Sua renda mensal</h1>
+                <p className="text-muted-foreground text-center mb-6 max-w-xs">
+                  Isso nos ajuda a mostrar o quanto você já comprometeu.
                 </p>
-                
-                <div className="w-full max-w-xs space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Receita fixa <span className="text-impulse">*</span>
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={fixedIncome ? formatCurrency(fixedIncome) : ""}
-                      onChange={(e) => handleIncomeChange(e.target.value, setFixedIncome)}
-                      placeholder="R$ 0,00"
-                      className="text-center text-xl h-14 font-medium"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Salário, aposentadoria, benefícios
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Receita variável <span className="text-muted-foreground">(opcional)</span>
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={variableIncome ? formatCurrency(variableIncome) : ""}
-                      onChange={(e) => handleIncomeChange(e.target.value, setVariableIncome)}
-                      placeholder="R$ 0,00"
-                      className="text-center text-xl h-14 font-medium"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Freelance, bônus, comissões
-                    </p>
-                  </div>
+
+                {/* Income type selector */}
+                <div className="w-full max-w-xs space-y-3 mb-6">
+                  {([
+                    { type: "fixed" as IncomeType, label: "Renda fixa", desc: "Salário, aposentadoria" },
+                    { type: "variable" as IncomeType, label: "Renda variável", desc: "Freelance, comissões" },
+                    { type: "later" as IncomeType, label: "Prefiro informar depois", desc: "Você pode adicionar a qualquer momento" },
+                  ]).map((opt) => (
+                    <motion.button
+                      key={opt.type}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setIncomeType(opt.type)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
+                        incomeType === opt.type
+                          ? "border-primary bg-primary/5 shadow-medium"
+                          : "border-border hover:border-muted-foreground/30"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                        incomeType === opt.type ? "border-primary bg-primary" : "border-muted-foreground"
+                      )}>
+                        {incomeType === opt.type && <Check className="w-3 h-3 text-primary-foreground" />}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                      </div>
+                    </motion.button>
+                  ))}
                 </div>
+
+                {/* Income value inputs - only show when type is selected */}
+                <AnimatePresence>
+                  {incomeType === "fixed" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="w-full max-w-xs overflow-hidden"
+                    >
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Valor da renda fixa</label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={fixedIncome ? formatCurrency(fixedIncome) : ""}
+                          onChange={(e) => handleIncomeChange(e.target.value, setFixedIncome)}
+                          placeholder="R$ 0,00"
+                          className="text-center text-xl h-14 font-medium"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                  {incomeType === "variable" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="w-full max-w-xs overflow-hidden"
+                    >
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Valor médio da renda variável</label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={variableIncome ? formatCurrency(variableIncome) : ""}
+                          onChange={(e) => handleIncomeChange(e.target.value, setVariableIncome)}
+                          placeholder="R$ 0,00"
+                          className="text-center text-xl h-14 font-medium"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
             {step.id === "problem" && (
               <div className="flex-1 flex flex-col">
                 <div className="text-center mb-8">
-                  <h1 className="font-serif text-3xl font-semibold mb-2">
-                    {step.title}
-                  </h1>
-                  <p className="text-muted-foreground">{step.subtitle}</p>
+                  <h1 className="font-serif text-3xl font-semibold mb-2">Qual seu maior desafio?</h1>
+                  <p className="text-muted-foreground">Escolha o que mais te incomoda hoje</p>
                 </div>
                 <div className="space-y-3">
-                  {step.options?.map((option, index) => (
+                  {problemOptions.map((option, index) => (
                     <motion.button
                       key={option.label}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                       onClick={() => setSelectedProblem(option.label)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 ${
+                      className={cn(
+                        "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200",
                         selectedProblem === option.label
                           ? "border-primary bg-primary/5 shadow-medium"
                           : "border-border hover:border-muted-foreground/30"
-                      }`}
+                      )}
                     >
                       <span className="text-3xl">{option.emoji}</span>
-                      <span className="font-medium text-left flex-1">
-                        {option.label}
-                      </span>
-                      {selectedProblem === option.label && (
-                        <Check className="w-5 h-5 text-primary" />
-                      )}
+                      <span className="font-medium text-left flex-1">{option.label}</span>
+                      {selectedProblem === option.label && <Check className="w-5 h-5 text-primary" />}
                     </motion.button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {step.id === "import-prompt" && (
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6"
+                >
+                  <CreditCard className="w-10 h-10 text-primary" />
+                </motion.div>
+                <h1 className="font-serif text-3xl font-semibold mb-3">Importar fatura do cartão?</h1>
+                <p className="text-muted-foreground max-w-xs mb-2">
+                  Você pode importar sua fatura atual em PDF ou CSV para já começar com seus gastos registrados.
+                </p>
+                <p className="text-xs text-muted-foreground max-w-xs mb-8">
+                  Você precisará cadastrar um cartão primeiro. Essa etapa é totalmente opcional.
+                </p>
+
+                <div className="w-full max-w-xs space-y-3">
+                  <Button
+                    variant="warm"
+                    size="lg"
+                    className="w-full gap-2"
+                    onClick={handleImportNow}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5" />
+                        Importar agora
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    className="w-full text-muted-foreground gap-2"
+                    onClick={handleNext}
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    Pular esta etapa
+                  </Button>
                 </div>
               </div>
             )}
@@ -431,14 +481,12 @@ export const Onboarding = () => {
                 >
                   <MessageCircle className="w-12 h-12 text-essential" />
                 </motion.div>
-                <h1 className="font-serif text-3xl font-semibold mb-2">
-                  {step.title}
-                </h1>
+                <h1 className="font-serif text-3xl font-semibold mb-2">Conecte com sua IA</h1>
                 <p className="text-xl text-primary font-medium mb-3">
-                  {aiName ? `Conheça ${aiName}!` : step.subtitle}
+                  {aiName ? `Conheça ${aiName}!` : "Comece a conversar agora"}
                 </p>
                 <p className="text-muted-foreground max-w-xs mb-8">
-                  {step.description}
+                  Sua IA está pronta. Clique no botão abaixo para iniciar a conversa no WhatsApp.
                 </p>
                 <Button
                   variant="default"
@@ -464,7 +512,7 @@ export const Onboarding = () => {
       </div>
 
       {/* Actions */}
-      {step.id !== "connect" && (
+      {step.id !== "connect" && step.id !== "import-prompt" && (
         <div className="px-6 pb-8 pb-safe-bottom space-y-3">
           <Button
             variant="warm"

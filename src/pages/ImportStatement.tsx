@@ -138,17 +138,22 @@ export default function ImportStatement() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="px-5 pt-safe-top">
-        <div className="pt-4 pb-2 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => {
-            if (step === "upload" || step === "done") navigate(-1);
-            else setStep("upload");
-          }}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="font-serif text-xl font-semibold">Importar Fatura</h1>
-            <p className="text-xs text-muted-foreground">{stepDescription[step]}</p>
+        <div className="pt-4 pb-2 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => {
+              if (step === "upload" || step === "done") navigate(-1);
+              else setStep("upload");
+            }}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="font-serif text-xl font-semibold">Importar Fatura</h1>
+              <p className="text-xs text-muted-foreground">{stepDescription[step]}</p>
+            </div>
           </div>
+          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => navigate("/")}>
+            Cancelar
+          </Button>
         </div>
       </header>
 
@@ -156,42 +161,60 @@ export default function ImportStatement() {
         {/* Step: Upload */}
         {step === "upload" && (
           <FadeIn className="space-y-6">
-            <div className="text-center py-8">
-              <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
-                <Upload className="w-10 h-10 text-primary" />
+            {cards.length === 0 ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="w-20 h-20 rounded-full bg-destructive/10 mx-auto flex items-center justify-center">
+                  <CreditCard className="w-10 h-10 text-destructive" />
+                </div>
+                <h2 className="font-serif text-lg font-semibold">Nenhum cartão cadastrado</h2>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                  Para importar uma fatura, primeiro cadastre o cartão de crédito correspondente.
+                </p>
+                <Button variant="warm" onClick={() => navigate("/cards/add")}>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Cadastrar cartão
+                </Button>
               </div>
-              <h2 className="font-serif text-lg font-semibold mb-2">Envie a fatura do cartão</h2>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Aceita PDF ou CSV de qualquer banco. Os lançamentos serão lidos, validados e categorizados automaticamente.
-              </p>
-            </div>
+            ) : (
+              <>
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
+                    <Upload className="w-10 h-10 text-primary" />
+                  </div>
+                  <h2 className="font-serif text-lg font-semibold mb-2">Envie a fatura do cartão</h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    Aceita PDF ou CSV de qualquer banco. Os lançamentos serão lidos, validados e categorizados automaticamente.
+                  </p>
+                </div>
 
-            <label className="block cursor-pointer">
-              <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center hover:border-primary/50 transition-colors">
-                <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                <p className="font-medium text-sm">Clique para selecionar arquivo</p>
-                <p className="text-xs text-muted-foreground mt-1">PDF ou CSV</p>
-              </div>
-              <input
-                type="file"
-                accept=".csv,.pdf"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </label>
+                <label className="block cursor-pointer">
+                  <div className="border-2 border-dashed border-border rounded-2xl p-8 text-center hover:border-primary/50 transition-colors">
+                    <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="font-medium text-sm">Clique para selecionar arquivo</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF ou CSV</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".csv,.pdf"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                </label>
 
-            <div className="bg-muted/50 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Bancos suportados:</p>
-              <p className="text-xs text-muted-foreground">
-                Nubank, Itaú, Bradesco, Santander, Inter, Banco do Brasil, Caixa, C6 Bank e outros.
-              </p>
-              <p className="text-xs font-medium text-muted-foreground mt-3">Como obter o arquivo:</p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• No app do banco, acesse a fatura do cartão</li>
-                <li>• Procure "Exportar", "Baixar" ou "Compartilhar"</li>
-                <li>• Selecione PDF ou CSV e envie aqui</li>
-              </ul>
-            </div>
+                <div className="bg-muted/50 rounded-xl p-4 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Bancos suportados:</p>
+                  <p className="text-xs text-muted-foreground">
+                    Nubank, Itaú, Bradesco, Santander, Inter, Banco do Brasil, Caixa, C6 Bank e outros.
+                  </p>
+                  <p className="text-xs font-medium text-muted-foreground mt-3">Como obter o arquivo:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• No app do banco, acesse a fatura do cartão</li>
+                    <li>• Procure "Exportar", "Baixar" ou "Compartilhar"</li>
+                    <li>• Selecione PDF ou CSV e envie aqui</li>
+                  </ul>
+                </div>
+              </>
+            )}
           </FadeIn>
         )}
 
