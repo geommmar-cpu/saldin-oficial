@@ -4,7 +4,7 @@
   "description": "O app que ajuda você a mudar sua relação com o dinheiro",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf8f5",
+  "background_color": "transparent",
   "theme_color": "#c97442",
   "orientation": "portrait-primary",
   "icons": [
