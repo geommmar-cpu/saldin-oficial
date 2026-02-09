@@ -297,10 +297,7 @@ export const Settings = () => {
               action={
                 <Switch
                   checked={preferences.darkMode}
-                  onCheckedChange={(checked) => {
-                    updatePreference("darkMode", checked);
-                    document.documentElement.classList.toggle("dark", checked);
-                  }}
+                  onCheckedChange={(checked) => updatePreference("darkMode", checked)}
                 />
               }
             />
