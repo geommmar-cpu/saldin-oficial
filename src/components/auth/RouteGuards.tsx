@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/backendClient";
 import { useWebAuthn } from "@/hooks/useWebAuthn";
+import { useProfile } from "@/hooks/useProfile";
 import { BiometricLockScreen } from "./BiometricLockScreen";
 
 // Session storage key to track if user unlocked with biometric this session
@@ -81,6 +82,7 @@ export const AuthRoute = ({ children }: { children: React.ReactNode }) => {
 export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
   const { isEnabled: isBiometricEnabled, isEnabledForUser, isLoading: biometricLoading } = useWebAuthn();
+  const { data: profile } = useProfile();
   
   // Track if user has unlocked with biometric this session
   const [isUnlocked, setIsUnlocked] = useState(() => {
@@ -120,7 +122,7 @@ export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => 
     return (
       <BiometricLockScreen
         userEmail={user.email || ""}
-        userName={user.user_metadata?.name || user.user_metadata?.full_name || ""}
+        userName={profile?.full_name || user.user_metadata?.name || user.user_metadata?.full_name || ""}
         onUnlock={() => {
           sessionStorage.setItem(BIOMETRIC_UNLOCKED_KEY, "true");
           setIsUnlocked(true);
