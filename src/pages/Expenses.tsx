@@ -7,7 +7,8 @@ import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Plus, Receipt, MessageCircle, Loader2 } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useCardInstallmentsByMonth } from "@/hooks/useCreditCards";
-import { startOfMonth, endOfMonth, isWithinInterval, format } from "date-fns";
+import { format } from "date-fns";
+import { getExpensesForMonth } from "@/lib/recurringExpenses";
 import { ptBR } from "date-fns/locale";
 
 // Emotion types from database
@@ -22,9 +23,6 @@ export const Expenses = () => {
     const stateMonth = location.state?.selectedMonth;
     return stateMonth ? new Date(stateMonth) : new Date();
   }, [location.state?.selectedMonth]);
-  
-  const monthStart = startOfMonth(selectedMonth);
-  const monthEnd = endOfMonth(selectedMonth);
 
   // Fetch real data from Supabase
   const { data: allExpenses = [], isLoading: expensesLoading } = useExpenses("all");
@@ -32,13 +30,10 @@ export const Expenses = () => {
 
   const isLoading = expensesLoading || installmentsLoading;
   
-  // Filter expenses by selected month
+  // Filter expenses by selected month (including installments projected to future months)
   const expenses = useMemo(() => {
-    return allExpenses.filter(expense => {
-      const expenseDate = new Date(expense.date || expense.created_at);
-      return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
-    });
-  }, [allExpenses, monthStart, monthEnd]);
+    return getExpensesForMonth(allExpenses, selectedMonth);
+  }, [allExpenses, selectedMonth]);
 
   // Transform credit card installments into Expense format
   const cardExpenses = useMemo((): Expense[] => {
@@ -267,10 +262,13 @@ export const Expenses = () => {
 
 // Transform database expense to ExpenseList format
 function transformExpense(e: any): Expense {
+  const installmentLabel = e.is_installment && e.total_installments && e.total_installments > 1
+    ? ` (${e.installment_number || 1}/${e.total_installments}x)`
+    : "";
   return {
     id: e.id,
     amount: Number(e.amount),
-    description: e.description,
+    description: `${e.description}${installmentLabel}`,
     category: e.emotion === "essencial" ? "essential" 
       : e.emotion === "pilar" ? "obligation" 
       : e.emotion === "impulso" ? "impulse" 

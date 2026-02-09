@@ -22,6 +22,7 @@ import { useIncomes } from "@/hooks/useIncomes";
 import { useGoals, useGoalStats } from "@/hooks/useGoals";
 import { useCreditCards, useCardInstallmentsByMonth } from "@/hooks/useCreditCards";
 import { calculateBalances, formatCurrency } from "@/lib/balanceCalculations";
+import { getExpensesForMonth } from "@/lib/recurringExpenses";
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval, isBefore, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -54,13 +55,10 @@ export const Home = () => {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
 
-  // Filter expenses by month
+  // Filter expenses by month (including installments projected to future months)
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
-      const expenseDate = new Date(expense.date || expense.created_at);
-      return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
-    });
-  }, [expenses, monthStart, monthEnd]);
+    return getExpensesForMonth(expenses, selectedMonth);
+  }, [expenses, selectedMonth]);
 
   // Filter incomes by month (including recurring)
   const filteredIncomes = useMemo(() => {

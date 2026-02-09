@@ -9,6 +9,7 @@ import { PeriodFilter, SourceFilter, EmotionFilter, ItemTypeFilter } from "@/typ
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format, startOfMonth, endOfMonth, isWithinInterval, isBefore, subMonths, addMonths } from "date-fns";
+import { getExpensesForMonth } from "@/lib/recurringExpenses";
 import { ptBR } from "date-fns/locale";
 import { useExpenses, ExpenseRow } from "@/hooks/useExpenses";
 import { useIncomes, IncomeRow } from "@/hooks/useIncomes";
@@ -210,15 +211,18 @@ export const History = () => {
   const historyItems = useMemo(() => {
     const items: HistoryItem[] = [];
 
-    // Add expenses — filter by month
-    expenses.forEach((expense: ExpenseRow) => {
+    // Add expenses — filter by month (including installments projected to future months)
+    const filteredExpenses = getExpensesForMonth(expenses, selectedMonth);
+    filteredExpenses.forEach((expense: ExpenseRow) => {
       const expDate = new Date(expense.date || expense.created_at);
-      if (!isWithinInterval(expDate, { start: monthStart, end: monthEnd })) return;
+      const installmentLabel = expense.is_installment && expense.total_installments && expense.total_installments > 1
+        ? ` (${expense.installment_number}/${expense.total_installments}x)`
+        : "";
       items.push({
         id: expense.id,
         type: "expense",
         amount: Number(expense.amount),
-        description: expense.description,
+        description: `${expense.description}${installmentLabel}`,
         category: expense.emotion as EmotionCategory | undefined,
         source: expense.source as HistoryItem["source"],
         pending: expense.status === "pending",

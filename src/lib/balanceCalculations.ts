@@ -1,10 +1,11 @@
  // Cálculos de saldo do Saldin
  // Implementa os 3 tipos de saldo: Bruto, Comprometido e Livre
  
- import { ExpenseRow } from "@/hooks/useExpenses";
- import { IncomeRow } from "@/hooks/useIncomes";
- import { DebtRow } from "@/hooks/useDebts";
- import { startOfMonth, endOfMonth, isWithinInterval, isBefore, isAfter, addMonths } from "date-fns";
+import { ExpenseRow } from "@/hooks/useExpenses";
+import { IncomeRow } from "@/hooks/useIncomes";
+import { DebtRow } from "@/hooks/useDebts";
+import { startOfMonth, endOfMonth, isWithinInterval, isBefore, isAfter, addMonths } from "date-fns";
+import { getExpensesForMonth } from "@/lib/recurringExpenses";
  
 export interface BalanceBreakdown {
   // Saldo Bruto = Receitas - Gastos já pagos
@@ -67,11 +68,8 @@ export function calculateBalances(
     return isWithinInterval(incomeDate, { start: monthStart, end: monthEnd });
   });
   
-  // Filtrar gastos do mês (já vem filtrado, mas garantimos)
-  const filteredExpenses = expenses.filter(expense => {
-    const expenseDate = new Date(expense.date || expense.created_at);
-    return isWithinInterval(expenseDate, { start: monthStart, end: monthEnd });
-  });
+  // Filtrar gastos do mês (incluindo parcelas futuras)
+  const filteredExpenses = getExpensesForMonth(expenses, selectedMonth);
   
   // Calcular dívidas ativas no mês
   const activeDebts = debts.filter(debt => {
