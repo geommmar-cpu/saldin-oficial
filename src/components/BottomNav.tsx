@@ -33,6 +33,8 @@ const navItems = [
 ];
 
 const moreItems = [
+  { icon: CreditCard, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
+  { icon: Landmark, label: "Contas Bancárias", path: "/banks", desc: "Gerenciar contas e saldos" },
   { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
   { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
   { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
@@ -113,7 +115,7 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
                 <RegisterOption
                   icon={ArrowUpCircle}
                   label="Registrar gasto"
-                  desc="Adicione uma despesa à vista"
+                  desc="Débito, crédito ou PIX"
                   colorClass="impulse"
                   onClick={() => handleOptionClick("/expenses/add")}
                   large
@@ -127,11 +129,11 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
                   large
                 />
                 <RegisterOption
-                  icon={CreditCard}
-                  label="Meus cartões"
-                  desc="Gerenciar cartões e faturas"
+                  icon={Landmark}
+                  label="Transferência entre contas"
+                  desc="Movimentar entre seus bancos"
                   colorClass="primary"
-                  onClick={() => handleOptionClick("/cards")}
+                  onClick={() => handleOptionClick("/banks/transfer")}
                 />
                 <RegisterOption
                   icon={Wallet}
@@ -144,12 +146,6 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
                   label="Valor a receber"
                   desc="Valores que devem para você"
                   onClick={() => handleOptionClick("/receivables/add")}
-                />
-                <RegisterOption
-                  icon={Landmark}
-                  label="Contas bancárias"
-                  desc="Gerenciar contas e transferir"
-                  onClick={() => handleOptionClick("/banks")}
                 />
               </div>
             </motion.div>
