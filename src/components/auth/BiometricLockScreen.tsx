@@ -69,11 +69,6 @@ export function BiometricLockScreen({
             <h1 className="font-serif text-2xl font-semibold">
               Olá{userName ? `, ${userName}` : " novamente"}!
             </h1>
-            {userEmail && (
-              <p className="text-muted-foreground text-xs">
-                {userEmail}
-              </p>
-            )}
           </div>
 
           {/* Biometric button */}
