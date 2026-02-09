@@ -192,7 +192,7 @@ export const Settings = () => {
             <SettingsItem
               icon={User}
               label="Nome"
-              value={user?.user_metadata?.full_name || "Usuário"}
+              value={profile?.full_name || user?.user_metadata?.full_name || "Usuário"}
             />
             <SettingsItem
               icon={Mail}

@@ -72,8 +72,13 @@ export const EditAccount = () => {
     setSavingProfile(true);
     
     try {
-      // Update profile name
+      // Update profile name in profiles table
       await updateProfile.mutateAsync({ full_name: name.trim() });
+      
+      // Also update user_metadata in Supabase Auth
+      await supabase.auth.updateUser({
+        data: { name: name.trim(), full_name: name.trim() },
+      });
       
       // Update email if changed
       if (email.trim() !== user?.email) {
