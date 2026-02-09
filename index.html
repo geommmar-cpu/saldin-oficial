@@ -35,6 +35,22 @@
 </head>
 
   <body>
+    <script>
+      // Apply theme before React renders to prevent flash
+      (function() {
+        try {
+          var prefs = JSON.parse(localStorage.getItem('user_preferences') || '{}');
+          if (prefs.darkMode === true) {
+            document.documentElement.classList.add('dark');
+          } else if (prefs.darkMode === undefined || prefs.darkMode === null) {
+            // No preference saved: follow system
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
