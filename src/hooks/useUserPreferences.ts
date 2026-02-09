@@ -42,9 +42,10 @@ export function useUserPreferences() {
     };
   });
 
-  // Persist to localStorage on change
+  // Persist to localStorage on change and sync dark mode class
   useEffect(() => {
     localStorage.setItem("user_preferences", JSON.stringify(preferences));
+    document.documentElement.classList.toggle("dark", preferences.darkMode);
   }, [preferences]);
 
   const updatePreference = useCallback(<K extends keyof UserPreferences>(
