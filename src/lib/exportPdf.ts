@@ -308,8 +308,9 @@ export async function generateFinancialReport({
     const groupInfo = categoryGroups[groupKey];
     const catsInGroup = defaultCategories.filter(c => c.group === groupKey);
 
-    // Check if any category in this group has expenses
-    const groupHasData = catsInGroup.some(c => expensesByCategory.has(c.id));
+    // Only show group if it has any expenses
+    const catsWithData = catsInGroup.filter(c => expensesByCategory.has(c.id) && expensesByCategory.get(c.id)!.length > 0);
+    if (catsWithData.length === 0) continue;
 
     y = pageCheck(doc, y, 14);
     doc.setFont("helvetica", "bold");
@@ -318,49 +319,41 @@ export async function generateFinancialReport({
     doc.text(groupInfo.name.toUpperCase(), margin, y);
     y += 5;
 
-    for (const cat of catsInGroup) {
-      const catExpenses = expensesByCategory.get(cat.id) || [];
+    for (const cat of catsWithData) {
+      const catExpenses = expensesByCategory.get(cat.id)!;
       const catTotal = catExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
       y = pageCheck(doc, y, 8);
 
-      if (catExpenses.length === 0) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(...C.gray);
-        doc.text(`${cat.name} -- R$ 0,00 (sem movimentacoes)`, margin + 4, y);
-        y += 5;
-      } else {
-        // Category name with total
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        doc.setTextColor(...C.primary);
-        doc.text(`${cat.name}`, margin + 4, y);
-        doc.setTextColor(...C.red);
-        doc.text(formatCurrency(catTotal), pageWidth - margin, y, { align: "right" });
-        y += 2;
+      // Category name with total
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...C.primary);
+      doc.text(`${cat.name}`, margin + 4, y);
+      doc.setTextColor(...C.red);
+      doc.text(formatCurrency(catTotal), pageWidth - margin, y, { align: "right" });
+      y += 2;
 
-        // Individual items
-        const catRows = catExpenses.map(e => [
-          e.description || "--",
-          emotionLabels[e.emotion || ""] || "--",
-          new Date(e.date || e.created_at).toLocaleDateString("pt-BR"),
-          formatCurrency(Number(e.amount)),
-        ]);
+      // Individual items
+      const catRows = catExpenses.map(e => [
+        e.description || "--",
+        emotionLabels[e.emotion || ""] || "--",
+        new Date(e.date || e.created_at).toLocaleDateString("pt-BR"),
+        formatCurrency(Number(e.amount)),
+      ]);
 
-        autoTable(doc, {
-          startY: y,
-          body: catRows,
-          margin: { left: margin + 4, right: margin },
-          theme: "plain",
-          bodyStyles: { fontSize: 7.5, textColor: C.primary, cellPadding: 1.2 },
-          columnStyles: {
-            0: { cellWidth: 60 },
-            3: { halign: "right", fontStyle: "bold" },
-          },
-        });
-        y = (doc as any).lastAutoTable.finalY + 3;
-      }
+      autoTable(doc, {
+        startY: y,
+        body: catRows,
+        margin: { left: margin + 4, right: margin },
+        theme: "plain",
+        bodyStyles: { fontSize: 7.5, textColor: C.primary, cellPadding: 1.2 },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          3: { halign: "right", fontStyle: "bold" },
+        },
+      });
+      y = (doc as any).lastAutoTable.finalY + 3;
     }
 
     y += 3;
