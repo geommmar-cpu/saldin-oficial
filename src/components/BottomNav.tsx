@@ -11,6 +11,7 @@ import {
   HandCoins,
   X,
   Wallet,
+  Landmark,
   Tag,
   FileText,
   Settings,
@@ -143,6 +144,12 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
                   label="Valor a receber"
                   desc="Valores que devem para você"
                   onClick={() => handleOptionClick("/receivables/add")}
+                />
+                <RegisterOption
+                  icon={Landmark}
+                  label="Contas bancárias"
+                  desc="Gerenciar contas e transferir"
+                  onClick={() => handleOptionClick("/banks")}
                 />
               </div>
             </motion.div>

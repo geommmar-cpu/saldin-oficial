@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useCreateExpense } from "@/hooks/useExpenses";
 import { useCreateCreditCardPurchase, useCreditCards } from "@/hooks/useCreditCards";
 import { useCreateReceivable } from "@/hooks/useReceivables";
+import { useBankAccounts, useUpdateBankBalance } from "@/hooks/useBankAccounts";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { 
@@ -89,6 +90,8 @@ export const ConfirmExpense = () => {
   const createExpense = useCreateExpense();
   const createCreditCardPurchase = useCreateCreditCardPurchase();
   const { data: creditCards = [] } = useCreditCards();
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const updateBankBalance = useUpdateBankBalance();
   const createReceivable = useCreateReceivable();
   
   const amount = location.state?.amount || 67.50;
@@ -104,6 +107,7 @@ export const ConfirmExpense = () => {
   const [category, setCategory] = useState<string | undefined>();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>();
   const [selectedCardId, setSelectedCardId] = useState<string | undefined>();
+  const [selectedBankId, setSelectedBankId] = useState<string | undefined>();
   
   // Layer 2 - Time behavior
   const [isRecurring, setIsRecurring] = useState<boolean | undefined>();
@@ -203,7 +207,16 @@ export const ConfirmExpense = () => {
           is_installment: isRecurring || false,
           total_installments: isRecurring && installments ? parseInt(installments) : undefined,
           installment_number: 1,
-        });
+          bank_account_id: selectedBankId || undefined,
+        } as any);
+
+        // Update bank balance if a bank was selected
+        if (selectedBankId) {
+          await updateBankBalance.mutateAsync({
+            accountId: selectedBankId,
+            delta: -amount,
+          });
+        }
       }
 
       // Se há reembolso, criar receivable em ambos os casos
@@ -514,6 +527,41 @@ export const ConfirmExpense = () => {
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {/* Bank Account Selector (for non-credit payments) */}
+            {paymentMethod && paymentMethod !== "credit" && bankAccounts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mb-5"
+              >
+                <label className="text-sm text-muted-foreground mb-3 block">
+                  Conta bancária (opcional)
+                </label>
+                <div className="space-y-2">
+                  {bankAccounts.map((account) => (
+                    <motion.button
+                      key={account.id}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedBankId(selectedBankId === account.id ? undefined : account.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
+                        selectedBankId === account.id
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card hover:bg-secondary"
+                      )}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                        <Banknote className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{account.bank_name}</p>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
               </motion.div>
             )}
           </FadeIn>

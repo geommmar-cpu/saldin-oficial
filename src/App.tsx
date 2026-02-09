@@ -42,6 +42,10 @@ import CreditCards from "./pages/CreditCards";
 import AddCreditCard from "./pages/AddCreditCard";
 import CreditCardDetail from "./pages/CreditCardDetail";
 import ImportStatement from "./pages/ImportStatement";
+import BankAccounts from "./pages/BankAccounts";
+import AddBankAccount from "./pages/AddBankAccount";
+import BankAccountDetail from "./pages/BankAccountDetail";
+import BankTransfer from "./pages/BankTransfer";
 import NotFound from "./pages/NotFound";
 import StyleGuide from "./pages/StyleGuide";
 import Categories from "./pages/Categories";
@@ -116,6 +120,12 @@ const App = () => (
           <Route path="/credit-cards" element={<OnboardingRoute><CreditCards /></OnboardingRoute>} />
           <Route path="/credit-cards/:id" element={<OnboardingRoute><CreditCardDetail /></OnboardingRoute>} />
           <Route path="/cards/import" element={<OnboardingRoute><ImportStatement /></OnboardingRoute>} />
+          
+          {/* Bank Accounts */}
+          <Route path="/banks" element={<OnboardingRoute><BankAccounts /></OnboardingRoute>} />
+          <Route path="/banks/add" element={<OnboardingRoute><AddBankAccount /></OnboardingRoute>} />
+          <Route path="/banks/:id" element={<OnboardingRoute><BankAccountDetail /></OnboardingRoute>} />
+          <Route path="/banks/transfer" element={<OnboardingRoute><BankTransfer /></OnboardingRoute>} />
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />

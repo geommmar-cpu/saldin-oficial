@@ -33,6 +33,7 @@ import { CreditCardSummary } from "@/components/home/CreditCardSummary";
 import { TransactionsSection } from "@/components/home/TransactionsSection";
 import { GoalsSummary } from "@/components/home/GoalsSummary";
 import { QuickActions } from "@/components/home/QuickActions";
+import { BankAccountsSummary } from "@/components/home/BankAccountsSummary";
 
 export const Home = () => {
   const navigate = useNavigate();
@@ -201,7 +202,12 @@ export const Home = () => {
               />
             </FadeIn>
 
-            {/* 4. METAS */}
+            {/* 4. CONTAS BANCÁRIAS */}
+            <FadeIn delay={0.13}>
+              <BankAccountsSummary />
+            </FadeIn>
+
+            {/* 5. METAS */}
             <FadeIn delay={0.14}>
               <GoalsSummary
                 goals={goals}

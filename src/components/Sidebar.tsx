@@ -35,6 +35,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { path: "/", icon: Home, label: "Home (Saldo)" },
   { path: "/history", icon: History, label: "Movimentações" },
+  { path: "/banks", icon: Building2, label: "Contas Bancárias" },
   { path: "/goals", icon: Target, label: "Metas", highlight: true },
   { path: "/overview", icon: Calendar, label: "Parcelas Futuras" },
   { path: "/debts", icon: CreditCard, label: "Dívidas" },

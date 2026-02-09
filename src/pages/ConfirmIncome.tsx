@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Check, RefreshCw, Zap, Loader2 } from "lucide-react";
 import { useCreateIncome } from "@/hooks/useIncomes";
+import { useBankAccounts, useUpdateBankBalance } from "@/hooks/useBankAccounts";
+import { BankAccountSelector } from "@/components/bank/BankAccountSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -34,12 +36,15 @@ export const ConfirmIncome = () => {
   const location = useLocation();
   const { user } = useAuth();
   const createIncome = useCreateIncome();
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const updateBankBalance = useUpdateBankBalance();
   
   const amount = location.state?.amount || 0;
   
   const [description, setDescription] = useState("");
   const [selectedType, setSelectedType] = useState<IncomeTypeDB | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedBankId, setSelectedBankId] = useState<string>("");
 
   const formattedAmount = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -65,7 +70,16 @@ export const ConfirmIncome = () => {
         description: description.trim(),
         type: selectedType,
         is_recurring: isRecurring,
-      });
+        bank_account_id: selectedBankId || undefined,
+      } as any);
+
+      // Update bank balance if selected
+      if (selectedBankId) {
+        await updateBankBalance.mutateAsync({
+          accountId: selectedBankId,
+          delta: amount,
+        });
+      }
       
       toast.success("Receita adicionada!");
       navigate("/");
@@ -198,6 +212,17 @@ export const ConfirmIncome = () => {
                 {isRecurring && <Check className="w-4 h-4 text-primary-foreground" />}
               </div>
             </motion.button>
+          </FadeIn>
+        )}
+
+        {/* Bank Account Selector */}
+        {bankAccounts.length > 0 && (
+          <FadeIn delay={0.4}>
+            <BankAccountSelector
+              selectedId={selectedBankId}
+              onSelect={(id) => setSelectedBankId(selectedBankId === id ? "" : id)}
+              label="Conta de destino (opcional)"
+            />
           </FadeIn>
         )}
       </main>
