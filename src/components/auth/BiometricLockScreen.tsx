@@ -67,7 +67,7 @@ export function BiometricLockScreen({
           {/* User greeting */}
           <div className="space-y-2">
             <h1 className="font-serif text-2xl font-semibold">
-              Olá{userName ? `, ${userName}` : " novamente"}!
+              Olá{userName ? `, ${userName.split(" ")[0]}` : " novamente"}!
             </h1>
           </div>
 
