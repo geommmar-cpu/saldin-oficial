@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
+  Users,
 } from "lucide-react";
 import { useGoals, useGoalStats } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
@@ -209,11 +210,19 @@ export default function Goals() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <h3 className="font-semibold truncate">{goal.name}</h3>
-                              {goal.status === 'completed' && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-essential/10 text-essential font-medium shrink-0">
-                                  ✓ Concluída
-                                </span>
-                              )}
+                              <div className="flex items-center gap-1 shrink-0">
+                                {goal.is_personal === false && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium flex items-center gap-1">
+                                    <Users className="w-3 h-3" />
+                                    Terceiro
+                                  </span>
+                                )}
+                                {goal.status === 'completed' && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-essential/10 text-essential font-medium">
+                                    ✓ Concluída
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             
                             <div className="flex items-baseline gap-1 mb-2">

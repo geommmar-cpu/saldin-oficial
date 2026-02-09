@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { FadeIn } from "@/components/ui/motion";
 import { 
   ArrowLeft, 
@@ -14,6 +15,7 @@ import {
   Calendar,
   Loader2,
   AlertTriangle,
+  Users,
 } from "lucide-react";
 import { useGoalById, useUpdateGoal } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,7 @@ export default function EditGoal() {
   const [notes, setNotes] = useState('');
   const [selectedColor, setSelectedColor] = useState('green');
   const [selectedIcon, setSelectedIcon] = useState('target');
+  const [isPersonal, setIsPersonal] = useState(true);
 
   useEffect(() => {
     if (goal) {
@@ -57,6 +60,7 @@ export default function EditGoal() {
       setNotes(goal.notes || '');
       setSelectedColor(goal.color || 'green');
       setSelectedIcon(goal.icon || 'target');
+      setIsPersonal(goal.is_personal !== false);
     }
   }, [goal]);
 
@@ -95,6 +99,7 @@ export default function EditGoal() {
       color: selectedColor,
       icon: selectedIcon,
       notes: notes.trim() || null,
+      is_personal: isPersonal,
       status: isCompleted ? 'completed' : 'in_progress',
     });
 
@@ -239,6 +244,29 @@ export default function EditGoal() {
               rows={3}
             />
           </div>
+        </FadeIn>
+
+        {/* Meta para outra pessoa */}
+        <FadeIn delay={0.28}>
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Meta para outra pessoa</p>
+                  <p className="text-xs text-muted-foreground">
+                    Não afeta seu saldo livre
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={!isPersonal}
+                onCheckedChange={(checked) => setIsPersonal(!checked)}
+              />
+            </div>
+          </Card>
         </FadeIn>
 
         {/* Submit Button */}

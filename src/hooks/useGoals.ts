@@ -102,8 +102,10 @@ export const useGoalStats = () => {
       }
 
       const goals = (data as unknown as Goal[]) || [];
-      const totalSaved = goals.reduce((sum, g) => sum + Number(g.current_amount), 0);
-      const totalTarget = goals.reduce((sum, g) => sum + Number(g.target_amount), 0);
+      // Only count personal goals for balance calculations
+      const personalGoals = goals.filter(g => g.is_personal !== false);
+      const totalSaved = personalGoals.reduce((sum, g) => sum + Number(g.current_amount), 0);
+      const totalTarget = personalGoals.reduce((sum, g) => sum + Number(g.target_amount), 0);
       const activeCount = goals.filter(g => g.status === 'in_progress').length;
       const completedCount = goals.filter(g => g.status === 'completed').length;
 
@@ -141,6 +143,7 @@ export const useCreateGoal = () => {
         color: goal.color || 'green',
         icon: goal.icon || 'target',
         notes: goal.notes || null,
+        is_personal: goal.is_personal !== undefined ? goal.is_personal : true,
         status: goal.status || 'in_progress',
       };
 

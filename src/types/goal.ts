@@ -10,6 +10,7 @@ export interface Goal {
   color: string | null;
   icon: string | null;
   notes: string | null;
+  is_personal: boolean;
   status: 'in_progress' | 'completed' | 'paused';
   created_at: string;
   updated_at: string;
@@ -23,6 +24,7 @@ export interface GoalInsert {
   color?: string | null;
   icon?: string | null;
   notes?: string | null;
+  is_personal?: boolean;
   status?: 'in_progress' | 'completed' | 'paused';
 }
 
@@ -34,6 +36,7 @@ export interface GoalUpdate {
   color?: string | null;
   icon?: string | null;
   notes?: string | null;
+  is_personal?: boolean;
   status?: 'in_progress' | 'completed' | 'paused';
 }
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { FadeIn } from "@/components/ui/motion";
 import { BottomNav } from "@/components/BottomNav";
 import { 
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Calendar,
   Loader2,
+  Users,
 } from "lucide-react";
 import { useCreateGoal } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
@@ -50,6 +52,7 @@ export default function AddGoal() {
   const [notes, setNotes] = useState('');
   const [selectedColor, setSelectedColor] = useState('green');
   const [selectedIcon, setSelectedIcon] = useState('target');
+  const [isPersonal, setIsPersonal] = useState(true);
 
   const targetAmount = parseCurrency(amount);
   const initialAmountNum = parseFloat(initialAmount.replace(',', '.')) || 0;
@@ -84,6 +87,7 @@ export default function AddGoal() {
       color: selectedColor,
       icon: selectedIcon,
       notes: notes.trim() || null,
+      is_personal: isPersonal,
       status: initialAmountNum >= targetAmount ? 'completed' : 'in_progress',
     });
 
@@ -313,6 +317,29 @@ export default function AddGoal() {
               rows={3}
             />
           </div>
+        </FadeIn>
+
+        {/* Meta para outra pessoa */}
+        <FadeIn delay={0.28}>
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Meta para outra pessoa</p>
+                  <p className="text-xs text-muted-foreground">
+                    Não afeta seu saldo livre
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={!isPersonal}
+                onCheckedChange={(checked) => setIsPersonal(!checked)}
+              />
+            </div>
+          </Card>
         </FadeIn>
 
         {/* Preview */}

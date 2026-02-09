@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Clock,
   History,
+  Users,
 } from "lucide-react";
 import {
   Dialog,
@@ -151,11 +152,18 @@ export default function GoalDetail() {
             </Button>
             <div>
               <h1 className="font-serif text-xl font-bold">{goal.name}</h1>
-              {isCompleted && (
-                <span className="text-xs text-essential flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Concluída
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {isCompleted && (
+                  <span className="text-xs text-essential flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Concluída
+                  </span>
+                )}
+                {goal.is_personal === false && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Users className="w-3 h-3" /> Para terceiro
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex gap-2">
@@ -342,7 +350,9 @@ export default function GoalDetail() {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Este valor será subtraído do seu Saldo Livre
+              {goal.is_personal !== false 
+                ? "Este valor será subtraído do seu Saldo Livre" 
+                : "Meta para terceiro — não afeta seu saldo"}
             </p>
           </div>
           <DialogFooter>
@@ -392,7 +402,9 @@ export default function GoalDetail() {
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-500 mt-1 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              Este valor voltará para seu Saldo Livre
+              {goal.is_personal !== false 
+                ? "Este valor voltará para seu Saldo Livre" 
+                : "Meta para terceiro — não afeta seu saldo"}
             </p>
           </div>
           <DialogFooter>
