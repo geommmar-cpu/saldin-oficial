@@ -46,6 +46,9 @@ import BankAccounts from "./pages/BankAccounts";
 import AddBankAccount from "./pages/AddBankAccount";
 import BankAccountDetail from "./pages/BankAccountDetail";
 import BankTransfer from "./pages/BankTransfer";
+import CryptoWallets from "./pages/CryptoWallets";
+import AddCryptoWallet from "./pages/AddCryptoWallet";
+import CryptoWalletDetail from "./pages/CryptoWalletDetail";
 import NotFound from "./pages/NotFound";
 import StyleGuide from "./pages/StyleGuide";
 import Categories from "./pages/Categories";
@@ -126,6 +129,11 @@ const App = () => (
           <Route path="/banks/add" element={<OnboardingRoute><AddBankAccount /></OnboardingRoute>} />
           <Route path="/banks/:id" element={<OnboardingRoute><BankAccountDetail /></OnboardingRoute>} />
           <Route path="/banks/transfer" element={<OnboardingRoute><BankTransfer /></OnboardingRoute>} />
+          
+          {/* Crypto Wallets */}
+          <Route path="/crypto" element={<OnboardingRoute><CryptoWallets /></OnboardingRoute>} />
+          <Route path="/crypto/add" element={<OnboardingRoute><AddCryptoWallet /></OnboardingRoute>} />
+          <Route path="/crypto/:id" element={<OnboardingRoute><CryptoWalletDetail /></OnboardingRoute>} />
           
           {/* Categories */}
           <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />

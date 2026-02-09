@@ -32,12 +32,15 @@ import { AlertsSection } from "@/components/home/AlertsSection";
 import { CreditCardSummary } from "@/components/home/CreditCardSummary";
 import { TransactionsSection } from "@/components/home/TransactionsSection";
 import { GoalsSummary } from "@/components/home/GoalsSummary";
-// QuickActions removed — Home now follows: Saldo > Bancos > Cartões > Metas > Alertas > Movimentações
+// QuickActions removed — Home now follows: Saldo > Bancos > Cripto > Cartões > Metas > Alertas > Movimentações
 import { BankAccountsSummary } from "@/components/home/BankAccountsSummary";
+import { CryptoSummary } from "@/components/home/CryptoSummary";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 export const Home = () => {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const { preferences } = useUserPreferences();
 
   // Fetch data
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -175,6 +178,13 @@ export const Home = () => {
             <FadeIn delay={0.08}>
               <BankAccountsSummary />
             </FadeIn>
+
+            {/* 2.5 CRIPTO */}
+            {preferences.cryptoEnabled && (
+              <FadeIn delay={0.09}>
+                <CryptoSummary />
+              </FadeIn>
+            )}
 
             {/* 3. CARTÃO DE CRÉDITO */}
             <FadeIn delay={0.10}>

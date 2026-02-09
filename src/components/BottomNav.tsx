@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import {
   Home,
   PlusCircle,
@@ -20,6 +21,7 @@ import {
   FileCheck,
   Upload,
   Clock,
+  Bitcoin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,23 +34,34 @@ const navItems = [
   { path: "#more", icon: MoreHorizontal, label: "Mais", isMore: true },
 ];
 
-const moreItems = [
-  { icon: CreditCard, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
-  { icon: Landmark, label: "Contas Bancárias", path: "/banks", desc: "Gerenciar contas e saldos" },
-  { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
-  { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
-  { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
-  { icon: Settings, label: "Configurações", path: "/settings", desc: "Conta e preferências" },
-  { icon: HelpCircle, label: "Ajuda", path: "/help", desc: "Dúvidas e suporte" },
-  { icon: FileCheck, label: "Termos de Uso", path: "/terms", desc: "Nossos termos" },
-  { icon: Shield, label: "Privacidade", path: "/privacy", desc: "Política de dados" },
-];
+// moreItems moved inside component to be reactive to preferences
 
 export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const { preferences } = useUserPreferences();
+
+  const moreItems = useMemo(() => {
+    const items = [
+      { icon: CreditCard, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
+      { icon: Landmark, label: "Contas Bancárias", path: "/banks", desc: "Gerenciar contas e saldos" },
+    ];
+    if (preferences.cryptoEnabled) {
+      items.push({ icon: Bitcoin, label: "Carteira Cripto", path: "/crypto", desc: "Investimentos em criptomoedas" });
+    }
+    items.push(
+      { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
+      { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
+      { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
+      { icon: Settings, label: "Configurações", path: "/settings", desc: "Conta e preferências" },
+      { icon: HelpCircle, label: "Ajuda", path: "/help", desc: "Dúvidas e suporte" },
+      { icon: FileCheck, label: "Termos de Uso", path: "/terms", desc: "Nossos termos" },
+      { icon: Shield, label: "Privacidade", path: "/privacy", desc: "Política de dados" },
+    );
+    return items;
+  }, [preferences.cryptoEnabled]);
 
   const handleFabClick = () => {
     setIsMoreOpen(false);

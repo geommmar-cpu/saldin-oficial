@@ -11,6 +11,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   onboardingCompleted: false,
   fixedIncome: 0,
   variableIncome: 0,
+  cryptoEnabled: false,
 };
 
 export function useUserPreferences() {

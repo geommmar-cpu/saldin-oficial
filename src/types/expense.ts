@@ -113,6 +113,7 @@ export interface UserPreferences {
   onboardingCompleted: boolean;
   fixedIncome?: number;
   variableIncome?: number;
+  cryptoEnabled: boolean;
 }
 
 // Alert types

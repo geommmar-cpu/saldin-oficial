@@ -37,7 +37,8 @@ import {
   Sun,
   Moon,
   Fingerprint,
-  Trash2
+  Trash2,
+  Bitcoin
 } from "lucide-react";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useAuth } from "@/hooks/useAuth";
@@ -307,6 +308,24 @@ export const Settings = () => {
                 <Switch
                   checked={preferences.darkMode}
                   onCheckedChange={(checked) => updatePreference("darkMode", checked)}
+                />
+              }
+            />
+          </SettingsSection>
+        </FadeIn>
+
+        {/* Funcionalidades Extras */}
+        <FadeIn delay={0.13}>
+          <SettingsSection title="Funcionalidades extras">
+            <SettingsItem
+              icon={Bitcoin}
+              iconColor={preferences.cryptoEnabled ? "text-[#F7931A]" : "text-muted-foreground"}
+              label="Carteira de criptomoedas"
+              description="Controle patrimonial de cripto"
+              action={
+                <Switch
+                  checked={preferences.cryptoEnabled}
+                  onCheckedChange={(checked) => updatePreference("cryptoEnabled", checked)}
                 />
               }
             />
