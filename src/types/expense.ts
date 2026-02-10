@@ -58,7 +58,7 @@ export interface Expense {
 }
 
 // Income types
-export type IncomeType = "fixed" | "variable";
+export type IncomeType = "fixed" | "variable" | "initial_balance";
 
 export type IncomeSource = "manual" | "whatsapp" | "bank";
 

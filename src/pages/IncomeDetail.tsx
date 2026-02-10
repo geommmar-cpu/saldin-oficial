@@ -17,6 +17,7 @@ const typeLabels: Record<string, string> = {
   freelance: "Freelance",
   investment: "Investimento",
   gift: "Presente",
+  initial_balance: "Saldo inicial",
   other: "Outros",
 };
 
