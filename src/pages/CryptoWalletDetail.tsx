@@ -6,8 +6,9 @@ import { BottomNav } from "@/components/BottomNav";
 import { FadeIn } from "@/components/ui/motion";
 import {
   ArrowLeft, Loader2, RefreshCw, TrendingUp, TrendingDown,
-  Edit2, Trash2, Plus, Minus, ArrowUpDown, Bitcoin, AlertTriangle
+  Edit2, Trash2, Plus, Minus, ArrowUpDown, Bitcoin, AlertTriangle, Banknote
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   useCryptoWalletById,
   useCryptoTransactions,
@@ -108,6 +109,12 @@ export const CryptoWalletDetail = () => {
     const qty = txComputedQuantity;
     if (!qty || qty <= 0) return;
 
+    // Bank account is required for deposit/withdraw
+    if (txType !== "adjustment" && (!txBankId || txBankId === "none")) {
+      toast.error("Selecione a conta de origem/destino");
+      return;
+    }
+
     if (txType === "withdraw" && qty > Number(wallet.quantity)) {
       return;
     }
@@ -118,7 +125,7 @@ export const CryptoWalletDetail = () => {
       quantity: txType === "adjustment" ? qty : qty,
       price_at_time: walletPrice,
       total_value: txType === "adjustment" ? null : txComputedValue,
-      bank_account_id: (txBankId && txBankId !== "none") ? txBankId : null,
+      bank_account_id: txType !== "adjustment" ? txBankId : null,
       notes: txNotes || null,
     });
 
@@ -388,30 +395,38 @@ export const CryptoWalletDetail = () => {
               </div>
             )}
 
-            {txType !== "adjustment" && bankAccounts.length > 0 && (
+            {txType !== "adjustment" && (
               <div>
                 <label className="text-sm text-muted-foreground mb-2 block">
-                  {txType === "deposit" ? "Banco de origem (opcional)" : "Banco de destino (opcional)"}
+                  {txType === "deposit" ? "Conta de origem *" : "Conta de destino *"}
                 </label>
-                <Select value={txBankId} onValueChange={setTxBankId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um banco..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {bankAccounts.map((bank) => (
-                      <SelectItem key={bank.id} value={bank.id}>
-                        {bank.bank_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {txType === "deposit"
-                    ? "Se selecionado, o valor será abatido do saldo do banco"
-                    : "Se selecionado, o valor será somado ao saldo do banco"
-                  }
-                </p>
+                {bankAccounts.length === 0 ? (
+                  <div className="flex items-center gap-2 text-sm text-warning p-3 rounded-xl bg-warning/10 border border-warning/20">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    Cadastre uma conta bancária antes de investir.
+                  </div>
+                ) : (
+                  <>
+                    <Select value={txBankId} onValueChange={setTxBankId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a conta..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankAccounts.map((bank) => (
+                          <SelectItem key={bank.id} value={bank.id}>
+                            {bank.bank_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {txType === "deposit"
+                        ? "O valor será transferido desta conta para a carteira cripto"
+                        : "O valor resgatado será devolvido a esta conta"
+                      }
+                    </p>
+                  </>
+                )}
               </div>
             )}
 
@@ -429,7 +444,7 @@ export const CryptoWalletDetail = () => {
               variant="warm"
               className="w-full"
               onClick={handleSubmitTx}
-              disabled={createTransaction.isPending || txComputedQuantity <= 0}
+              disabled={createTransaction.isPending || txComputedQuantity <= 0 || (txType !== "adjustment" && (!txBankId || txBankId === "none" || bankAccounts.length === 0))}
             >
               {createTransaction.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

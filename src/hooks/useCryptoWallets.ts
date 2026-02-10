@@ -114,12 +114,52 @@ export const useDeleteCryptoWallet = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      // 1. Fetch all transactions to reverse bank impacts
+      const { data: txs } = await db
+        .from("crypto_transactions")
+        .select("type, total_value, bank_account_id")
+        .eq("wallet_id", id);
+
+      if (txs && txs.length > 0) {
+        // Group reversals by bank_account_id
+        const reversals: Record<string, number> = {};
+        for (const tx of txs) {
+          if (!tx.bank_account_id || !tx.total_value) continue;
+          const val = Number(tx.total_value);
+          // Reverse: deposit had deducted from bank, so add back; withdraw had added, so deduct
+          const delta = tx.type === "deposit" ? val : tx.type === "withdraw" ? -val : 0;
+          if (delta !== 0) {
+            reversals[tx.bank_account_id] = (reversals[tx.bank_account_id] || 0) + delta;
+          }
+        }
+
+        // Apply reversals
+        for (const [bankId, delta] of Object.entries(reversals)) {
+          const { data: bank } = await db
+            .from("bank_accounts")
+            .select("current_balance")
+            .eq("id", bankId)
+            .maybeSingle();
+          if (bank) {
+            await db
+              .from("bank_accounts")
+              .update({
+                current_balance: Number(bank.current_balance) + delta,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", bankId);
+          }
+        }
+      }
+
+      // 2. Delete transactions then wallet
       await db.from("crypto_transactions").delete().eq("wallet_id", id);
       const { error } = await db.from("crypto_wallets").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["crypto-wallets"] });
+      qc.invalidateQueries({ queryKey: ["bank-accounts"] });
       toast.success("Carteira removida!");
     },
     onError: () => toast.error("Erro ao remover"),

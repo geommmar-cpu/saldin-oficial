@@ -6,17 +6,29 @@ import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Check, Loader2, Bitcoin, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCreateCryptoWallet } from "@/hooks/useCryptoWallets";
+import { useCreateCryptoWallet, useCreateCryptoTransaction } from "@/hooks/useCryptoWallets";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { CRYPTO_LIST } from "@/types/cryptoWallet";
 import { fetchCryptoPrices, formatCryptoValue, formatCryptoQuantity } from "@/lib/cryptoPrices";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 type InputMode = "brl" | "quantity";
 
 export const AddCryptoWallet = () => {
   const navigate = useNavigate();
   const createWallet = useCreateCryptoWallet();
+  const createTransaction = useCreateCryptoTransaction();
+  const { data: bankAccounts = [] } = useBankAccounts();
 
   const [selectedCrypto, setSelectedCrypto] = useState<string>("");
+  const [selectedBankId, setSelectedBankId] = useState<string>("");
   const [customName, setCustomName] = useState("");
   const [customSymbol, setCustomSymbol] = useState("");
   const [customCoinGeckoId, setCustomCoinGeckoId] = useState("");
@@ -72,19 +84,39 @@ export const AddCryptoWallet = () => {
     ? rawValue * currentPrice
     : inputMode === "brl" ? rawValue : 0;
 
-  const canSave = name.trim().length > 0 && symbol.trim().length > 0 && computedQuantity > 0;
+  const hasInitialValue = computedQuantity > 0;
+  const canSave = name.trim().length > 0 && symbol.trim().length > 0 
+    && (!hasInitialValue || (selectedBankId && selectedBankId !== "none"));
 
   const handleSave = async () => {
     if (!canSave) return;
 
-    await createWallet.mutateAsync({
+    if (hasInitialValue && (!selectedBankId || selectedBankId === "none")) {
+      toast.error("Selecione a conta de origem para o investimento");
+      return;
+    }
+
+    const wallet = await createWallet.mutateAsync({
       crypto_id: cryptoId || symbol.toLowerCase(),
       symbol: symbol.trim(),
       name: name.trim(),
-      quantity: computedQuantity,
+      quantity: 0, // Start at 0, transaction will add
       display_currency: displayCurrency,
       active: true,
     });
+
+    // If there's an initial deposit, create a transaction to handle bank transfer
+    if (hasInitialValue && wallet) {
+      await createTransaction.mutateAsync({
+        wallet_id: wallet.id,
+        type: "deposit",
+        quantity: computedQuantity,
+        price_at_time: currentPrice || 0,
+        total_value: computedValue,
+        bank_account_id: selectedBankId,
+        notes: "Aporte inicial",
+      });
+    }
 
     navigate("/crypto");
   };
@@ -274,6 +306,37 @@ export const AddCryptoWallet = () => {
               </FadeIn>
             )}
           </>
+        )}
+
+        {/* Bank account selector for initial deposit */}
+        {showCryptoSelected && hasInitialValue && (
+          <FadeIn delay={0.08} className="mb-6">
+            <label className="text-sm text-muted-foreground mb-2 block">Conta de origem *</label>
+            {bankAccounts.length === 0 ? (
+              <div className="flex items-center gap-2 text-sm text-warning p-3 rounded-xl bg-warning/10 border border-warning/20">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                Cadastre uma conta bancária antes de investir.
+              </div>
+            ) : (
+              <>
+                <Select value={selectedBankId} onValueChange={setSelectedBankId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a conta..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bankAccounts.map((bank) => (
+                      <SelectItem key={bank.id} value={bank.id}>
+                        {bank.bank_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  O valor será transferido desta conta para a carteira cripto
+                </p>
+              </>
+            )}
+          </FadeIn>
         )}
 
         {/* Display currency */}
