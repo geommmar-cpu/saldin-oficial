@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parseLocalDate } from "@/lib/dateUtils";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/ui/motion";
@@ -140,7 +141,7 @@ export const IncomeDetail = () => {
               <div>
                 <p className="text-xs text-muted-foreground">Data</p>
                 <p className="text-sm font-medium">
-                  {format(new Date(income.date || income.created_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  {format(income.date ? parseLocalDate(income.date) : new Date(income.created_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 </p>
               </div>
             </div>

@@ -3,7 +3,7 @@
 
 import { ExpenseRow } from "@/hooks/useExpenses";
 import { startOfMonth, endOfMonth, addMonths, isWithinInterval, isBefore } from "date-fns";
-import { toLocalDateString } from "@/lib/dateUtils";
+import { toLocalDateString, parseLocalDate } from "@/lib/dateUtils";
 
 /**
  * Filtra gastos para um mês, incluindo parcelas futuras de gastos parcelados.
@@ -23,7 +23,7 @@ export function getExpensesForMonth(
   const result: ExpenseRow[] = [];
 
   expenses.forEach(expense => {
-    const expenseDate = new Date(expense.date || expense.created_at);
+    const expenseDate = expense.date ? parseLocalDate(expense.date) : new Date(expense.created_at);
     const expenseMonthStart = startOfMonth(expenseDate);
 
     if (expense.is_installment && expense.total_installments && expense.total_installments > 1) {

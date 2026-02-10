@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { parseLocalDate } from "@/lib/dateUtils";
 import logoSaldin from "@/assets/logo-saldin-final.png";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -72,7 +73,7 @@ export const Home = () => {
   // Filter incomes by month (including recurring)
   const filteredIncomes = useMemo(() => {
     return incomes.filter(income => {
-      const incomeDate = new Date(income.date || income.created_at);
+      const incomeDate = income.date ? parseLocalDate(income.date) : new Date(income.created_at);
       if (income.is_recurring) {
         return !isBefore(monthStart, startOfMonth(incomeDate));
       }
@@ -83,7 +84,7 @@ export const Home = () => {
   // Filter receivables by due date
   const filteredReceivables = useMemo(() => {
     return receivables.filter(r => {
-      const dueDate = r.due_date ? new Date(r.due_date) : null;
+      const dueDate = r.due_date ? parseLocalDate(r.due_date) : null;
       return dueDate ? isWithinInterval(dueDate, { start: monthStart, end: monthEnd }) : false;
     });
   }, [receivables, monthStart, monthEnd]);

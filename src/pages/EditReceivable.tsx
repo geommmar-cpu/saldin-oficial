@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { toLocalDateString } from "@/lib/dateUtils";
+import { toLocalDateString, parseLocalDate } from "@/lib/dateUtils";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ export const EditReceivable = () => {
       setDebtorName(receivable.debtor_name || "");
       setAmount(formatCurrency(Number(receivable.amount), false));
       setDescription(receivable.description || "");
-      if (receivable.due_date) setDueDate(new Date(receivable.due_date));
+      if (receivable.due_date) setDueDate(parseLocalDate(receivable.due_date));
     }
   }, [receivable]);
 

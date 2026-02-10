@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format, startOfMonth, endOfMonth, isWithinInterval, isBefore, subMonths, addMonths } from "date-fns";
 import { getExpensesForMonth } from "@/lib/recurringExpenses";
 import { ptBR } from "date-fns/locale";
+import { parseLocalDate } from "@/lib/dateUtils";
 import { useExpenses, ExpenseRow } from "@/hooks/useExpenses";
 import { useIncomes, IncomeRow } from "@/hooks/useIncomes";
 import { useDebts, DebtRow } from "@/hooks/useDebts";
@@ -214,7 +215,7 @@ export const History = () => {
     // Add expenses — filter by month (including installments projected to future months)
     const filteredExpenses = getExpensesForMonth(expenses, selectedMonth);
     filteredExpenses.forEach((expense: ExpenseRow) => {
-      const expDate = new Date(expense.date || expense.created_at);
+      const expDate = expense.date ? parseLocalDate(expense.date) : new Date(expense.created_at);
       const installmentLabel = expense.is_installment && expense.total_installments && expense.total_installments > 1
         ? ` (${expense.installment_number}/${expense.total_installments}x)`
         : "";
@@ -232,7 +233,7 @@ export const History = () => {
 
     // Add incomes — filter by month (including recurring)
     incomes.forEach((income: IncomeRow) => {
-      const incomeDate = new Date(income.date || income.created_at);
+      const incomeDate = income.date ? parseLocalDate(income.date) : new Date(income.created_at);
       const isRecurring = income.is_recurring;
       if (isRecurring) {
         if (isBefore(monthStart, startOfMonth(incomeDate))) return;
@@ -273,7 +274,7 @@ export const History = () => {
       const purchase = inst.purchase;
       const card = purchase?.card;
       const refMonth = inst.reference_month
-        ? format(new Date(inst.reference_month), "MMM/yy", { locale: ptBR })
+        ? format(parseLocalDate(inst.reference_month), "MMM/yy", { locale: ptBR })
         : undefined;
 
       items.push({
@@ -285,7 +286,7 @@ export const History = () => {
         invoiceMonth: refMonth,
         source: "manual" as const,
         pending: inst.status === "open",
-        createdAt: new Date(purchase?.purchase_date || inst.created_at),
+        createdAt: purchase?.purchase_date ? parseLocalDate(purchase.purchase_date) : new Date(inst.created_at),
       });
     });
 

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { parseLocalDate } from "@/lib/dateUtils";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
@@ -47,7 +48,7 @@ const Receivables = () => {
   // Filter receivables by due date in selected month
   const receivables = useMemo(() => {
     return allReceivables.filter(receivable => {
-      const dueDate = receivable.due_date ? new Date(receivable.due_date) : null;
+      const dueDate = receivable.due_date ? parseLocalDate(receivable.due_date) : null;
       if (!dueDate) return false;
       return isWithinInterval(dueDate, { start: monthStart, end: monthEnd });
     });
@@ -78,7 +79,7 @@ const Receivables = () => {
 
   const totalPending = pendingReceivables.reduce((sum, r) => sum + Number(r.amount), 0);
   const overdueCount = pendingReceivables.filter(r => {
-    const dueDate = r.due_date ? new Date(r.due_date) : null;
+    const dueDate = r.due_date ? parseLocalDate(r.due_date) : null;
     return dueDate && dueDate < new Date();
   }).length;
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { parseLocalDate } from "@/lib/dateUtils";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
@@ -69,12 +70,12 @@ export const Insights = () => {
     
     // Filter expenses by month
     const thisMonthExpenses = expenses.filter(e => {
-      const date = new Date(e.date || e.created_at);
+      const date = e.date ? parseLocalDate(e.date) : new Date(e.created_at);
       return isWithinInterval(date, { start: currentMonthStart, end: currentMonthEnd });
     });
     
     const lastMonthExpenses = expenses.filter(e => {
-      const date = new Date(e.date || e.created_at);
+      const date = e.date ? parseLocalDate(e.date) : new Date(e.created_at);
       return isWithinInterval(date, { start: lastMonthStart, end: lastMonthEnd });
     });
     
@@ -84,7 +85,7 @@ export const Insights = () => {
     
     // Filter incomes
     const thisMonthIncomes = incomes.filter(i => {
-      const date = new Date(i.date || i.created_at);
+      const date = i.date ? parseLocalDate(i.date) : new Date(i.created_at);
       return isWithinInterval(date, { start: currentMonthStart, end: currentMonthEnd }) || i.is_recurring;
     });
     const totalIncome = thisMonthIncomes.reduce((sum, i) => sum + Number(i.amount), 0);

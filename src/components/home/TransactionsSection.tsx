@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/balanceCalculations";
 import { format, isToday, isThisWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseLocalDate } from "@/lib/dateUtils";
 import type { ExpenseRow } from "@/hooks/useExpenses";
 import type { IncomeRow } from "@/hooks/useIncomes";
 import type { DebtRow } from "@/hooks/useDebts";
@@ -57,7 +58,7 @@ export const TransactionsSection = ({
         type: "expense",
         amount: Number(e.amount),
         description: `${e.description}${installmentLabel}`,
-        date: new Date(e.date || e.created_at),
+        date: e.date ? parseLocalDate(e.date) : new Date(e.created_at),
         icon: Receipt,
         color: "text-impulse",
       });
@@ -67,9 +68,10 @@ export const TransactionsSection = ({
     incomes.forEach(i => {
       const paymentDayMatch = i.notes?.match(/payment_day:(\d+)/);
       const paymentDay = paymentDayMatch ? Number(paymentDayMatch[1]) : null;
+      const incomeDate = i.date ? parseLocalDate(i.date) : new Date(i.created_at);
       const displayDate = i.is_recurring
-        ? new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), new Date(i.date || i.created_at).getDate())
-        : new Date(i.date || i.created_at);
+        ? new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), incomeDate.getDate())
+        : incomeDate;
       const isFuture = i.is_recurring && paymentDay ? displayDate > new Date() : false;
       items.push({
         id: i.id,
@@ -106,7 +108,7 @@ export const TransactionsSection = ({
         type: "receivable",
         amount: Number(r.amount),
         description: `${r.debtor_name}${r.description ? ` · ${r.description}` : ''}`,
-        date: new Date(r.due_date || r.created_at),
+        date: r.due_date ? parseLocalDate(r.due_date) : new Date(r.created_at),
         icon: HandCoins,
         color: "text-essential",
       });
