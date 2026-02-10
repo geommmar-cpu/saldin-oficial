@@ -106,7 +106,7 @@ export const Debts = () => {
                 {activeDebts.length} ativa{activeDebts.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <p className="font-serif text-3xl font-semibold text-impulse">
+            <p className="font-serif text-2xl font-semibold text-impulse">
               {formatCurrency(totalMonthlyCommitment)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">

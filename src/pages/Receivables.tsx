@@ -95,20 +95,17 @@ const Receivables = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
-        <div className="pt-4 pb-4">
-          <FadeIn>
-            <div className="flex items-center gap-3 mb-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => navigate("/")}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h1 className="font-serif text-2xl font-semibold">A Receber</h1>
-            </div>
-          </FadeIn>
+        <div className="pt-4 pb-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="font-serif text-xl font-semibold">A Receber</h1>
+          </div>
+          <Button variant="warm" size="sm" className="gap-1" onClick={() => navigate("/receivables/add")}>
+            <Plus className="w-4 h-4" />
+            Nova
+          </Button>
         </div>
       </header>
 
@@ -117,12 +114,12 @@ const Receivables = () => {
         <FadeIn delay={0.05}>
           <Card className="p-5">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-essential/15 flex items-center justify-center">
-                <HandCoins className="w-7 h-7 text-essential" />
+              <div className="w-10 h-10 rounded-full bg-essential/15 flex items-center justify-center">
+                <HandCoins className="w-5 h-5 text-essential" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Total a receber</p>
-                <p className="font-serif text-3xl font-semibold text-essential">
+                <p className="font-serif text-2xl font-semibold text-essential">
                   {formatCurrency(totalPending)}
                 </p>
               </div>
@@ -142,16 +139,8 @@ const Receivables = () => {
           </Card>
         </FadeIn>
 
-        {/* Add Button */}
-        <FadeIn delay={0.1}>
-          <Button
-            className="w-full h-12"
-            onClick={() => navigate("/receivables/add")}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Adicionar valor a receber
-          </Button>
-        </FadeIn>
+        {/* Separator */}
+        <div className="h-px bg-border" />
 
         {/* Receivables List */}
         <FadeIn delay={0.15}>

@@ -54,7 +54,7 @@ export const BankAccounts = () => {
           <FadeIn>
             <div className="p-5 rounded-2xl bg-card border border-border shadow-medium text-center">
               <p className="text-sm text-muted-foreground mb-1">Saldo total em contas</p>
-              <p className="font-serif text-3xl font-bold">{formatCurrency(totalBalance)}</p>
+              <p className="font-serif text-2xl font-semibold">{formatCurrency(totalBalance)}</p>
             </div>
           </FadeIn>
         )}

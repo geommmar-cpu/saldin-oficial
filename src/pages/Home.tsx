@@ -142,8 +142,8 @@ export const Home = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="px-5 pt-safe-top bg-background sticky top-0 z-10 border-b border-border">
-        <div className="pt-3 pb-2 flex items-center justify-between">
+      <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
+        <div className="pt-4 pb-3 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center">
             <img src={logoSaldin} alt="Saldin" className="h-10 object-contain" />
           </button>

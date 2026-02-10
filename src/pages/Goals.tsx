@@ -72,11 +72,11 @@ export default function Goals() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="px-5 pt-safe-top bg-background sticky top-0 z-10 border-b border-border">
-        <div className="py-4 flex items-center justify-between">
+      <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
+        <div className="pt-4 pb-3 flex items-center justify-between">
           <FadeIn>
             <div>
-              <h1 className="font-serif text-2xl font-bold">Metas</h1>
+              <h1 className="font-serif text-xl font-semibold">Metas</h1>
               <p className="text-sm text-muted-foreground">
                 Organize seu dinheiro em caixinhas
               </p>
@@ -103,7 +103,7 @@ export default function Goals() {
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Total guardado</p>
-                <p className="font-serif text-2xl font-bold text-essential">
+                <p className="font-serif text-2xl font-semibold text-essential">
                   {formatCurrency(stats?.totalSaved || 0)}
                 </p>
               </div>

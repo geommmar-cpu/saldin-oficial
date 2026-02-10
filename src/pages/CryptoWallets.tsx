@@ -70,7 +70,7 @@ export const CryptoWallets = () => {
           <FadeIn>
             <div className="p-5 rounded-2xl bg-card border border-border shadow-medium text-center">
               <p className="text-sm text-muted-foreground mb-1">Valor total em cripto</p>
-              <p className="font-serif text-3xl font-bold">{formatCryptoValue(totalValue)}</p>
+              <p className="font-serif text-2xl font-semibold">{formatCryptoValue(totalValue)}</p>
             </div>
           </FadeIn>
         )}
