@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/balanceCalculations";
@@ -17,7 +16,7 @@ export const MonthlyResult = ({ totalIncome, totalSpent }: MonthlyResultProps) =
   if (hasNoData) return null;
 
   return (
-    <div className="p-4 rounded-2xl bg-card border border-border shadow-medium space-y-3">
+    <div className="p-4 rounded-2xl bg-card border border-border shadow-soft space-y-3">
       <p className="text-sm font-medium text-muted-foreground">Resultado do mês</p>
 
       {/* Income & Expenses rows */}
@@ -29,7 +28,7 @@ export const MonthlyResult = ({ totalIncome, totalSpent }: MonthlyResultProps) =
             </div>
             <span className="text-sm">Receitas</span>
           </div>
-          <span className="text-sm font-semibold text-essential">
+          <span className="text-sm font-semibold text-essential tabular-nums">
             + {formatCurrency(totalIncome)}
           </span>
         </div>
@@ -41,17 +40,17 @@ export const MonthlyResult = ({ totalIncome, totalSpent }: MonthlyResultProps) =
             </div>
             <span className="text-sm">Gastos</span>
           </div>
-          <span className="text-sm font-semibold">
+          <span className="text-sm font-semibold tabular-nums">
             − {formatCurrency(totalSpent)}
           </span>
         </div>
       </div>
 
       {/* Divider + Result */}
-      <div className="pt-2 border-t border-border">
+      <div className="pt-3 border-t border-border">
         {hasNoIncome ? (
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-impulse" />
+            <AlertTriangle className="w-4 h-4 text-impulse shrink-0" />
             <p className="text-xs text-impulse">
               Você ainda não registrou receitas neste mês
             </p>
@@ -60,32 +59,28 @@ export const MonthlyResult = ({ totalIncome, totalSpent }: MonthlyResultProps) =
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-impulse" />
-                <p className="text-xs text-impulse font-medium">
-                  Você gastou {formatCurrency(Math.abs(resultado))} a mais do que ganhou
-                </p>
+                <AlertTriangle className="w-4 h-4 text-impulse shrink-0" />
+                <p className="text-sm text-impulse font-medium">Déficit no mês</p>
               </div>
-              <span className="text-sm font-bold text-impulse">
-                {formatCurrency(resultado)}
+              <span className="font-serif text-lg font-bold text-impulse tabular-nums">
+                − {formatCurrency(Math.abs(resultado))}
               </span>
             </div>
-            <p className="text-xs text-impulse/80 pl-6">
+            <p className="text-xs text-muted-foreground pl-6">
               {Math.abs(resultado) > 2000
-                ? "Seus gastos estão muito acima da receita. Considere cortar despesas imediatamente."
+                ? "Gastos muito acima da receita. Considere cortar despesas."
                 : Math.abs(resultado) > 500
-                  ? "Cuidado: o déficit está crescendo. Reavalie suas prioridades este mês."
-                  : "Fique atento para não aumentar essa diferença até o fim do mês."}
+                  ? "Cuidado: o déficit está crescendo. Reavalie prioridades."
+                  : "Fique atento para não aumentar essa diferença."}
             </p>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-essential" />
-              <p className="text-xs text-essential">
-                Você está dentro do orçamento este mês
-              </p>
+              <CheckCircle className="w-4 h-4 text-essential shrink-0" />
+              <p className="text-sm text-essential font-medium">Dentro do orçamento</p>
             </div>
-            <span className="text-sm font-bold text-essential">
+            <span className="font-serif text-lg font-bold text-essential tabular-nums">
               + {formatCurrency(resultado)}
             </span>
           </div>
