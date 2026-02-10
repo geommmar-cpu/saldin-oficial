@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Coins, ChevronDown, ChevronUp, Wallet, Lock, PiggyBank, Info, CreditCard, Bitcoin, TrendingUp, AlertTriangle } from "lucide-react";
+import { Coins, ChevronDown, ChevronUp, Wallet, Lock, PiggyBank, Info, CreditCard, Bitcoin, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BalanceBreakdown, formatCurrency } from "@/lib/balanceCalculations";
 import {
@@ -11,19 +11,12 @@ import {
 
 interface BalanceHeroProps {
   balance: BalanceBreakdown;
-  totalIncome: number;
-  totalSpent: number;
   cryptoTotal?: number;
   cryptoEnabled?: boolean;
 }
 
-export const BalanceHero = ({ balance, totalIncome, totalSpent, cryptoTotal = 0, cryptoEnabled = false }: BalanceHeroProps) => {
+export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }: BalanceHeroProps) => {
   const [expanded, setExpanded] = useState(false);
-  const totalCompromised = totalSpent + balance.saldoComprometido + balance.saldoGuardado;
-  const usagePercentage = totalIncome > 0 ? (totalCompromised / totalIncome) * 100 : 0;
-  const isOverBudget = usagePercentage > 100;
-  const hasNoIncome = totalIncome === 0 && totalSpent > 0;
-  const excessAmount = totalCompromised - totalIncome;
   const patrimonioTotal = balance.saldoBruto + cryptoTotal;
 
   return (
@@ -63,44 +56,6 @@ export const BalanceHero = ({ balance, totalIncome, totalSpent, cryptoTotal = 0,
           ? "Disponível para gastar"
           : "Você está no vermelho"}
       </p>
-
-      {/* Usage bar */}
-      {(totalIncome > 0 || hasNoIncome) && (
-        <div className="mt-4">
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: hasNoIncome ? "100%" : `${Math.min(usagePercentage, 100)}%` }}
-              transition={{ duration: 0.6 }}
-              className={cn(
-                "h-full rounded-full",
-                (isOverBudget || hasNoIncome) ? "bg-impulse" :
-                usagePercentage > 80 ? "bg-pleasure" :
-                "bg-essential"
-              )}
-            />
-          </div>
-          {hasNoIncome ? (
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-impulse" />
-              <p className="text-xs text-impulse">
-                Você ainda não registrou receitas neste mês
-              </p>
-            </div>
-          ) : isOverBudget ? (
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-impulse" />
-              <p className="text-xs text-impulse">
-                Você comprometeu {formatCurrency(excessAmount)} a mais do que ganhou este mês
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground mt-1">
-              {Math.round(usagePercentage)}% da receita utilizada
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Expand toggle */}
       <button

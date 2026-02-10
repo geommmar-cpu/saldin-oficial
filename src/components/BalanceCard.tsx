@@ -1,35 +1,22 @@
  // Componente de Saldo com os 3 tipos: Bruto, Comprometido e Livre
  
- import { motion } from "framer-motion";
- import { Wallet, Lock, Coins, ChevronDown, ChevronUp, Info, AlertTriangle } from "lucide-react";
- import { cn } from "@/lib/utils";
- import { useState } from "react";
- import { BalanceBreakdown, formatCurrency } from "@/lib/balanceCalculations";
- import {
-   Tooltip,
-   TooltipContent,
-   TooltipTrigger,
- } from "@/components/ui/tooltip";
+import { motion } from "framer-motion";
+import { Wallet, Lock, Coins, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { BalanceBreakdown, formatCurrency } from "@/lib/balanceCalculations";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface BalanceCardProps {
+  balance: BalanceBreakdown;
+}
  
- interface BalanceCardProps {
-   balance: BalanceBreakdown;
-   totalIncome: number;
-   totalSpent: number;
- }
- 
- export const BalanceCard = ({ balance, totalIncome, totalSpent }: BalanceCardProps) => {
-   const [expanded, setExpanded] = useState(false);
-   
-    const usagePercentage = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
-    const isOverBudget = usagePercentage > 100;
-    const hasNoIncome = totalIncome === 0 && totalSpent > 0;
-    const excessAmount = totalSpent - totalIncome;
-    
-    const getProgressColor = () => {
-      if (isOverBudget || hasNoIncome) return "bg-impulse";
-      if (usagePercentage > 80) return "bg-pleasure";
-      return "bg-essential";
-    };
+export const BalanceCard = ({ balance }: BalanceCardProps) => {
+    const [expanded, setExpanded] = useState(false);
  
    return (
      <div className="space-y-3">
@@ -63,40 +50,7 @@
            {formatCurrency(balance.saldoLivre)}
          </p>
          
-          {/* Progress bar */}
-          {(totalIncome > 0 || hasNoIncome) && (
-            <div className="mt-3">
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: hasNoIncome ? "100%" : `${Math.min(usagePercentage, 100)}%` }}
-                  transition={{ duration: 0.6 }}
-                  className={cn("h-full rounded-full", getProgressColor())}
-                />
-              </div>
-              {hasNoIncome ? (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-impulse" />
-                  <p className="text-xs text-impulse">
-                    Você ainda não registrou receitas neste mês
-                  </p>
-                </div>
-              ) : isOverBudget ? (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-impulse" />
-                  <p className="text-xs text-impulse">
-                    Você gastou {formatCurrency(excessAmount)} a mais do que ganhou este mês
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {Math.round(usagePercentage)}% da receita utilizada
-                </p>
-              )}
-            </div>
-          )}
-         
-         {/* Expand toggle */}
+          {/* Expand toggle */}
          <button 
            onClick={() => setExpanded(!expanded)}
            className="w-full mt-3 pt-3 border-t border-border flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
