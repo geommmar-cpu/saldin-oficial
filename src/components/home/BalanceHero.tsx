@@ -176,30 +176,13 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }:
               </div>
             )}
 
-            {/* Breakdown */}
-            <div className="p-3 rounded-xl bg-muted/50 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Receitas do mês</span>
-                <span className="text-essential">+ {formatCurrency(balance.detalhes.receitasTotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Gastos do mês</span>
-                <span>− {formatCurrency(balance.detalhes.gastosTotal)}</span>
-              </div>
-              {balance.detalhes.dividasAtivas > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Dívidas ativas</span>
-                  <span className="text-impulse">− {formatCurrency(balance.detalhes.dividasAtivas)}</span>
-                </div>
-              )}
-              {(balance.saldoComprometido - balance.detalhes.dividasAtivas) > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <CreditCard className="w-3.5 h-3.5" /> Parcelas cartão
-                  </span>
-                  <span className="text-obligation">− {formatCurrency(balance.saldoComprometido - balance.detalhes.dividasAtivas - balance.detalhes.valoresParaTerceiros)}</span>
-                </div>
-              )}
+            {/* Explicação do saldo */}
+            <div className="p-3 rounded-xl bg-muted/50">
+              <p className="text-xs text-muted-foreground">
+                Saldo Livre = Saldo Bruto nas contas
+                {balance.saldoComprometido > 0 ? " − Compromissos (dívidas/parcelas)" : ""}
+                {balance.saldoGuardado > 0 ? " − Guardado em metas" : ""}
+              </p>
             </div>
           </motion.div>
         )}
