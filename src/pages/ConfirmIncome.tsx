@@ -4,12 +4,19 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, Check, RefreshCw, Zap, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, RefreshCw, Zap, Loader2, CalendarClock, Info } from "lucide-react";
 import { useCreateIncome } from "@/hooks/useIncomes";
 import { useBankAccounts, useUpdateBankBalance } from "@/hooks/useBankAccounts";
 import { BankAccountSelector } from "@/components/bank/BankAccountSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Map to database income_type enum
 type IncomeTypeDB = "salary" | "freelance" | "investment" | "gift" | "other";
@@ -31,6 +38,17 @@ const incomeTypes: { id: IncomeTypeDB; label: string; description: string; icon:
   },
 ];
 
+const paymentDays = Array.from({ length: 31 }, (_, i) => i + 1);
+
+function getNextPaymentDate(day: number): Date {
+  const now = new Date();
+  const target = new Date(now.getFullYear(), now.getMonth(), day);
+  if (target <= now) {
+    target.setMonth(target.getMonth() + 1);
+  }
+  return target;
+}
+
 export const ConfirmIncome = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,6 +63,7 @@ export const ConfirmIncome = () => {
   const [selectedType, setSelectedType] = useState<IncomeTypeDB | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [selectedBankId, setSelectedBankId] = useState<string>("");
+  const [paymentDay, setPaymentDay] = useState<string>("");
 
   const formattedAmount = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -54,7 +73,13 @@ export const ConfirmIncome = () => {
   const handleTypeSelect = (typeId: IncomeTypeDB, recurring: boolean) => {
     setSelectedType(typeId);
     setIsRecurring(recurring);
+    if (!recurring) {
+      setPaymentDay("");
+    }
   };
+
+  // Check if payment date is today or past (within the month)
+  const isFutureIncome = isRecurring && paymentDay ? getNextPaymentDate(Number(paymentDay)) > new Date() : false;
 
   const handleSave = async () => {
     if (!user) return;
@@ -64,24 +89,41 @@ export const ConfirmIncome = () => {
       return;
     }
 
+    if (isRecurring && !paymentDay) {
+      toast.error("Informe o dia do recebimento");
+      return;
+    }
+
     try {
+      // Calculate income date
+      let incomeDate: string | undefined;
+      if (isRecurring && paymentDay) {
+        const nextDate = getNextPaymentDate(Number(paymentDay));
+        incomeDate = nextDate.toISOString().split("T")[0];
+      }
+
       await createIncome.mutateAsync({
         amount,
         description: description.trim(),
         type: selectedType,
         is_recurring: isRecurring,
         bank_account_id: selectedBankId || undefined,
+        ...(incomeDate ? { date: incomeDate } : {}),
+        ...(paymentDay ? { notes: `payment_day:${paymentDay}` } : {}),
       } as any);
 
-      // Update bank balance if selected
-      if (selectedBankId) {
+      // Only update bank balance for non-future incomes
+      if (selectedBankId && !isFutureIncome) {
         await updateBankBalance.mutateAsync({
           accountId: selectedBankId,
           delta: amount,
         });
       }
       
-      toast.success("Receita adicionada!");
+      toast.success(isFutureIncome 
+        ? "Receita agendada! Será registrada no dia do recebimento." 
+        : "Receita adicionada!"
+      );
       navigate("/");
     } catch (error) {
       console.error("Failed to save income:", error);
@@ -89,7 +131,7 @@ export const ConfirmIncome = () => {
     }
   };
 
-  const canSave = amount > 0 && description.trim() && selectedType && (bankAccounts.length === 0 || selectedBankId) && !createIncome.isPending;
+  const canSave = amount > 0 && description.trim() && selectedType && (bankAccounts.length === 0 || selectedBankId) && (!isRecurring || paymentDay) && !createIncome.isPending;
 
   // Redirect if no amount
   if (!amount) {
@@ -109,7 +151,7 @@ export const ConfirmIncome = () => {
         </div>
       </header>
 
-      <main className="flex-1 px-5 space-y-6">
+      <main className="flex-1 px-5 space-y-6 overflow-y-auto pb-32">
         {/* Amount Display */}
         <FadeIn>
           <div className="text-center py-4">
@@ -175,7 +217,7 @@ export const ConfirmIncome = () => {
           </div>
         </FadeIn>
 
-        {/* Recurring Toggle */}
+        {/* Recurring Toggle & Payment Day */}
         {selectedType === "salary" && (
           <FadeIn delay={0.3}>
             <motion.button
@@ -215,18 +257,51 @@ export const ConfirmIncome = () => {
           </FadeIn>
         )}
 
+        {/* Payment Day Selector - shown when recurring */}
+        {isRecurring && (
+          <FadeIn delay={0.35}>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="w-4 h-4 text-muted-foreground" />
+                <p className="text-sm font-medium">Dia do recebimento *</p>
+              </div>
+              <Select value={paymentDay} onValueChange={setPaymentDay}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione o dia do mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentDays.map((day) => (
+                    <SelectItem key={day} value={String(day)}>
+                      Dia {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {paymentDay && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Essa receita será registrada e somada ao saldo apenas no dia {paymentDay} de cada mês. Até lá, ela aparecerá como receita prevista.
+                  </p>
+                </div>
+              )}
+            </div>
+          </FadeIn>
+        )}
+
         {/* Bank Account Selector */}
         <FadeIn delay={0.4}>
           <BankAccountSelector
             selectedId={selectedBankId}
             onSelect={(id) => setSelectedBankId(selectedBankId === id ? "" : id)}
-            label="Conta de destino *"
+            label={isRecurring ? "Conta de destino (quando receber) *" : "Conta de destino *"}
           />
         </FadeIn>
       </main>
 
       {/* Save Button */}
-      <div className="px-5 pb-8 pb-safe-bottom pt-4">
+      <div className="fixed bottom-0 left-0 right-0 px-5 pb-8 pb-safe-bottom pt-4 bg-background/95 backdrop-blur-sm border-t border-border">
         <div className="flex gap-3">
           <Button
             variant="outline"
@@ -249,7 +324,7 @@ export const ConfirmIncome = () => {
                 Salvando...
               </>
             ) : (
-              "Salvar"
+              isFutureIncome ? "Agendar" : "Salvar"
             )}
           </Button>
         </div>

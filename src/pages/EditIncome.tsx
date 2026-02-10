@@ -5,10 +5,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Loader2, CalendarClock, Info } from "lucide-react";
 import { useIncomeById, useUpdateIncome } from "@/hooks/useIncomes";
 import { toast } from "sonner";
 import { parseCurrency, formatCurrency } from "@/lib/currency";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const paymentDays = Array.from({ length: 31 }, (_, i) => i + 1);
 
 export const EditIncome = () => {
   const navigate = useNavigate();
@@ -19,12 +28,19 @@ export const EditIncome = () => {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
+  const [paymentDay, setPaymentDay] = useState<string>("");
 
   useEffect(() => {
     if (income) {
       setAmount(formatCurrency(Number(income.amount), false));
       setDescription(income.description || "");
       setIsRecurring(income.is_recurring || false);
+      // Extract payment day from notes if stored
+      const notes = income.notes || "";
+      const match = notes.match(/payment_day:(\d+)/);
+      if (match) {
+        setPaymentDay(match[1]);
+      }
     }
   }, [income]);
 
@@ -36,12 +52,18 @@ export const EditIncome = () => {
       return;
     }
 
+    if (isRecurring && !paymentDay) {
+      toast.error("Informe o dia do recebimento");
+      return;
+    }
+
     try {
       await updateIncome.mutateAsync({
         id,
         amount: parsedAmount,
         description: description.trim() || "Receita",
         is_recurring: isRecurring,
+        ...(isRecurring && paymentDay ? { notes: `payment_day:${paymentDay}` } : { notes: null }),
       });
       navigate("/");
     } catch (error) {
@@ -103,10 +125,43 @@ export const EditIncome = () => {
             </div>
           </div>
         </FadeIn>
+
+        {/* Payment Day Selector */}
+        {isRecurring && (
+          <FadeIn delay={0.15} className="mb-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CalendarClock className="w-4 h-4 text-muted-foreground" />
+                <Label className="text-sm text-muted-foreground">Dia do recebimento *</Label>
+              </div>
+              <Select value={paymentDay} onValueChange={setPaymentDay}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione o dia do mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentDays.map((day) => (
+                    <SelectItem key={day} value={String(day)}>
+                      Dia {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {paymentDay && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    Essa receita será registrada e somada ao saldo apenas no dia {paymentDay} de cada mês.
+                  </p>
+                </div>
+              )}
+            </div>
+          </FadeIn>
+        )}
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-background/95 backdrop-blur-sm border-t border-border">
-        <Button variant="warm" size="lg" className="w-full gap-2" onClick={handleSave} disabled={updateIncome.isPending}>
+        <Button variant="warm" size="lg" className="w-full gap-2" onClick={handleSave} disabled={updateIncome.isPending || (isRecurring && !paymentDay)}>
           {updateIncome.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
           Salvar alterações
         </Button>
