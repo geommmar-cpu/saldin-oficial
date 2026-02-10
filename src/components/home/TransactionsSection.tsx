@@ -49,11 +49,14 @@ export const TransactionsSection = ({
 
     // Add expenses
     expenses.forEach(e => {
+      const installmentLabel = e.is_installment && e.total_installments && e.total_installments > 1
+        ? ` · ${e.installment_number || 1}/${e.total_installments}`
+        : "";
       items.push({
         id: e.id,
         type: "expense",
         amount: Number(e.amount),
-        description: e.description,
+        description: `${e.description}${installmentLabel}`,
         date: new Date(e.date || e.created_at),
         icon: Receipt,
         color: "text-impulse",
@@ -111,11 +114,15 @@ export const TransactionsSection = ({
 
     // Add credit card purchases
     creditCardInstallments.forEach(inst => {
+      const purchase = inst.purchase;
+      const installmentLabel = purchase?.total_installments > 1
+        ? ` · ${inst.installment_number}/${purchase.total_installments}`
+        : "";
       items.push({
         id: inst.id,
         type: "credit_card",
         amount: Number(inst.amount),
-        description: `${inst.purchase?.description || "Cartão"} · ${inst.purchase?.card?.card_name || ""}`,
+        description: `${purchase?.description || "Cartão"} · ${purchase?.card?.card_name || ""}${installmentLabel}`,
         date: new Date(inst.created_at),
         icon: CreditCard,
         color: "text-obligation",

@@ -15,6 +15,8 @@ export interface Expense {
   pending: boolean;
   createdAt: Date;
   establishment?: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
 }
 
 interface ExpenseItemProps {
@@ -90,9 +92,16 @@ export const ExpenseItem = ({ expense, onClick }: ExpenseItemProps) => {
         />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">
-          {expense.description || expense.establishment || "Despesa"}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium truncate">
+            {expense.description || expense.establishment || "Despesa"}
+          </p>
+          {expense.totalInstallments && expense.totalInstallments > 1 && (
+            <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+              {expense.installmentNumber || 1}/{expense.totalInstallments}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground">
           {formatDistanceToNow(expense.createdAt, {
             addSuffix: true,

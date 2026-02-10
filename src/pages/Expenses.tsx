@@ -40,20 +40,19 @@ export const Expenses = () => {
     return ccInstallments.map(inst => {
       const purchase = inst.purchase;
       const card = purchase?.card;
-      const installmentLabel = purchase?.total_installments > 1
-        ? ` (${inst.installment_number}/${purchase.total_installments}x)`
-        : "";
       const cardLabel = card?.card_name ? `${card.card_name} · ` : "";
       
       return {
         id: `cc-${inst.id}`,
         amount: Number(inst.amount),
-        description: `${cardLabel}${purchase?.description || "Compra no cartão"}${installmentLabel}`,
+        description: `${cardLabel}${purchase?.description || "Compra no cartão"}`,
         category: undefined,
         wouldDoAgain: undefined,
         source: "cartao" as const,
         pending: inst.status === "open",
         createdAt: new Date(purchase?.purchase_date || inst.created_at),
+        installmentNumber: inst.installment_number,
+        totalInstallments: purchase?.total_installments,
       };
     });
   }, [ccInstallments]);
@@ -262,13 +261,10 @@ export const Expenses = () => {
 
 // Transform database expense to ExpenseList format
 function transformExpense(e: any): Expense {
-  const installmentLabel = e.is_installment && e.total_installments && e.total_installments > 1
-    ? ` (${e.installment_number || 1}/${e.total_installments}x)`
-    : "";
   return {
     id: e.id,
     amount: Number(e.amount),
-    description: `${e.description}${installmentLabel}`,
+    description: e.description,
     category: e.emotion === "essencial" ? "essential" 
       : e.emotion === "pilar" ? "obligation" 
       : e.emotion === "impulso" ? "impulse" 
@@ -278,6 +274,8 @@ function transformExpense(e: any): Expense {
     pending: e.status === "pending",
     createdAt: new Date(e.date || e.created_at),
     establishment: undefined,
+    installmentNumber: e.installment_number,
+    totalInstallments: e.is_installment ? e.total_installments : undefined,
   };
 }
 
