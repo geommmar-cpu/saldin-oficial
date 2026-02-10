@@ -12,6 +12,8 @@ interface BankAccountSelectorProps {
   onSelect: (id: string) => void;
   label?: string;
   excludeId?: string; // For transfer: exclude the "from" account
+  onCreateAccount?: () => void; // Custom handler for creating account
+  emptyMessage?: string;
 }
 
 export const BankAccountSelector = ({
@@ -19,6 +21,8 @@ export const BankAccountSelector = ({
   onSelect,
   label = "Conta bancária",
   excludeId,
+  onCreateAccount,
+  emptyMessage = "Nenhuma conta cadastrada",
 }: BankAccountSelectorProps) => {
   const navigate = useNavigate();
   const { data: accounts = [] } = useBankAccounts();
@@ -32,10 +36,10 @@ export const BankAccountSelector = ({
       <div className="mb-5">
         <label className="text-sm text-muted-foreground mb-3 block">{label}</label>
         <div className="p-4 rounded-xl border border-dashed border-border text-center">
-          <p className="text-sm text-muted-foreground mb-2">Nenhuma conta cadastrada</p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/banks/add")}>
+          <p className="text-sm text-muted-foreground mb-2">{emptyMessage}</p>
+          <Button variant="outline" size="sm" onClick={() => onCreateAccount ? onCreateAccount() : navigate("/banks/add")}>
             <Plus className="w-4 h-4 mr-1" />
-            Cadastrar conta
+            Criar conta agora
           </Button>
         </div>
       </div>

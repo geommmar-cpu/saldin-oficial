@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -58,12 +58,27 @@ export const ConfirmIncome = () => {
   const updateBankBalance = useUpdateBankBalance();
   
   const amount = location.state?.amount || 0;
+  const preSelectedBankId = location.state?.preSelectedBankId as string | undefined;
   
-  const [description, setDescription] = useState("");
-  const [selectedType, setSelectedType] = useState<IncomeTypeDB | null>(null);
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [description, setDescription] = useState(location.state?.description || "");
+  const [selectedType, setSelectedType] = useState<IncomeTypeDB | null>(location.state?.selectedType || null);
+  const [isRecurring, setIsRecurring] = useState(location.state?.isRecurring || false);
   const [selectedBankId, setSelectedBankId] = useState<string>("");
-  const [paymentDay, setPaymentDay] = useState<string>("");
+  const [paymentDay, setPaymentDay] = useState<string>(location.state?.paymentDay || "");
+
+  // Auto-select bank account when returning from create flow
+  useEffect(() => {
+    if (preSelectedBankId && bankAccounts.length > 0 && !selectedBankId) {
+      if (preSelectedBankId === "latest") {
+        const sorted = [...bankAccounts].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setSelectedBankId(sorted[0].id);
+      } else {
+        setSelectedBankId(preSelectedBankId);
+      }
+    }
+  }, [preSelectedBankId, bankAccounts, selectedBankId]);
 
   const formattedAmount = new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -301,6 +316,21 @@ export const ConfirmIncome = () => {
             selectedId={selectedBankId}
             onSelect={(id) => setSelectedBankId(selectedBankId === id ? "" : id)}
             label={isRecurring ? "Conta de destino (quando receber) *" : "Conta de destino *"}
+            emptyMessage="Para registrar uma receita, é necessário cadastrar uma conta bancária."
+            onCreateAccount={() => {
+              navigate("/banks/add", {
+                state: {
+                  returnTo: "/income/confirm",
+                  returnState: {
+                    amount,
+                    description,
+                    selectedType,
+                    isRecurring,
+                    paymentDay,
+                  },
+                },
+              });
+            }}
           />
         </FadeIn>
       </main>

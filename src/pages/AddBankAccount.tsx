@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,10 @@ import { parseCurrency } from "@/lib/currency";
 
 export const AddBankAccount = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const createAccount = useCreateBankAccount();
+  const returnTo = location.state?.returnTo as string | undefined;
+  const returnState = location.state?.returnState as Record<string, any> | undefined;
 
   const [bankKey, setBankKey] = useState<string>("");
   const [customBankName, setCustomBankName] = useState("");
@@ -31,7 +34,7 @@ export const AddBankAccount = () => {
 
     const balance = parseCurrency(initialBalance);
 
-    await createAccount.mutateAsync({
+    const result = await createAccount.mutateAsync({
       bank_name: bankName.trim(),
       bank_key: bankKey || null,
       account_type: accountType,
@@ -41,7 +44,11 @@ export const AddBankAccount = () => {
       active: true,
     });
 
-    navigate("/banks");
+    if (returnTo) {
+      navigate(returnTo, { state: { ...returnState, preSelectedBankId: result?.id || "latest" } });
+    } else {
+      navigate("/banks");
+    }
   };
 
   return (
