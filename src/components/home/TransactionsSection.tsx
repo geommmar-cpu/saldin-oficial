@@ -73,7 +73,7 @@ export const TransactionsSection = ({
         type: "income",
         amount: Number(i.amount),
         description: isFuture
-          ? `${i.description} (prevista)`
+          ? `${i.description} (prevista · dia ${paymentDay})`
           : i.is_recurring ? `${i.description} (recorrente)` : i.description,
         date: displayDate,
         icon: Banknote,
