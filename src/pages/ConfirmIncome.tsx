@@ -89,6 +89,11 @@ export const ConfirmIncome = () => {
       return;
     }
 
+    if (!selectedBankId) {
+      toast.error("Selecione uma conta bancária de destino");
+      return;
+    }
+
     if (isRecurring && !paymentDay) {
       toast.error("Informe o dia do recebimento");
       return;
@@ -131,7 +136,7 @@ export const ConfirmIncome = () => {
     }
   };
 
-  const canSave = amount > 0 && description.trim() && selectedType && (bankAccounts.length === 0 || selectedBankId) && (!isRecurring || paymentDay) && !createIncome.isPending;
+  const canSave = amount > 0 && description.trim() && selectedType && selectedBankId && (!isRecurring || paymentDay) && !createIncome.isPending;
 
   // Redirect if no amount
   if (!amount) {
