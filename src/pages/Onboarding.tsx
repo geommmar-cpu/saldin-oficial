@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ChevronRight, Brain, MessageCircle, Smartphone, Check, Wallet, Loader2, CreditCard, Upload, SkipForward, Landmark, Plus, Trash2, CalendarDays } from "lucide-react";
+import { ChevronRight, Brain, MessageCircle, Smartphone, Loader2, CreditCard, Upload, SkipForward, Landmark, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/backendClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -13,8 +13,6 @@ import { cn } from "@/lib/utils";
 import { BANK_LIST } from "@/lib/cardBranding";
 import { accountTypeOptions, type BankAccountType } from "@/types/bankAccount";
 import { parseCurrency } from "@/lib/currency";
-
-type IncomeType = "fixed" | "variable" | "later";
 
 interface BankAccountEntry {
   id: string;
@@ -35,7 +33,6 @@ const createEmptyBankAccount = (): BankAccountEntry => ({
 const onboardingSteps = [
   { id: "welcome" },
   { id: "concept" },
-  { id: "income" },
   { id: "bank-account" },
   { id: "import-prompt" },
 ];
@@ -45,10 +42,6 @@ export const Onboarding = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
-  const [incomeType, setIncomeType] = useState<IncomeType | null>(null);
-  const [fixedIncome, setFixedIncome] = useState("");
-  const [variableIncome, setVariableIncome] = useState("");
-  const [paymentDay, setPaymentDay] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   // Multiple bank accounts state
@@ -57,20 +50,6 @@ export const Onboarding = () => {
 
   const step = onboardingSteps[currentStep];
   const isLastStep = currentStep === onboardingSteps.length - 1;
-
-  const formatCurrency = (value: string) => {
-    const numericValue = value.replace(/\D/g, "");
-    const number = parseInt(numericValue || "0", 10) / 100;
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(number);
-  };
-
-  const handleIncomeChange = (value: string, setter: (v: string) => void) => {
-    const numericValue = value.replace(/\D/g, "");
-    setter(numericValue);
-  };
 
   const updateBankAccount = (id: string, updates: Partial<BankAccountEntry>) => {
     setBankAccounts(prev => prev.map(acc => acc.id === id ? { ...acc, ...updates } : acc));
@@ -107,47 +86,6 @@ export const Onboarding = () => {
           onboarding_completed: true,
         })
         .eq("user_id", user.id);
-
-      // Create income records only if user chose to inform
-      if (incomeType !== "later" && incomeType !== null) {
-        const totalFixedIncome = parseInt(fixedIncome || "0", 10) / 100;
-        const totalVariableIncome = parseInt(variableIncome || "0", 10) / 100;
-
-        if (totalFixedIncome > 0) {
-          // Use payment day to set the income date
-          const day = parseInt(paymentDay, 10);
-          const now = new Date();
-          let incomeDate: string | undefined;
-          if (day >= 1 && day <= 31) {
-            const targetDate = new Date(now.getFullYear(), now.getMonth(), day);
-            // If day already passed this month, set to next month
-            if (targetDate < now) {
-              targetDate.setMonth(targetDate.getMonth() + 1);
-            }
-            incomeDate = targetDate.toISOString().split("T")[0];
-          }
-
-          await supabase.from("incomes").insert({
-            user_id: user.id,
-            amount: totalFixedIncome,
-            description: "Receita fixa mensal",
-            type: "salary",
-            is_recurring: true,
-            ...(incomeDate ? { date: incomeDate } : {}),
-            notes: day >= 1 && day <= 31 ? `Dia de recebimento: ${day}` : null,
-          });
-        }
-
-        if (totalVariableIncome > 0) {
-          await supabase.from("incomes").insert({
-            user_id: user.id,
-            amount: totalVariableIncome,
-            description: "Receita variável mensal",
-            type: "freelance",
-            is_recurring: false,
-          });
-        }
-      }
 
       // Create bank accounts
       if (!skipBank) {
@@ -227,16 +165,8 @@ export const Onboarding = () => {
   };
 
   const canProceed = () => {
-    if (step.id === "income") {
-      if (!incomeType) return false;
-      if (incomeType === "later") return true;
-      if (incomeType === "fixed") return fixedIncome && parseInt(fixedIncome, 10) > 0;
-      if (incomeType === "variable") return variableIncome && parseInt(variableIncome, 10) > 0;
-      return true;
-    }
     if (step.id === "bank-account") {
       if (skipBank) return true;
-      // At least one valid bank account
       return bankAccounts.some(acc => {
         const selectedBank = BANK_LIST.find((b) => b.key === acc.bankKey);
         const bankName = acc.bankKey === "outros" ? acc.customBankName : selectedBank?.name || "";
@@ -344,122 +274,6 @@ export const Onboarding = () => {
               </div>
             )}
 
-            {step.id === "income" && (
-              <div className="flex-1 flex flex-col items-center justify-center">
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="w-20 h-20 rounded-full bg-essential/20 flex items-center justify-center mb-6"
-                >
-                  <Wallet className="w-10 h-10 text-essential" />
-                </motion.div>
-                <h1 className="font-serif text-3xl font-semibold mb-2 text-center">Sua renda mensal</h1>
-                <p className="text-muted-foreground text-center mb-6 max-w-xs">
-                  Isso nos ajuda a mostrar o quanto você já comprometeu. Totalmente opcional.
-                </p>
-
-                {/* Income type selector */}
-                <div className="w-full max-w-xs space-y-3 mb-6">
-                  {([
-                    { type: "fixed" as IncomeType, label: "Renda fixa", desc: "Salário, aposentadoria" },
-                    { type: "variable" as IncomeType, label: "Renda variável", desc: "Freelance, comissões" },
-                    { type: "later" as IncomeType, label: "Prefiro informar depois", desc: "Você pode adicionar a qualquer momento" },
-                  ]).map((opt) => (
-                    <motion.button
-                      key={opt.type}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setIncomeType(opt.type)}
-                      className={cn(
-                        "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left",
-                        incomeType === opt.type
-                          ? "border-primary bg-primary/5 shadow-medium"
-                          : "border-border hover:border-muted-foreground/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
-                        incomeType === opt.type ? "border-primary bg-primary" : "border-muted-foreground"
-                      )}>
-                        {incomeType === opt.type && <Check className="w-3 h-3 text-primary-foreground" />}
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-
-                {/* Income value inputs */}
-                <AnimatePresence>
-                  {incomeType === "fixed" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="w-full max-w-xs overflow-hidden space-y-4"
-                    >
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Valor da renda fixa</label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          value={fixedIncome ? formatCurrency(fixedIncome) : ""}
-                          onChange={(e) => handleIncomeChange(e.target.value, setFixedIncome)}
-                          placeholder="R$ 0,00"
-                          className="text-center text-xl h-14 font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                          <CalendarDays className="w-4 h-4 text-muted-foreground" />
-                          Dia do recebimento (opcional)
-                        </label>
-                        <Input
-                          type="number"
-                          inputMode="numeric"
-                          min={1}
-                          max={31}
-                          value={paymentDay}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (v === "" || (parseInt(v) >= 1 && parseInt(v) <= 31)) {
-                              setPaymentDay(v);
-                            }
-                          }}
-                          placeholder="Ex: 5"
-                          className="text-center text-lg h-12"
-                        />
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Essa renda será adicionada ao saldo somente na data de recebimento.
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                  {incomeType === "variable" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="w-full max-w-xs overflow-hidden"
-                    >
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Valor médio da renda variável</label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          value={variableIncome ? formatCurrency(variableIncome) : ""}
-                          onChange={(e) => handleIncomeChange(e.target.value, setVariableIncome)}
-                          placeholder="R$ 0,00"
-                          className="text-center text-xl h-14 font-medium"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
             {step.id === "bank-account" && (
               <div className="flex-1 flex flex-col">
                 <div className="text-center mb-6">
@@ -472,7 +286,10 @@ export const Onboarding = () => {
                   </motion.div>
                   <h1 className="font-serif text-3xl font-semibold mb-2">Suas contas bancárias</h1>
                   <p className="text-muted-foreground max-w-xs mx-auto">
-                    Cadastre suas contas para acompanhar seu saldo real. A renda mensal será considerada nos relatórios, mas o saldo começa com o valor que você informar.
+                    Cadastre suas contas para acompanhar seu saldo real. O saldo começa com o valor que você informar.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
+                    Você pode adicionar sua renda e outras informações depois.
                   </p>
                 </div>
 
