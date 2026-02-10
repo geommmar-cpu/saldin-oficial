@@ -62,17 +62,22 @@ export const TransactionsSection = ({
 
     // Add incomes
     incomes.forEach(i => {
+      const paymentDayMatch = i.notes?.match(/payment_day:(\d+)/);
+      const paymentDay = paymentDayMatch ? Number(paymentDayMatch[1]) : null;
       const displayDate = i.is_recurring
         ? new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), new Date(i.date || i.created_at).getDate())
         : new Date(i.date || i.created_at);
+      const isFuture = i.is_recurring && paymentDay ? displayDate > new Date() : false;
       items.push({
         id: i.id,
         type: "income",
         amount: Number(i.amount),
-        description: i.is_recurring ? `${i.description} (recorrente)` : i.description,
+        description: isFuture
+          ? `${i.description} (prevista)`
+          : i.is_recurring ? `${i.description} (recorrente)` : i.description,
         date: displayDate,
         icon: Banknote,
-        color: "text-essential",
+        color: isFuture ? "text-muted-foreground" : "text-essential",
       });
     });
 
