@@ -93,12 +93,13 @@ export const useIncomeStats = (month?: number, year?: number) => {
 export const useCreateIncome = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const db = supabase as any;
 
   return useMutation({
     mutationFn: async (income: Omit<IncomeInsert, "user_id">) => {
       if (!user) throw new Error("Usuário não autenticado");
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("incomes")
         .insert({
           ...income,
@@ -108,11 +109,33 @@ export const useCreateIncome = () => {
         .single();
 
       if (error) throw error;
+
+      // Update bank balance if bank_account_id is provided
+      const incomeData = income as any;
+      if (incomeData.bank_account_id && incomeData.amount) {
+        const { data: account } = await db
+          .from("bank_accounts")
+          .select("current_balance")
+          .eq("id", incomeData.bank_account_id)
+          .single();
+        if (account) {
+          await db
+            .from("bank_accounts")
+            .update({
+              current_balance: Number(account.current_balance) + Number(incomeData.amount),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", incomeData.bank_account_id);
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incomes"] });
       queryClient.invalidateQueries({ queryKey: ["income-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["bank-accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["bank-account"] });
       toast.success("Receita registrada com sucesso!");
     },
     onError: (error) => {
