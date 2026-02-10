@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Coins, ChevronDown, ChevronUp, Wallet, Lock, PiggyBank, Info, CreditCard, Bitcoin, TrendingUp } from "lucide-react";
+import { Coins, ChevronDown, ChevronUp, Lock, PiggyBank, Info, Bitcoin, TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BalanceBreakdown, formatCurrency } from "@/lib/balanceCalculations";
 import {
@@ -13,11 +13,16 @@ interface BalanceHeroProps {
   balance: BalanceBreakdown;
   cryptoTotal?: number;
   cryptoEnabled?: boolean;
+  totalIncome?: number;
+  totalSpent?: number;
 }
 
-export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }: BalanceHeroProps) => {
+export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false, totalIncome = 0, totalSpent = 0 }: BalanceHeroProps) => {
   const [expanded, setExpanded] = useState(false);
   const patrimonioTotal = balance.saldoBruto + cryptoTotal;
+  const resultadoMes = totalIncome - totalSpent;
+  const isDeficit = resultadoMes < 0;
+  const hasMonthlyData = totalIncome > 0 || totalSpent > 0;
 
   return (
     <motion.div
@@ -64,10 +69,36 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }:
               : "🔴 Alerta máximo: seu saldo está muito comprometido. Tome uma atitude agora."}
       </p>
 
+      {/* Resultado do mês - sempre visível quando há dados */}
+      {hasMonthlyData && (
+        <div className="mt-4 pt-3 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {isDeficit ? (
+                <AlertTriangle className="w-4 h-4 text-impulse" />
+              ) : (
+                <CheckCircle className="w-4 h-4 text-essential" />
+              )}
+              <p className={cn("text-xs font-medium", isDeficit ? "text-impulse" : "text-essential")}>
+                {isDeficit
+                  ? "Este mês você gastou mais do que ganhou"
+                  : "Você está dentro do orçamento este mês"}
+              </p>
+            </div>
+            <span className={cn(
+              "text-sm font-bold",
+              isDeficit ? "text-impulse" : "text-essential"
+            )}>
+              {isDeficit ? "" : "+ "}{formatCurrency(resultadoMes)}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Expand toggle */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full mt-4 pt-3 border-t border-border flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className="w-full mt-3 pt-3 border-t border-border flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         {expanded ? (
           <>
@@ -77,7 +108,7 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }:
         ) : (
           <>
             <ChevronDown className="w-4 h-4" />
-            Ver detalhes do saldo
+            Ver detalhes
           </>
         )}
       </button>
@@ -91,56 +122,83 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }:
             exit={{ opacity: 0, height: 0 }}
             className="mt-3 space-y-3 overflow-hidden"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-muted-foreground" />
+            {/* Resultado do Mês - Detalhamento */}
+            {hasMonthlyData && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Resultado do mês</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-essential/10 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-essential" />
+                    </div>
+                    <p className="text-sm">Receitas</p>
+                  </div>
+                  <p className="text-sm font-semibold text-essential">
+                    + {formatCurrency(totalIncome)}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Saldo Bruto</p>
-                  <p className="text-xs text-muted-foreground">Saldo nas contas bancárias</p>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-impulse/10 flex items-center justify-center">
+                      <TrendingDown className="w-4 h-4 text-impulse" />
+                    </div>
+                    <p className="text-sm">Gastos</p>
+                  </div>
+                  <p className="text-sm font-semibold">
+                    − {formatCurrency(totalSpent)}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <p className="text-sm font-medium">Resultado</p>
+                  <p className={cn("text-sm font-bold", isDeficit ? "text-impulse" : "text-essential")}>
+                    {isDeficit ? "" : "+ "}{formatCurrency(resultadoMes)}
+                  </p>
                 </div>
               </div>
-              <p className={cn("font-semibold", balance.saldoBruto >= 0 ? "text-foreground" : "text-impulse")}>
-                {formatCurrency(balance.saldoBruto)}
-              </p>
+            )}
+
+            {/* Composição do Saldo Livre */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Composição do saldo</p>
+
+              {balance.saldoComprometido > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-impulse/10 flex items-center justify-center">
+                      <Lock className="w-4 h-4 text-impulse" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Comprometido</p>
+                      <p className="text-xs text-muted-foreground">Dívidas e parcelas</p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-impulse">
+                    − {formatCurrency(balance.saldoComprometido)}
+                  </p>
+                </div>
+              )}
+
+              {balance.saldoGuardado > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-essential/10 flex items-center justify-center">
+                      <PiggyBank className="w-4 h-4 text-essential" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Guardado em metas</p>
+                      <p className="text-xs text-muted-foreground">Separado para objetivos</p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-essential">
+                    − {formatCurrency(balance.saldoGuardado)}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {balance.saldoComprometido > 0 && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-impulse/10 flex items-center justify-center">
-                    <Lock className="w-4 h-4 text-impulse" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Comprometido</p>
-                    <p className="text-xs text-muted-foreground">Dívidas e parcelas</p>
-                  </div>
-                </div>
-                <p className="font-semibold text-impulse">
-                  − {formatCurrency(balance.saldoComprometido)}
-                </p>
-              </div>
-            )}
-
-            {balance.saldoGuardado > 0 && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-essential/10 flex items-center justify-center">
-                    <PiggyBank className="w-4 h-4 text-essential" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Guardado em metas</p>
-                    <p className="text-xs text-muted-foreground">Separado para objetivos</p>
-                  </div>
-                </div>
-                <p className="font-semibold text-essential">
-                  − {formatCurrency(balance.saldoGuardado)}
-                </p>
-              </div>
-            )}
-
-            {/* Crypto Investment - separate from available balance */}
+            {/* Crypto Investment */}
             {cryptoEnabled && cryptoTotal > 0 && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -179,8 +237,8 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }:
             {/* Explicação do saldo */}
             <div className="p-3 rounded-xl bg-muted/50">
               <p className="text-xs text-muted-foreground">
-                Saldo Livre = Saldo Bruto nas contas
-                {balance.saldoComprometido > 0 ? " − Compromissos (dívidas/parcelas)" : ""}
+                Saldo Livre = Saldo nas contas
+                {balance.saldoComprometido > 0 ? " − Compromissos" : ""}
                 {balance.saldoGuardado > 0 ? " − Guardado em metas" : ""}
               </p>
             </div>
