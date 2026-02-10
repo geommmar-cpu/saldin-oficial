@@ -1,7 +1,7 @@
  // Componente de Saldo com os 3 tipos: Bruto, Comprometido e Livre
  
  import { motion } from "framer-motion";
- import { Wallet, Lock, Coins, ChevronDown, ChevronUp, Info } from "lucide-react";
+ import { Wallet, Lock, Coins, ChevronDown, ChevronUp, Info, AlertTriangle } from "lucide-react";
  import { cn } from "@/lib/utils";
  import { useState } from "react";
  import { BalanceBreakdown, formatCurrency } from "@/lib/balanceCalculations";
@@ -20,13 +20,16 @@
  export const BalanceCard = ({ balance, totalIncome, totalSpent }: BalanceCardProps) => {
    const [expanded, setExpanded] = useState(false);
    
-   const usagePercentage = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
-   
-   const getProgressColor = () => {
-     if (usagePercentage > 100) return "bg-impulse";
-     if (usagePercentage > 80) return "bg-pleasure";
-     return "bg-essential";
-   };
+    const usagePercentage = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
+    const isOverBudget = usagePercentage > 100;
+    const hasNoIncome = totalIncome === 0 && totalSpent > 0;
+    const excessAmount = totalSpent - totalIncome;
+    
+    const getProgressColor = () => {
+      if (isOverBudget || hasNoIncome) return "bg-impulse";
+      if (usagePercentage > 80) return "bg-pleasure";
+      return "bg-essential";
+    };
  
    return (
      <div className="space-y-3">
@@ -60,22 +63,38 @@
            {formatCurrency(balance.saldoLivre)}
          </p>
          
-         {/* Progress bar */}
-         {totalIncome > 0 && (
-           <div className="mt-3">
-             <div className="h-2 bg-muted rounded-full overflow-hidden">
-               <motion.div
-                 initial={{ width: 0 }}
-                 animate={{ width: `${Math.min(usagePercentage, 100)}%` }}
-                 transition={{ duration: 0.6 }}
-                 className={cn("h-full rounded-full", getProgressColor())}
-               />
-             </div>
-             <p className="text-xs text-muted-foreground mt-1.5">
-               {Math.round(usagePercentage)}% da receita utilizada
-             </p>
-           </div>
-         )}
+          {/* Progress bar */}
+          {(totalIncome > 0 || hasNoIncome) && (
+            <div className="mt-3">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: hasNoIncome ? "100%" : `${Math.min(usagePercentage, 100)}%` }}
+                  transition={{ duration: 0.6 }}
+                  className={cn("h-full rounded-full", getProgressColor())}
+                />
+              </div>
+              {hasNoIncome ? (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-impulse" />
+                  <p className="text-xs text-impulse">
+                    Você ainda não registrou receitas neste mês
+                  </p>
+                </div>
+              ) : isOverBudget ? (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-impulse" />
+                  <p className="text-xs text-impulse">
+                    Você gastou {formatCurrency(excessAmount)} a mais do que ganhou este mês
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {Math.round(usagePercentage)}% da receita utilizada
+                </p>
+              )}
+            </div>
+          )}
          
          {/* Expand toggle */}
          <button 
