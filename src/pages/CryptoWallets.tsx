@@ -13,7 +13,14 @@ export const CryptoWallets = () => {
   const { data: wallets = [], isLoading } = useCryptoWallets();
   const refreshPrices = useRefreshCryptoPrices();
 
-  const totalValue = wallets.reduce((sum, w) => sum + Number(w.quantity) * Number(w.last_price), 0);
+  // Sort wallets by current value (highest first)
+  const sortedWallets = [...wallets].sort((a, b) => {
+    const valueA = Number(a.quantity) * Number(a.last_price);
+    const valueB = Number(b.quantity) * Number(b.last_price);
+    return valueB - valueA;
+  });
+
+  const totalValue = sortedWallets.reduce((sum, w) => sum + Number(w.quantity) * Number(w.last_price), 0);
 
   const handleRefresh = () => {
     refreshPrices.mutate(wallets);
@@ -86,7 +93,7 @@ export const CryptoWallets = () => {
           </FadeIn>
         ) : (
           <div className="space-y-3">
-            {wallets.map((wallet, index) => {
+            {sortedWallets.map((wallet, index) => {
               const cryptoInfo = CRYPTO_LIST.find(c => c.id === wallet.crypto_id);
               const color = cryptoInfo?.color || "#888";
               const value = Number(wallet.quantity) * Number(wallet.last_price);

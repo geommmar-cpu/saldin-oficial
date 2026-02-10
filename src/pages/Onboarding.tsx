@@ -403,7 +403,7 @@ export const Onboarding = () => {
                   </motion.div>
                   <h1 className="font-serif text-3xl font-semibold mb-2">Sua conta bancária</h1>
                   <p className="text-muted-foreground max-w-xs mx-auto">
-                    Cadastre sua conta principal para acompanhar seu saldo real.
+                    Cadastre sua conta principal para acompanhar seu saldo real. A renda mensal será considerada nos relatórios, mas o saldo do banco começa com o valor que você informar.
                   </p>
                 </div>
 

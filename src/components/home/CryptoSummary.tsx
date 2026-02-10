@@ -12,7 +12,14 @@ export const CryptoSummary = () => {
 
   if (wallets.length === 0) return null;
 
-  const totalValue = wallets.reduce(
+  // Sort by value descending
+  const sortedWallets = [...wallets].sort((a, b) => {
+    const valueA = Number(a.quantity) * Number(a.last_price);
+    const valueB = Number(b.quantity) * Number(b.last_price);
+    return valueB - valueA;
+  });
+
+  const totalValue = sortedWallets.reduce(
     (sum, w) => sum + Number(w.quantity) * Number(w.last_price),
     0
   );
@@ -43,7 +50,7 @@ export const CryptoSummary = () => {
 
       {/* Wallet cards */}
       <div className="space-y-2">
-        {wallets.slice(0, 3).map((wallet) => {
+        {sortedWallets.slice(0, 3).map((wallet) => {
           const cryptoInfo = CRYPTO_LIST.find(c => c.id === wallet.crypto_id);
           const color = cryptoInfo?.color || "#888";
           const value = Number(wallet.quantity) * Number(wallet.last_price);

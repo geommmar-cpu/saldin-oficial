@@ -43,13 +43,15 @@ export interface BalanceBreakdown {
 // Calcular os 3 saldos para um período
 // Nota: goalsSaved é passado como parâmetro opcional para não acoplar a lib aos hooks
 // ccInstallmentsTotal: total de parcelas de cartão de crédito no mês (compromisso futuro)
+// bankTotal: somatório dos saldos reais das contas bancárias (base para saldo bruto)
 export function calculateBalances(
   incomes: IncomeRow[],
   expenses: ExpenseRow[],
   debts: DebtRow[],
   selectedMonth: Date,
   goalsSaved: number = 0,
-  ccInstallmentsTotal: number = 0
+  ccInstallmentsTotal: number = 0,
+  bankTotal?: number
 ): BalanceBreakdown {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
@@ -117,7 +119,9 @@ export function calculateBalances(
    const valoresParaTerceiros = 0;
    
    // Cálculos principais
-   const saldoBruto = receitasTotal - gastosTotal;
+   // Se bankTotal foi informado, usar saldo real das contas como base
+   // Caso contrário, fallback para receitas - gastos (compatibilidade)
+   const saldoBruto = bankTotal !== undefined ? bankTotal : (receitasTotal - gastosTotal);
    const saldoComprometido = dividasAtivas + valoresParaTerceiros + ccInstallmentsTotal;
    const saldoGuardado = goalsSaved;
    const saldoLivre = saldoBruto - saldoComprometido - saldoGuardado;

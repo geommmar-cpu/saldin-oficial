@@ -126,7 +126,7 @@ export const CryptoWalletDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 overflow-y-auto">
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -257,7 +257,7 @@ export const CryptoWalletDetail = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{transactionTypeLabels[tx.type]}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(tx.created_at).toLocaleDateString("pt-BR")}
+                        {new Date(tx.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                         {tx.notes && ` • ${tx.notes}`}
                       </p>
                     </div>

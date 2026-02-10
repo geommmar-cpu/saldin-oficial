@@ -36,6 +36,8 @@ import { GoalsSummary } from "@/components/home/GoalsSummary";
 import { BankAccountsSummary } from "@/components/home/BankAccountsSummary";
 import { CryptoSummary } from "@/components/home/CryptoSummary";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useCryptoTotalValue } from "@/hooks/useCryptoWallets";
 
 export const Home = () => {
   const navigate = useNavigate();
@@ -52,6 +54,8 @@ export const Home = () => {
   const { data: goals = [] } = useGoals("all");
   const { data: creditCards = [] } = useCreditCards();
   const { data: ccInstallments = [] } = useCardInstallmentsByMonth(selectedMonth);
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const { totalValue: cryptoTotal } = useCryptoTotalValue();
 
   const isLoading = profileLoading || expenseLoading || debtLoading || receivableLoading || incomeLoading || goalLoading;
 
@@ -106,14 +110,20 @@ export const Home = () => {
   // Total de parcelas de cartão no mês (valor comprometido)
   const totalCCInstallments = ccInstallments.reduce((sum, inst) => sum + Number(inst.amount), 0);
 
-  // Balance calculation (incluindo cartão como comprometido)
+  // Bank total = soma dos saldos reais de todas as contas bancárias
+  const bankTotal = bankAccounts.reduce((sum, acc) => sum + Number(acc.current_balance), 0);
+  // Saldo bruto = bancos + cripto (se ativo)
+  const saldoBrutoReal = bankTotal + (preferences.cryptoEnabled ? cryptoTotal : 0);
+
+  // Balance calculation (usando saldo real dos bancos como base)
   const balanceBreakdown = calculateBalances(
     filteredIncomes,
     filteredExpenses,
     filteredDebts,
     selectedMonth,
     goalStats?.totalSaved || 0,
-    totalCCInstallments
+    totalCCInstallments,
+    saldoBrutoReal
   );
 
   // Navigation
