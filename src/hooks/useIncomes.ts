@@ -109,26 +109,6 @@ export const useCreateIncome = () => {
         .single();
 
       if (error) throw error;
-
-      // Update bank balance if bank_account_id is provided
-      const incomeData = income as any;
-      if (incomeData.bank_account_id && incomeData.amount) {
-        const { data: account } = await db
-          .from("bank_accounts")
-          .select("current_balance")
-          .eq("id", incomeData.bank_account_id)
-          .single();
-        if (account) {
-          await db
-            .from("bank_accounts")
-            .update({
-              current_balance: Number(account.current_balance) + Number(incomeData.amount),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", incomeData.bank_account_id);
-        }
-      }
-
       return data;
     },
     onSuccess: () => {
@@ -136,11 +116,9 @@ export const useCreateIncome = () => {
       queryClient.invalidateQueries({ queryKey: ["income-stats"] });
       queryClient.invalidateQueries({ queryKey: ["bank-accounts"] });
       queryClient.invalidateQueries({ queryKey: ["bank-account"] });
-      toast.success("Receita registrada com sucesso!");
     },
     onError: (error) => {
       console.error("Error creating income:", error);
-      toast.error("Erro ao registrar receita");
     },
   });
 };
