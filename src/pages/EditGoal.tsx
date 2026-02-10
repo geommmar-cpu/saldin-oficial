@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FadeIn } from "@/components/ui/motion";
+import { GoalImagePicker } from "@/components/goal/GoalImagePicker";
 import { 
   ArrowLeft, 
   Target, 
@@ -51,6 +52,7 @@ export default function EditGoal() {
   const [selectedColor, setSelectedColor] = useState('green');
   const [selectedIcon, setSelectedIcon] = useState('target');
   const [isPersonal, setIsPersonal] = useState(true);
+  const [imagePreset, setImagePreset] = useState<string | null>(null);
 
   useEffect(() => {
     if (goal) {
@@ -61,6 +63,7 @@ export default function EditGoal() {
       setSelectedColor(goal.color || 'green');
       setSelectedIcon(goal.icon || 'target');
       setIsPersonal(goal.is_personal !== false);
+      setImagePreset(goal.image_preset || null);
     }
   }, [goal]);
 
@@ -98,6 +101,7 @@ export default function EditGoal() {
       target_date: targetDate || null,
       color: selectedColor,
       icon: selectedIcon,
+      image_preset: imagePreset,
       notes: notes.trim() || null,
       is_personal: isPersonal,
       status: isCompleted ? 'completed' : 'in_progress',
@@ -231,6 +235,11 @@ export default function EditGoal() {
               })}
             </div>
           </div>
+        </FadeIn>
+
+        {/* Imagem */}
+        <FadeIn delay={0.22}>
+          <GoalImagePicker selected={imagePreset} onSelect={setImagePreset} />
         </FadeIn>
 
         {/* Observação */}

@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useGoalById, useAddToGoal, useDeleteGoal, useGoalTransactions } from "@/hooks/useGoals";
+import { getPresetImage } from "@/lib/goalPresets";
 import { cn } from "@/lib/utils";
 
 // Cores disponíveis
@@ -189,46 +190,60 @@ export default function GoalDetail() {
       <main className="px-5 py-6 space-y-6">
         {/* Main Card */}
         <FadeIn>
-          <Card className={cn("p-6 border-2", colorClasses.border)}>
-            <div className="flex items-center gap-4 mb-6">
-              <div className={cn(
-                "w-16 h-16 rounded-2xl flex items-center justify-center",
-                colorClasses.bg
-              )}>
-                <Icon className={cn("w-8 h-8", colorClasses.text)} />
+          <Card className={cn("p-6 border-2 overflow-hidden relative", colorClasses.border)}>
+            {(() => {
+              const presetImg = getPresetImage(goal.image_preset);
+              if (presetImg) {
+                return (
+                  <div className="absolute inset-0">
+                    <img src={presetImg} alt="" className="w-full h-full object-cover opacity-10" />
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            <div className="relative">
+              <div className="flex items-center gap-4 mb-6">
+                <div className={cn(
+                  "w-16 h-16 rounded-2xl flex items-center justify-center",
+                  colorClasses.bg
+                )}>
+                  <Icon className={cn("w-8 h-8", colorClasses.text)} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Guardado</p>
+                  <p className={cn("font-serif text-3xl font-bold", colorClasses.text)}>
+                    {formatCurrency(Number(goal.current_amount))}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Guardado</p>
-                <p className={cn("font-serif text-3xl font-bold", colorClasses.text)}>
-                  {formatCurrency(Number(goal.current_amount))}
+
+              <Progress value={progress} className="h-3 mb-3" />
+              
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {Math.round(progress)}% do objetivo
+                </span>
+                <span className="font-medium">
+                  Meta: {formatCurrency(Number(goal.target_amount))}
+                </span>
+              </div>
+
+              {!isCompleted && remaining > 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Faltam <strong>{formatCurrency(remaining)}</strong> para atingir a meta
                 </p>
-              </div>
+              )}
+
+              {goal.target_date && !isCompleted && (
+                <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  Objetivo para {new Date(goal.target_date).toLocaleDateString('pt-BR')}
+                </p>
+              )}
             </div>
-
-            <Progress value={progress} className="h-3 mb-3" />
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {Math.round(progress)}% do objetivo
-              </span>
-              <span className="font-medium">
-                Meta: {formatCurrency(Number(goal.target_amount))}
-              </span>
-            </div>
-
-            {!isCompleted && remaining > 0 && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Faltam <strong>{formatCurrency(remaining)}</strong> para atingir a meta
-              </p>
-            )}
-
-            {goal.target_date && !isCompleted && (
-              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Objetivo para {new Date(goal.target_date).toLocaleDateString('pt-BR')}
-              </p>
-            )}
           </Card>
+
         </FadeIn>
 
         {/* Action Buttons */}

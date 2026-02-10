@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { useGoals, useGoalStats } from "@/hooks/useGoals";
+import { getPresetImage } from "@/lib/goalPresets";
 import { cn } from "@/lib/utils";
 
 // Cores disponíveis para metas
@@ -193,13 +194,24 @@ export default function Goals() {
                       <Card
                         variant="interactive"
                         className={cn(
-                          "p-4 border-2",
+                          "p-4 border-2 overflow-hidden relative",
                           colorClasses.border,
                           goal.status === 'completed' && "opacity-80"
                         )}
                         onClick={() => navigate(`/goals/${goal.id}`)}
                       >
-                        <div className="flex items-start gap-3">
+                        {(() => {
+                          const presetImg = getPresetImage(goal.image_preset);
+                          if (presetImg) {
+                            return (
+                              <div className="absolute inset-0">
+                                <img src={presetImg} alt="" className="w-full h-full object-cover opacity-10" />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                        <div className="relative flex items-start gap-3">
                           <div className={cn(
                             "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
                             colorClasses.bg

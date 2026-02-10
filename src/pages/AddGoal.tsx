@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FadeIn } from "@/components/ui/motion";
+import { GoalImagePicker } from "@/components/goal/GoalImagePicker";
+import { getPresetImage } from "@/lib/goalPresets";
 import { BottomNav } from "@/components/BottomNav";
 import { 
   ArrowLeft, 
@@ -53,6 +55,7 @@ export default function AddGoal() {
   const [selectedColor, setSelectedColor] = useState('green');
   const [selectedIcon, setSelectedIcon] = useState('target');
   const [isPersonal, setIsPersonal] = useState(true);
+  const [imagePreset, setImagePreset] = useState<string | null>(null);
 
   const targetAmount = parseCurrency(amount);
   const initialAmountNum = parseFloat(initialAmount.replace(',', '.')) || 0;
@@ -86,6 +89,7 @@ export default function AddGoal() {
       target_date: targetDate || null,
       color: selectedColor,
       icon: selectedIcon,
+      image_preset: imagePreset,
       notes: notes.trim() || null,
       is_personal: isPersonal,
       status: initialAmountNum >= targetAmount ? 'completed' : 'in_progress',
@@ -306,6 +310,11 @@ export default function AddGoal() {
           </div>
         </FadeIn>
 
+        {/* Imagem */}
+        <FadeIn delay={0.22}>
+          <GoalImagePicker selected={imagePreset} onSelect={setImagePreset} />
+        </FadeIn>
+
         {/* Observação */}
         <FadeIn delay={0.25}>
           <div className="space-y-2">
@@ -345,32 +354,45 @@ export default function AddGoal() {
         {/* Preview */}
         <FadeIn delay={0.3}>
           <Card className={cn(
-            "p-4 border-2",
+            "p-4 border-2 overflow-hidden relative",
             `border-${selectedColor === 'green' ? 'essential' : selectedColor === 'blue' ? 'calm' : selectedColor === 'purple' ? 'pleasure' : selectedColor === 'orange' ? 'obligation' : selectedColor === 'red' ? 'impulse' : 'pink-500'}/30`
           )}>
-            <p className="text-xs text-muted-foreground mb-2">Prévia da sua caixinha</p>
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
-                colorOptions.find(c => c.id === selectedColor)?.class + '/20'
-              )}>
-                {(() => {
-                  const Icon = iconOptions.find(i => i.id === selectedIcon)?.icon || Target;
-                  return <Icon className={cn(
-                    "w-6 h-6",
-                    selectedColor === 'green' ? 'text-essential' :
-                    selectedColor === 'blue' ? 'text-calm' :
-                    selectedColor === 'purple' ? 'text-pleasure' :
-                    selectedColor === 'orange' ? 'text-obligation' :
-                    selectedColor === 'red' ? 'text-impulse' : 'text-pink-500'
-                  )} />;
-                })()}
-              </div>
-              <div>
-                <p className="font-semibold">{name || 'Nome da meta'}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrency(initialAmountNum)} de {formatCurrency(targetAmount)}
-                </p>
+            {(() => {
+              const presetImg = getPresetImage(imagePreset);
+              if (presetImg) {
+                return (
+                  <div className="absolute inset-0">
+                    <img src={presetImg} alt="" className="w-full h-full object-cover opacity-15" />
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            <div className="relative">
+              <p className="text-xs text-muted-foreground mb-2">Prévia da sua caixinha</p>
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  colorOptions.find(c => c.id === selectedColor)?.class + '/20'
+                )}>
+                  {(() => {
+                    const Icon = iconOptions.find(i => i.id === selectedIcon)?.icon || Target;
+                    return <Icon className={cn(
+                      "w-6 h-6",
+                      selectedColor === 'green' ? 'text-essential' :
+                      selectedColor === 'blue' ? 'text-calm' :
+                      selectedColor === 'purple' ? 'text-pleasure' :
+                      selectedColor === 'orange' ? 'text-obligation' :
+                      selectedColor === 'red' ? 'text-impulse' : 'text-pink-500'
+                    )} />;
+                  })()}
+                </div>
+                <div>
+                  <p className="font-semibold">{name || 'Nome da meta'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatCurrency(initialAmountNum)} de {formatCurrency(targetAmount)}
+                  </p>
+                </div>
               </div>
             </div>
           </Card>

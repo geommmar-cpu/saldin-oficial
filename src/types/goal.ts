@@ -9,6 +9,7 @@ export interface Goal {
   target_date: string | null;
   color: string | null;
   icon: string | null;
+  image_preset: string | null;
   notes: string | null;
   is_personal: boolean;
   status: 'in_progress' | 'completed' | 'paused';
@@ -23,6 +24,7 @@ export interface GoalInsert {
   target_date?: string | null;
   color?: string | null;
   icon?: string | null;
+  image_preset?: string | null;
   notes?: string | null;
   is_personal?: boolean;
   status?: 'in_progress' | 'completed' | 'paused';
@@ -35,6 +37,7 @@ export interface GoalUpdate {
   target_date?: string | null;
   color?: string | null;
   icon?: string | null;
+  image_preset?: string | null;
   notes?: string | null;
   is_personal?: boolean;
   status?: 'in_progress' | 'completed' | 'paused';

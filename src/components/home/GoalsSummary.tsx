@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/balanceCalculations";
+import { getPresetImage } from "@/lib/goalPresets";
 import type { Goal } from "@/types/goal";
 
 interface GoalsSummaryProps {
@@ -58,8 +59,20 @@ export const GoalsSummary = ({ goals, totalSaved, totalTarget }: GoalsSummaryPro
                 transition={{ delay: index * 0.05 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate(`/goals/${goal.id}`)}
-                className="w-full p-4 rounded-xl bg-card border border-border shadow-soft text-left"
+                className="w-full p-4 rounded-xl bg-card border border-border shadow-soft text-left overflow-hidden relative"
               >
+                {(() => {
+                  const presetImg = getPresetImage(goal.image_preset);
+                  if (presetImg) {
+                    return (
+                      <div className="absolute inset-0">
+                        <img src={presetImg} alt="" className="w-full h-full object-cover opacity-10" />
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                <div className="relative">
                 <div className="flex items-center justify-between mb-2">
                   <p className="font-medium text-sm">{goal.name}</p>
                   <span className="text-xs text-muted-foreground">
@@ -81,6 +94,7 @@ export const GoalsSummary = ({ goals, totalSaved, totalTarget }: GoalsSummaryPro
                   <span className="text-xs text-muted-foreground">
                     de {formatCurrency(goal.target_amount)}
                   </span>
+                </div>
                 </div>
               </motion.button>
             );

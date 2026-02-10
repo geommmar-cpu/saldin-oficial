@@ -142,6 +142,7 @@ export const useCreateGoal = () => {
         target_date: goal.target_date || null,
         color: goal.color || 'green',
         icon: goal.icon || 'target',
+        image_preset: goal.image_preset || null,
         notes: goal.notes || null,
         is_personal: goal.is_personal !== undefined ? goal.is_personal : true,
         status: goal.status || 'in_progress',
