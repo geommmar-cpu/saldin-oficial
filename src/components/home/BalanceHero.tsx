@@ -32,14 +32,14 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false, t
       {/* Top label */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <p className="text-sm text-muted-foreground font-medium">Saldo Livre Hoje</p>
+          <p className="text-sm text-muted-foreground font-medium">Saldo Livre</p>
           <Tooltip>
             <TooltipTrigger>
               <Info className="w-3.5 h-3.5 text-muted-foreground/50" />
             </TooltipTrigger>
             <TooltipContent className="max-w-[260px]">
               <p className="text-xs">
-                Quanto você pode gastar agora, já descontando dívidas, parcelas e dinheiro guardado em metas.
+                Dinheiro disponível nas suas contas, já descontando compromissos e metas.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -61,29 +61,35 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false, t
         balance.saldoLivre >= 0 ? "text-muted-foreground" : "text-impulse font-medium"
       )}>
         {balance.saldoLivre >= 0
-          ? "Disponível para gastar"
+          ? "Dinheiro disponível nas suas contas"
           : balance.saldoLivre > -500
-            ? "⚠️ Atenção: seu saldo está negativo. Evite novos gastos."
+            ? "⚠️ Atenção: seu saldo está negativo"
             : balance.saldoLivre > -2000
-              ? "🚨 Situação crítica. Revise seus gastos urgentemente."
-              : "🔴 Alerta máximo: seu saldo está muito comprometido. Tome uma atitude agora."}
+              ? "🚨 Situação crítica. Revise seus gastos."
+              : "🔴 Alerta máximo: saldo muito comprometido."}
       </p>
 
-      {/* Resultado do mês - sempre visível quando há dados */}
+      {/* Resultado do mês - separado do saldo */}
       {hasMonthlyData && (
         <div className="mt-4 pt-3 border-t border-border">
-          <div className="flex items-center gap-2">
-            {isDeficit ? (
-              <AlertTriangle className="w-4 h-4 text-impulse shrink-0" />
-            ) : (
-              <CheckCircle className="w-4 h-4 text-essential shrink-0" />
-            )}
-            <p className={cn("text-xs font-medium", isDeficit ? "text-impulse" : "text-essential")}>
-              {isDeficit
-                ? "Você gastou mais do que ganhou este mês"
-                : "Dentro do orçamento este mês"}
-            </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-muted-foreground">Resultado do mês</p>
+            <div className="flex items-center gap-1.5">
+              {isDeficit ? (
+                <AlertTriangle className="w-3.5 h-3.5 text-impulse shrink-0" />
+              ) : (
+                <CheckCircle className="w-3.5 h-3.5 text-essential shrink-0" />
+              )}
+              <p className={cn("text-xs font-semibold", isDeficit ? "text-impulse" : "text-essential")}>
+                {isDeficit ? "" : "+"}{formatCurrency(resultadoMes)}
+              </p>
+            </div>
           </div>
+          <p className={cn("text-[10px] mt-0.5", isDeficit ? "text-impulse/80" : "text-essential/80")}>
+            {isDeficit
+              ? "Você gastou mais do que ganhou este mês"
+              : "Dentro do orçamento este mês"}
+          </p>
         </div>
       )}
 
