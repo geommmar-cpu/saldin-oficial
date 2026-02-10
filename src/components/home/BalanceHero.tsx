@@ -19,7 +19,8 @@ interface BalanceHeroProps {
 
 export const BalanceHero = ({ balance, totalIncome, totalSpent, cryptoTotal = 0, cryptoEnabled = false }: BalanceHeroProps) => {
   const [expanded, setExpanded] = useState(false);
-  const usagePercentage = totalIncome > 0 ? (totalSpent / totalIncome) * 100 : 0;
+  const totalCompromised = totalSpent + balance.saldoComprometido + balance.saldoGuardado;
+  const usagePercentage = totalIncome > 0 ? (totalCompromised / totalIncome) * 100 : 0;
   const patrimonioTotal = balance.saldoBruto + cryptoTotal;
 
   return (
