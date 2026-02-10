@@ -29,7 +29,7 @@ import { ptBR } from "date-fns/locale";
 
 // Home section components
 import { BalanceHero } from "@/components/home/BalanceHero";
-
+import { MonthlyResult } from "@/components/home/MonthlyResult";
 import { AlertsSection } from "@/components/home/AlertsSection";
 import { CreditCardSummary } from "@/components/home/CreditCardSummary";
 import { TransactionsSection } from "@/components/home/TransactionsSection";
@@ -175,19 +175,25 @@ export const Home = () => {
       <main className="px-5 space-y-4 pt-4">
         {hasData ? (
           <>
-            {/* 1. SALDO LIVRE - Hero */}
+            {/* 1. DINHEIRO DISPONÍVEL - Hero principal */}
             <FadeIn delay={0.05}>
               <BalanceHero
                 balance={balanceBreakdown}
                 cryptoTotal={preferences.cryptoEnabled ? cryptoTotal : 0}
                 cryptoEnabled={preferences.cryptoEnabled}
+              />
+            </FadeIn>
+
+            {/* 2. RESULTADO DO MÊS - Destaque médio */}
+            <FadeIn delay={0.07}>
+              <MonthlyResult
                 totalIncome={totalIncome}
                 totalSpent={totalSpent}
               />
             </FadeIn>
 
-            {/* 2. CONTAS BANCÁRIAS */}
-            <FadeIn delay={0.08}>
+            {/* 3. ONDE ESTÁ SEU DINHEIRO - Contas */}
+            <FadeIn delay={0.09}>
               <BankAccountsSummary />
             </FadeIn>
 

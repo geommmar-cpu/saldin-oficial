@@ -21,7 +21,7 @@ export const BankAccountsSummary = () => {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Landmark className="w-4 h-4 text-muted-foreground" />
-          <h3 className="font-medium text-sm">Contas Bancárias</h3>
+          <h3 className="font-medium text-sm">Onde está seu dinheiro</h3>
         </div>
         <Button
           variant="ghost"
