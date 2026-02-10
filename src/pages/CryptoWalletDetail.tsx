@@ -137,7 +137,7 @@ export const CryptoWalletDetail = () => {
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/crypto")}>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <h1 className="font-serif text-xl font-semibold">{wallet.name}</h1>
