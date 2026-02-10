@@ -28,7 +28,7 @@ import { ptBR } from "date-fns/locale";
 
 // Home section components
 import { BalanceHero } from "@/components/home/BalanceHero";
-import { MonthlyResult } from "@/components/home/MonthlyResult";
+
 import { AlertsSection } from "@/components/home/AlertsSection";
 import { CreditCardSummary } from "@/components/home/CreditCardSummary";
 import { TransactionsSection } from "@/components/home/TransactionsSection";
@@ -180,12 +180,6 @@ export const Home = () => {
                 balance={balanceBreakdown}
                 cryptoTotal={preferences.cryptoEnabled ? cryptoTotal : 0}
                 cryptoEnabled={preferences.cryptoEnabled}
-              />
-            </FadeIn>
-
-            {/* 1.5 RESULTADO DO MÊS */}
-            <FadeIn delay={0.06}>
-              <MonthlyResult
                 totalIncome={totalIncome}
                 totalSpent={totalSpent}
               />
