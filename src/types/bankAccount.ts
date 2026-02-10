@@ -1,6 +1,6 @@
 // Bank Account types for the Saldin financial app
 
-export type BankAccountType = "checking" | "savings" | "payment";
+export type BankAccountType = "checking" | "savings" | "payment" | "cash";
 
 export interface BankAccount {
   id: string;
@@ -42,6 +42,7 @@ export const accountTypeLabels: Record<BankAccountType, string> = {
   checking: "Corrente",
   savings: "Poupança",
   payment: "Pagamento",
+  cash: "Dinheiro",
 };
 
 export const accountTypeOptions: { value: BankAccountType; label: string }[] = [
@@ -49,3 +50,7 @@ export const accountTypeOptions: { value: BankAccountType; label: string }[] = [
   { value: "savings", label: "Poupança" },
   { value: "payment", label: "Pagamento" },
 ];
+
+// Cash account constants
+export const CASH_ACCOUNT_NAME = "Dinheiro em mãos";
+export const CASH_ACCOUNT_KEY = "__cash__";

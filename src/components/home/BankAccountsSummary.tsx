@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { Landmark, ChevronRight, Plus, AlertTriangle } from "lucide-react";
+import { Landmark, ChevronRight, Plus, AlertTriangle, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { detectBank } from "@/lib/cardBranding";
 import { formatCurrency } from "@/lib/balanceCalculations";
+import { CASH_ACCOUNT_KEY } from "@/types/bankAccount";
 
 export const BankAccountsSummary = () => {
   const navigate = useNavigate();
@@ -50,8 +51,10 @@ export const BankAccountsSummary = () => {
       {/* Account cards */}
       <div className="space-y-2">
         {accounts.slice(0, 3).map((account) => {
+          const isCash = account.bank_key === CASH_ACCOUNT_KEY || account.account_type === ("cash" as any);
           const bankTheme = detectBank(account.bank_name, account.bank_key);
-          const color = account.color || bankTheme.color;
+          const color = isCash ? "#6B7280" : (account.color || bankTheme.color);
+          const Icon = isCash ? Wallet : Landmark;
 
           return (
             <motion.button
@@ -64,7 +67,7 @@ export const BankAccountsSummary = () => {
                 className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                 style={{ backgroundColor: color + "20" }}
               >
-                <Landmark className="w-4 h-4" style={{ color }} />
+                <Icon className="w-4 h-4" style={{ color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{account.bank_name}</p>

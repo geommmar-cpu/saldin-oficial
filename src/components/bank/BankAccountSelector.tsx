@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { Landmark, Plus } from "lucide-react";
+import { Landmark, Plus, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { detectBank } from "@/lib/cardBranding";
 import { formatCurrency } from "@/lib/balanceCalculations";
+import { CASH_ACCOUNT_KEY } from "@/types/bankAccount";
 
 interface BankAccountSelectorProps {
   selectedId?: string;
@@ -51,8 +52,10 @@ export const BankAccountSelector = ({
       <label className="text-sm text-muted-foreground mb-3 block">{label}</label>
       <div className="space-y-2">
         {filteredAccounts.map((account) => {
+          const isCash = account.bank_key === CASH_ACCOUNT_KEY || account.account_type === ("cash" as any);
           const bankTheme = detectBank(account.bank_name, account.bank_key);
-          const color = account.color || bankTheme.color;
+          const color = isCash ? "#6B7280" : (account.color || bankTheme.color);
+          const Icon = isCash ? Wallet : Landmark;
 
           return (
             <motion.button
@@ -70,7 +73,7 @@ export const BankAccountSelector = ({
                 className="w-8 h-8 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: color + "30" }}
               >
-                <Landmark className="w-4 h-4" style={{ color }} />
+                <Icon className="w-4 h-4" style={{ color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{account.bank_name}</p>

@@ -15,6 +15,7 @@ import { useCreateExpense } from "@/hooks/useExpenses";
 import { useCreateCreditCardPurchase, useCreditCards } from "@/hooks/useCreditCards";
 import { useCreateReceivable } from "@/hooks/useReceivables";
 import { useBankAccounts, useUpdateBankBalance } from "@/hooks/useBankAccounts";
+import { useCashAccount } from "@/hooks/useCashAccount";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { 
@@ -93,6 +94,7 @@ export const ConfirmExpense = () => {
   const { data: bankAccounts = [] } = useBankAccounts();
   const updateBankBalance = useUpdateBankBalance();
   const createReceivable = useCreateReceivable();
+  const { ensureCashAccount, cashAccountId, isCreating: isCreatingCash } = useCashAccount();
   
   const amount = location.state?.amount || 67.50;
   const isNew = id === "new";
@@ -158,6 +160,7 @@ export const ConfirmExpense = () => {
   const canContinueExpense = () => {
     if (!description.trim() || !category || !paymentMethod) return false;
     if (paymentMethod === "credit" && !selectedCardId) return false;
+    if (paymentMethod === "cash") return true; // Cash account will be auto-created
     if (paymentMethod !== "credit" && bankAccounts.length > 0 && !selectedBankId) return false;
     return true;
   };
@@ -198,6 +201,12 @@ export const ConfirmExpense = () => {
           purchase_date: new Date().toISOString().split("T")[0],
         });
       } else {
+        // For cash payments, ensure the cash account exists
+        let bankId = selectedBankId;
+        if (paymentMethod === "cash") {
+          bankId = await ensureCashAccount();
+        }
+
         // GASTO NORMAL: Criar expense
         await createExpense.mutateAsync({
           amount,
@@ -208,13 +217,13 @@ export const ConfirmExpense = () => {
           is_installment: isRecurring || false,
           total_installments: isRecurring && installments ? parseInt(installments) : undefined,
           installment_number: 1,
-          bank_account_id: selectedBankId || undefined,
+          bank_account_id: bankId || undefined,
         } as any);
 
         // Update bank balance if a bank was selected
-        if (selectedBankId) {
+        if (bankId) {
           await updateBankBalance.mutateAsync({
-            accountId: selectedBankId,
+            accountId: bankId,
             delta: -amount,
           });
         }
@@ -460,6 +469,13 @@ export const ConfirmExpense = () => {
                     onClick={() => {
                       setPaymentMethod(opt.value);
                       if (opt.value !== "credit") setSelectedCardId(undefined);
+                      if (opt.value === "cash" && cashAccountId) {
+                        setSelectedBankId(cashAccountId);
+                      } else if (opt.value === "cash" && !cashAccountId) {
+                        setSelectedBankId("__cash_pending__");
+                      } else if (opt.value !== "cash" && (selectedBankId === "__cash_pending__" || selectedBankId === cashAccountId)) {
+                        setSelectedBankId(undefined);
+                      }
                     }}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-xl border transition-all",
@@ -474,6 +490,25 @@ export const ConfirmExpense = () => {
                 ))}
               </div>
             </div>
+
+            {/* Cash account indicator */}
+            {paymentMethod === "cash" && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mb-5"
+              >
+                <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-primary bg-primary/10">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                    <Banknote className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Dinheiro em mãos</p>
+                    <p className="text-xs text-muted-foreground">Conta criada automaticamente</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Credit Card Selector (only when credit is selected) */}
             {paymentMethod === "credit" && (
@@ -531,8 +566,8 @@ export const ConfirmExpense = () => {
               </motion.div>
             )}
 
-            {/* Bank Account Selector (for non-credit payments) */}
-            {paymentMethod && paymentMethod !== "credit" && (
+            {/* Bank Account Selector (for non-credit, non-cash payments) */}
+            {paymentMethod && paymentMethod !== "credit" && paymentMethod !== "cash" && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
