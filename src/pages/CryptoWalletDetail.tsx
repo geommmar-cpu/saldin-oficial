@@ -81,7 +81,7 @@ export const CryptoWalletDetail = () => {
 
   const handleDelete = async () => {
     await deleteWallet.mutateAsync(wallet.id);
-    navigate("/crypto");
+    navigate("/");
   };
 
   const walletPrice = Number(wallet.last_price);
