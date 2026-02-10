@@ -69,30 +69,19 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false, t
               : "🔴 Alerta máximo: saldo muito comprometido."}
       </p>
 
-      {/* Resultado do mês - separado do saldo */}
+      {/* Resultado do mês */}
       {hasMonthlyData && (
-        <div className={cn(
-          "mt-4 p-3 rounded-xl flex items-center gap-3",
-          isDeficit ? "bg-impulse/8" : "bg-essential/8"
-        )}>
-          <div className={cn(
-            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-            isDeficit ? "bg-impulse/15" : "bg-essential/15"
-          )}>
+        <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
             {isDeficit ? (
-              <TrendingDown className="w-4 h-4 text-impulse" />
+              <TrendingDown className="w-4 h-4 text-impulse shrink-0" />
             ) : (
-              <TrendingUp className="w-4 h-4 text-essential" />
+              <TrendingUp className="w-4 h-4 text-essential shrink-0" />
             )}
+            <p className="text-xs text-muted-foreground">Resultado do mês</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-muted-foreground font-medium">Resultado do mês</p>
-            <p className={cn("text-sm font-bold", isDeficit ? "text-impulse" : "text-essential")}>
-              {isDeficit ? "− " : "+ "}{formatCurrency(Math.abs(resultadoMes))}
-            </p>
-          </div>
-          <p className={cn("text-[10px] font-medium text-right max-w-[120px] shrink-0", isDeficit ? "text-impulse/80" : "text-essential/80")}>
-            {isDeficit ? "Gastou mais do que ganhou" : "Dentro do orçamento"}
+          <p className={cn("text-sm font-semibold tabular-nums", isDeficit ? "text-impulse" : "text-essential")}>
+            {isDeficit ? "− " : "+ "}{formatCurrency(Math.abs(resultadoMes))}
           </p>
         </div>
       )}
