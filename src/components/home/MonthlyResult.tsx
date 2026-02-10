@@ -57,16 +57,25 @@ export const MonthlyResult = ({ totalIncome, totalSpent }: MonthlyResultProps) =
             </p>
           </div>
         ) : isDeficit ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-impulse" />
-              <p className="text-xs text-impulse">
-                Você gastou {formatCurrency(Math.abs(resultado))} a mais do que ganhou
-              </p>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-impulse" />
+                <p className="text-xs text-impulse font-medium">
+                  Você gastou {formatCurrency(Math.abs(resultado))} a mais do que ganhou
+                </p>
+              </div>
+              <span className="text-sm font-bold text-impulse">
+                {formatCurrency(resultado)}
+              </span>
             </div>
-            <span className="text-sm font-bold text-impulse">
-              {formatCurrency(resultado)}
-            </span>
+            <p className="text-xs text-impulse/80 pl-6">
+              {Math.abs(resultado) > 2000
+                ? "Seus gastos estão muito acima da receita. Considere cortar despesas imediatamente."
+                : Math.abs(resultado) > 500
+                  ? "Cuidado: o déficit está crescendo. Reavalie suas prioridades este mês."
+                  : "Fique atento para não aumentar essa diferença até o fim do mês."}
+            </p>
           </div>
         ) : (
           <div className="flex items-center justify-between">

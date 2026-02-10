@@ -51,10 +51,17 @@ export const BalanceHero = ({ balance, cryptoTotal = 0, cryptoEnabled = false }:
       >
         {formatCurrency(balance.saldoLivre)}
       </p>
-      <p className="text-xs text-muted-foreground mt-1.5">
+      <p className={cn(
+        "text-xs mt-1.5",
+        balance.saldoLivre >= 0 ? "text-muted-foreground" : "text-impulse font-medium"
+      )}>
         {balance.saldoLivre >= 0
           ? "Disponível para gastar"
-          : "Você está no vermelho"}
+          : balance.saldoLivre > -500
+            ? "⚠️ Atenção: seu saldo está negativo. Evite novos gastos."
+            : balance.saldoLivre > -2000
+              ? "🚨 Situação crítica. Revise seus gastos urgentemente."
+              : "🔴 Alerta máximo: seu saldo está muito comprometido. Tome uma atitude agora."}
       </p>
 
       {/* Expand toggle */}
