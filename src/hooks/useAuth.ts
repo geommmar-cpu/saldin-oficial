@@ -17,10 +17,19 @@ export const useAuth = () => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // THEN check for existing session with timeout
+    const sessionPromise = supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      return true;
+    });
+
+    // Timeout after 5 seconds
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => resolve(false), 5000);
+    });
+
+    Promise.race([sessionPromise, timeoutPromise]).then(() => {
       setLoading(false);
     });
 
@@ -29,7 +38,7 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string, name?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -54,7 +63,7 @@ export const useAuth = () => {
 
   const signInWithGoogle = async () => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -72,7 +81,7 @@ export const useAuth = () => {
 
   const resetPassword = async (email: string) => {
     const redirectUrl = `${window.location.origin}/auth`;
-    
+
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl,
     });

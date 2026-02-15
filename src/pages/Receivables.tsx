@@ -7,11 +7,11 @@ import { WhatsAppChargeButton } from "@/components/WhatsAppChargeButton";
 import { FadeIn } from "@/components/ui/motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { 
-  ArrowLeft, 
-  Plus, 
-  User, 
-  Clock, 
+import {
+  ChevronLeft,
+  Plus,
+  User,
+  Clock,
   CheckCircle2,
   AlertTriangle,
   HandCoins,
@@ -31,20 +31,20 @@ const statusConfig = {
 const Receivables = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get selected month from navigation state, fallback to current month
   const selectedMonth = useMemo(() => {
     const stateMonth = location.state?.selectedMonth;
     return stateMonth ? new Date(stateMonth) : new Date();
   }, [location.state?.selectedMonth]);
-  
+
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
-  
+
   // Fetch real data from Supabase
   const { data: allReceivables = [], isLoading } = useReceivables("all");
   const { data: stats } = useReceivableStats();
-  
+
   // Filter receivables by due date in selected month
   const receivables = useMemo(() => {
     return allReceivables.filter(receivable => {
@@ -98,8 +98,8 @@ const Receivables = () => {
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="-ml-2">
+              <ChevronLeft className="w-5 h-5" />
             </Button>
             <h1 className="font-serif text-xl font-semibold">A Receber</h1>
           </div>
@@ -144,6 +144,7 @@ const Receivables = () => {
         <div className="h-px bg-border" />
 
         {/* Receivables List */}
+        {/* Receivables List */}
         <FadeIn delay={0.15}>
           <div>
             <h2 className="font-serif text-lg font-semibold mb-3">
@@ -151,63 +152,70 @@ const Receivables = () => {
             </h2>
             <div className="space-y-3">
               {pendingReceivables.length === 0 ? (
-                <Card className="p-6 text-center">
+                <div className="p-8 text-center bg-card rounded-2xl border border-border/50">
                   <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center">
                     <HandCoins className="w-6 h-6 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground">
                     Nenhum valor a receber no momento
                   </p>
-                </Card>
+                </div>
               ) : (
-                pendingReceivables.map((receivable) => {
-                  const config = statusConfig[receivable.status] || statusConfig.pending;
-                  const StatusIcon = config.icon;
-                  
+                pendingReceivables.map((receivable, index) => {
+                  const isOverdue = receivable.due_date && parseLocalDate(receivable.due_date)! < new Date();
+                  const isLoan = receivable.type === "loan";
+
                   return (
-                    <motion.button
+                    <motion.div
                       key={receivable.id}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      onClick={() => navigate(`/receivables/${receivable.id}`)}
-                      className="w-full"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
                     >
-                      <Card className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-11 h-11 rounded-full bg-muted flex items-center justify-center">
-                            <User className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 text-left">
-                            <p className="font-medium">{receivable.debtor_name}</p>
-                            {receivable.description && (
-                              <p className="text-sm text-muted-foreground truncate">
-                                {receivable.description}
-                              </p>
+                      <button
+                        onClick={() => navigate(`/receivables/${receivable.id}`)}
+                        className="w-full text-left bg-card rounded-xl border border-border p-4 shadow-sm active:scale-[0.98] transition-all hover:shadow-md group"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                              isLoan ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"
+                            )}>
+                              {isLoan ? "Empréstimo" : "A Receber"}
+                            </span>
+                            {isOverdue && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-100 text-red-700 flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3" />
+                                Atrasado
+                              </span>
                             )}
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold">
-                              {formatCurrency(Number(receivable.amount))}
-                            </p>
-                            <div className={cn("flex items-center gap-1 text-xs", config.color)}>
-                              <StatusIcon className="w-3 h-3" />
-                              <span>{formatDate(receivable.due_date)}</span>
+                          <p className="font-serif text-lg font-semibold tabular-nums">
+                            {formatCurrency(Number(receivable.amount))}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <User className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{receivable.debtor_name}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              <span>Vence {formatDate(receivable.due_date)}</span>
+                              {receivable.is_installment && (
+                                <>
+                                  <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                                  <span>{receivable.installment_number}/{receivable.total_installments}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
-                        {/* Botão Cobrar */}
-                        <div className="mt-3 pt-3 border-t border-border">
-                          <WhatsAppChargeButton
-                            debtorName={receivable.debtor_name}
-                            amount={Number(receivable.amount)}
-                            description={receivable.description || undefined}
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                          />
-                        </div>
-                      </Card>
-                    </motion.button>
+                      </button>
+                    </motion.div>
                   );
                 })
               )}
@@ -218,37 +226,29 @@ const Receivables = () => {
         {/* Received History - Show if any exist */}
         {receivables.some((r) => r.status === "received") && (
           <FadeIn delay={0.2}>
-            <div>
+            <div className="mt-8">
               <h2 className="font-serif text-lg font-semibold mb-3 text-muted-foreground">
-                Recebidos
+                Recebidos Recentemente
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-3 opacity-60 hover:opacity-100 transition-opacity">
                 {receivables
                   .filter((r) => r.status === "received")
                   .map((receivable) => (
-                    <Card key={receivable.id} className="p-4 opacity-60">
-                      <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-full bg-essential/10 flex items-center justify-center">
-                          <CheckCircle2 className="w-5 h-5 text-essential" />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-medium">{receivable.debtor_name}</p>
-                          {receivable.description && (
-                            <p className="text-sm text-muted-foreground truncate">
-                              {receivable.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-essential">
-                            {formatCurrency(Number(receivable.amount))}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Recebido
-                          </p>
-                        </div>
+                    <div
+                      key={receivable.id}
+                      className="flex items-center gap-3 p-4 bg-card/50 rounded-xl border border-border/50"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-essential/20 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-essential" />
                       </div>
-                    </Card>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate line-through text-muted-foreground">{receivable.debtor_name}</p>
+                        <p className="text-xs text-muted-foreground">Confirmado</p>
+                      </div>
+                      <p className="font-semibold text-muted-foreground line-through">
+                        {formatCurrency(Number(receivable.amount))}
+                      </p>
+                    </div>
                   ))}
               </div>
             </div>

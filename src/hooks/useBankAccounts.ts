@@ -172,7 +172,21 @@ export const useCreateBankTransfer = () => {
     mutationFn: async (transfer: Omit<BankTransferInsert, "user_id">) => {
       if (!user) throw new Error("Não autenticado");
 
-      // 1. Create transfer record
+      // 1. Check if source account has enough balance
+      const { data: sourceAccount, error: fetchError } = await db
+        .from("bank_accounts")
+        .select("current_balance, bank_name")
+        .eq("id", transfer.from_account_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!sourceAccount) throw new Error("Conta de origem não encontrada");
+
+      if (Number(sourceAccount.current_balance) < Number(transfer.amount)) {
+        throw new Error(`Erro: Saldo insuficiente na conta ${sourceAccount.bank_name}.`);
+      }
+
+      // 2. Create transfer record
       const { data, error } = await db
         .from("bank_transfers")
         .insert({ ...transfer, user_id: user.id })
@@ -180,7 +194,7 @@ export const useCreateBankTransfer = () => {
         .single();
       if (error) throw error;
 
-      // 2. Update from_account balance (subtract)
+      // 3. Update from_account balance (subtract)
       const { data: fromAcc, error: fromErr } = await db
         .from("bank_accounts")
         .select("current_balance")
@@ -196,7 +210,7 @@ export const useCreateBankTransfer = () => {
         })
         .eq("id", transfer.from_account_id);
 
-      // 3. Update to_account balance (add)
+      // 4. Update to_account balance (add)
       const { data: toAcc, error: toErr } = await db
         .from("bank_accounts")
         .select("current_balance")
@@ -267,5 +281,120 @@ export const useDeleteBankTransfer = () => {
       toast.success("Transferência revertida!");
     },
     onError: () => toast.error("Erro ao reverter transferência"),
+  });
+};
+
+// ─── Account History ────────────────────────────────────
+
+export type AccountHistoryItem = {
+  id: string;
+  type: "income" | "expense" | "transfer_in" | "transfer_out";
+  amount: number;
+  description: string;
+  date: string;
+  category?: string;
+  status: "pending" | "confirmed" | "completed";
+};
+
+export const useBankAccountHistory = (accountId: string | undefined) => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["bank-history", accountId],
+    queryFn: async () => {
+      if (!accountId || !user) return [];
+
+      // 1. Fetch Incomes
+      const { data: incomes, error: incError } = await db
+        .from("incomes")
+        .select("*")
+        .eq("bank_account_id", accountId)
+        .order("date", { ascending: false });
+
+      if (incError) throw incError;
+
+      // 2. Fetch Expenses
+      const { data: expenses, error: expError } = await db
+        .from("expenses")
+        .select("*, categories(name, icon, color)")
+        .eq("bank_account_id", accountId) // Assuming column exists based on context
+        .order("date", { ascending: false });
+
+      if (expError) {
+        // Fallback if column doesn't exist yet, just return empty for expenses
+        console.warn("Could not fetch expenses for bank account:", expError);
+      }
+
+      // 3. Fetch Transfers Out
+      const { data: transfersOut, error: trOutError } = await db
+        .from("bank_transfers")
+        .select("*, to:to_account_id(bank_name)")
+        .eq("from_account_id", accountId);
+
+      if (trOutError) throw trOutError;
+
+      // 4. Fetch Transfers In
+      const { data: transfersIn, error: trInError } = await db
+        .from("bank_transfers")
+        .select("*, from:from_account_id(bank_name)")
+        .eq("to_account_id", accountId);
+
+      if (trInError) throw trInError;
+
+      // Combine and normalize
+      const history: AccountHistoryItem[] = [];
+
+      incomes?.forEach((inc: any) => {
+        history.push({
+          id: inc.id,
+          type: "income",
+          amount: Number(inc.amount),
+          description: inc.description,
+          date: inc.date,
+          category: inc.type === 'salary' ? 'Salário' : 'Receita',
+          status: "confirmed"
+        });
+      });
+
+      expenses?.forEach((exp: any) => {
+        history.push({
+          id: exp.id,
+          type: "expense",
+          amount: Number(exp.amount),
+          description: exp.description,
+          date: exp.date,
+          category: exp.categories?.name || "Despesa",
+          status: exp.status === 'confirmed' ? 'confirmed' : 'pending'
+        });
+      });
+
+      transfersOut?.forEach((tr: any) => {
+        history.push({
+          id: tr.id,
+          type: "transfer_out",
+          amount: Number(tr.amount),
+          description: `Transferência para ${tr.to?.bank_name || 'Conta'}`,
+          date: tr.date,
+          category: "Transferência",
+          status: "completed"
+        });
+      });
+
+      transfersIn?.forEach((tr: any) => {
+        history.push({
+          id: tr.id,
+          type: "transfer_in",
+          amount: Number(tr.amount),
+          description: `Recebido de ${tr.from?.bank_name || 'Conta'}`,
+          date: tr.date,
+          category: "Transferência",
+          status: "completed"
+        });
+      });
+
+      // Sort by date desc
+      return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    },
+    enabled: !!accountId && !!user
   });
 };

@@ -85,8 +85,11 @@ export const AddCryptoWallet = () => {
     : inputMode === "brl" ? rawValue : 0;
 
   const hasInitialValue = computedQuantity > 0;
-  const canSave = name.trim().length > 0 && symbol.trim().length > 0 
+  const canSave = name.trim().length > 0 && symbol.trim().length > 0
     && (!hasInitialValue || (selectedBankId && selectedBankId !== "none"));
+
+  const selectedBank = bankAccounts.find(b => b.id === selectedBankId);
+  const isInsufficient = hasInitialValue && selectedBank && computedValue > Number(selectedBank.current_balance);
 
   const handleSave = async () => {
     if (!canSave) return;
@@ -151,13 +154,23 @@ export const AddCryptoWallet = () => {
                     : "border-border bg-card hover:bg-secondary"
                 )}
               >
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: crypto.color + "20" }}
-                >
-                  <span className="text-xs font-bold" style={{ color: crypto.color }}>
-                    {crypto.symbol}
-                  </span>
+                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-background border border-border">
+                  {crypto.image ? (
+                    <img
+                      src={crypto.image}
+                      alt={crypto.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ backgroundColor: crypto.color + "20" }}
+                    >
+                      <span className="text-xs font-bold" style={{ color: crypto.color }}>
+                        {crypto.symbol}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <span className="text-xs font-medium truncate w-full text-center">{crypto.name}</span>
               </motion.button>
@@ -360,6 +373,24 @@ export const AddCryptoWallet = () => {
             ))}
           </div>
         </FadeIn>
+
+        {/* Socratic Feedback - Insufficient Funds Warning */}
+        {isInsufficient && selectedBank && (
+          <FadeIn className="p-4 rounded-xl bg-impulse/10 border border-impulse/20 mb-6 mx-auto max-w-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-impulse shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-impulse">Atenção: Saldo insuficiente</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  O valor de <strong>{formatCryptoValue(computedValue, displayCurrency)}</strong> é maior do que o saldo atual da conta <strong>{selectedBank.bank_name}</strong>.
+                </p>
+                <p className="text-xs font-medium text-impulse/80 mt-2">
+                  Deseja prosseguir com o investimento mesmo assim?
+                </p>
+              </div>
+            </div>
+          </FadeIn>
+        )}
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-background/95 backdrop-blur-sm border-t border-border">

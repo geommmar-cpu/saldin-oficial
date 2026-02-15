@@ -22,15 +22,17 @@ import {
   Upload,
   Clock,
   Bitcoin,
+  Calendar,
+  BarChart4,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { path: "/", icon: Home, label: "Início" },
-  { path: "/history", icon: Clock, label: "Histórico" },
-  { path: "/goals", icon: Target, label: "Metas" },
+  { path: "/banks", icon: Landmark, label: "Contas" },
   { path: "/cards", icon: CreditCard, label: "Cartões" },
+  { path: "/subscriptions", icon: Calendar, label: "Assinaturas" },
   { path: "#more", icon: MoreHorizontal, label: "Mais", isMore: true },
 ];
 
@@ -46,15 +48,19 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
   const moreItems = useMemo(() => {
     const items = [
       { icon: CreditCard, label: "Meus Cartões", path: "/cards", desc: "Gerenciar cartões e faturas" },
+      { icon: Target, label: "Metas e Objetivos", path: "/goals", desc: "Planeje seus sonhos" },
+      { icon: Tag, label: "Assinaturas", path: "/subscriptions", desc: "Seus gastos recorrentes" },
+      { icon: Clock, label: "Histórico", path: "/history", desc: "Ver todas as movimentações" },
       { icon: Landmark, label: "Contas Bancárias", path: "/banks", desc: "Gerenciar contas e saldos" },
+
     ];
     if (preferences.cryptoEnabled) {
       items.push({ icon: Bitcoin, label: "Carteira Cripto", path: "/crypto", desc: "Investimentos em criptomoedas" });
     }
     items.push(
       { icon: Upload, label: "Importar Fatura", path: "/cards/import", desc: "Importar PDF ou CSV de fatura" },
+      { icon: BarChart4, label: "Relatórios e Análises", path: "/reports", desc: "Gráficos e insights do mês" },
       { icon: Tag, label: "Categorias", path: "/categories", desc: "Suas categorias de gastos" },
-      { icon: FileText, label: "Exportar PDF", path: "/settings", desc: "Relatórios financeiros" },
       { icon: Settings, label: "Configurações", path: "/settings", desc: "Conta e preferências" },
       { icon: HelpCircle, label: "Ajuda", path: "/help", desc: "Dúvidas e suporte" },
       { icon: FileCheck, label: "Termos de Uso", path: "/terms", desc: "Nossos termos" },
@@ -65,7 +71,23 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
 
   const handleFabClick = () => {
     setIsMoreOpen(false);
-    setIsSheetOpen(true);
+
+    // Context-aware additions
+    if (location.pathname.startsWith("/subscriptions")) {
+      navigate("/subscriptions/add");
+    } else if (location.pathname.startsWith("/banks")) {
+      navigate("/banks/add");
+    } else if (location.pathname.startsWith("/cards") && !location.pathname.includes("/import")) {
+      navigate("/cards/add");
+    } else if (location.pathname.startsWith("/goals")) {
+      navigate("/goals/add");
+    } else if (location.pathname.startsWith("/receivables")) {
+      navigate("/receivables/add");
+    } else if (location.pathname.startsWith("/crypto")) {
+      navigate("/crypto/add");
+    } else {
+      setIsSheetOpen(true);
+    }
   };
 
   const handleMoreClick = () => {
@@ -87,14 +109,36 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <>
       {/* FAB - Floating Action Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleFabClick}
-        className="fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full gradient-warm shadow-large"
-      >
-        <PlusCircle className="h-7 w-7 text-primary-foreground" />
-      </motion.button>
+      <AnimatePresence>
+        {!location.pathname.includes("/add") &&
+          !location.pathname.includes("/edit") &&
+          !location.pathname.includes("/confirm") &&
+          !location.pathname.includes("/transfer") && (
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleFabClick}
+              className="fixed bottom-20 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full gradient-warm shadow-large"
+            >
+              {location.pathname.startsWith("/subscriptions") ? (
+                <Calendar className="h-7 w-7 text-primary-foreground" />
+              ) : location.pathname.startsWith("/banks") ? (
+                <Landmark className="h-7 w-7 text-primary-foreground" />
+              ) : location.pathname.startsWith("/cards") ? (
+                <CreditCard className="h-7 w-7 text-primary-foreground" />
+              ) : location.pathname.startsWith("/goals") ? (
+                <Target className="h-7 w-7 text-primary-foreground" />
+              ) : location.pathname.startsWith("/receivables") ? (
+                <HandCoins className="h-7 w-7 text-primary-foreground" />
+              ) : (
+                <PlusCircle className="h-7 w-7 text-primary-foreground" />
+              )}
+            </motion.button>
+          )}
+      </AnimatePresence>
 
       {/* Bottom Sheet — Register */}
       <AnimatePresence>
@@ -240,8 +284,10 @@ export const BottomNav = React.forwardRef<HTMLDivElement>((_, ref) => {
           {navItems.map((item) => {
             const isActive = !item.isMore && location.pathname === item.path;
             const isCardsActive = item.path === "/cards" && (location.pathname.startsWith("/cards") || location.pathname.startsWith("/credit-cards"));
+            const isBanksActive = item.path === "/banks" && location.pathname.startsWith("/banks");
+            const isSubscriptionsActive = item.path === "/subscriptions" && location.pathname.startsWith("/subscriptions");
             const isHistoryActive = item.path === "/history" && location.pathname === "/history";
-            const active = isActive || isCardsActive || isHistoryActive;
+            const active = isActive || isCardsActive || isBanksActive || isSubscriptionsActive || isHistoryActive;
             const Icon = item.icon;
 
             if (item.isMore) {

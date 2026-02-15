@@ -5,9 +5,23 @@ import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, CreditCard as CreditCardIcon, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCreateCreditCard } from "@/hooks/useCreditCards";
+import { useCreateCreditCard, useCreditCards } from "@/hooks/useCreditCards";
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { formatCurrencyInput, parseCurrency } from "@/lib/currency";
+import { Switch } from "@/components/ui/switch";
 import { BANK_LIST, BRAND_LIST, detectBank } from "@/lib/cardBranding";
+import { BankLogo } from "@/components/BankLogo";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 export default function AddCreditCard() {
   const navigate = useNavigate();
@@ -22,6 +36,16 @@ export default function AddCreditCard() {
   const [closingDay, setClosingDay] = useState("");
   const [dueDay, setDueDay] = useState("");
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
+  const [isMainCard, setIsMainCard] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const { data: profile } = useProfile();
+  const { data: cards = [] } = useCreditCards();
+  const updateProfile = useUpdateProfile();
+
+  // Find existing main card names for the confirmation message
+  const existingCardId = (profile as any)?.wa_default_expense_card_id;
+  const existingCard = cards.find(c => c.id === existingCardId);
 
   const bankTheme = selectedBank
     ? BANK_LIST.find(b => b.key === selectedBank)
@@ -50,6 +74,13 @@ export default function AddCreditCard() {
       due_day: parseInt(dueDay),
       color: cardColor,
     });
+
+    if (isMainCard && newCard?.id) {
+      await updateProfile.mutateAsync({
+        wa_default_expense_card_id: newCard.id
+      });
+    }
+
     if (fromOnboarding && newCard?.id) {
       // Go directly to import with the new card pre-selected
       navigate("/cards/import", { replace: true, state: { fromOnboarding: true, preselectedCardId: newCard.id } });
@@ -91,14 +122,17 @@ export default function AddCreditCard() {
               <CreditCardIcon className="w-16 h-16" />
             </div>
             <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                  <span className="text-xs font-bold">
-                    {(bankTheme?.name || "C").charAt(0)}
-                  </span>
-                </div>
-                <p className="text-sm opacity-80">{cardBrand || bankTheme?.name || "Cartão"}</p>
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shadow-inner overflow-hidden border border-white/10 backdrop-blur-sm">
+                <BankLogo
+                  bankName={bankTheme?.name || "Cartão"}
+                  className="w-full h-full border-0 bg-transparent"
+                  iconClassName="text-white"
+                />
               </div>
+              <p className="text-sm opacity-80 font-semibold tracking-tight uppercase">
+                {cardBrand || bankTheme?.name || "Cartão"}
+              </p>
+
               <h3 className="text-xl font-bold mt-1">{cardName || "Nome do cartão"}</h3>
               {lastFour && (
                 <p className="text-sm opacity-70 font-mono mt-3">•••• •••• •••• {lastFour}</p>
@@ -117,37 +151,63 @@ export default function AddCreditCard() {
           </div>
 
           {/* Bank Selector */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-sm text-muted-foreground">Banco emissor</label>
-            <div className="flex gap-2 flex-wrap">
-              {BANK_LIST.filter(b => b.key !== "outros").slice(0, 12).map(bank => (
+            <div
+              className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {BANK_LIST.filter(b => b.key !== "outros").map(bank => (
                 <button
                   key={bank.key}
                   onClick={() => handleBankSelect(bank.key)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
-                    selectedBank === bank.key
-                      ? "border-foreground bg-foreground text-background scale-105"
-                      : "border-border bg-card text-foreground hover:border-foreground/30"
-                  )}
+                  className="flex flex-col items-center gap-2 min-w-[64px] snap-center group"
                 >
-                  <div
-                    className="w-4 h-4 rounded-full shrink-0"
-                    style={{ backgroundColor: bank.color }}
-                  />
-                  {bank.name}
+                  <div className={cn(
+                    "w-14 h-14 rounded-full flex items-center justify-center transition-all border-2 shadow-sm",
+                    selectedBank === bank.key
+                      ? "border-primary ring-2 ring-primary/20 ring-offset-2 scale-110"
+                      : "border-border bg-card group-hover:border-primary/50"
+                  )}
+                    style={{ backgroundColor: selectedBank === bank.key ? bank.color : "#ffffff" }}
+                  >
+                    {selectedBank === bank.key ? (
+                      <Check className="w-6 h-6 text-white" />
+                    ) : (
+                      <BankLogo bankName={bank.name} color={bank.color} size="lg" />
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-medium text-center truncate w-full transition-colors",
+                    selectedBank === bank.key ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {bank.name}
+                  </span>
                 </button>
               ))}
+
               <button
                 onClick={() => handleBankSelect("outros")}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
-                  selectedBank === "outros"
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-card text-foreground hover:border-foreground/30"
-                )}
+                className="flex flex-col items-center gap-2 min-w-[64px] snap-center group"
               >
-                Outro
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 shadow-sm bg-muted",
+                  selectedBank === "outros"
+                    ? "border-primary ring-2 ring-primary/20 ring-offset-2 scale-110"
+                    : "border-border group-hover:border-primary/50"
+                )}>
+                  {selectedBank === "outros" ? (
+                    <Check className="w-5 h-5 text-primary" />
+                  ) : (
+                    <span className="text-[10px] font-bold text-muted-foreground">...</span>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium text-center truncate w-full transition-colors",
+                  selectedBank === "outros" ? "text-primary" : "text-muted-foreground"
+                )}>
+                  Outro
+                </span>
               </button>
             </div>
           </div>
@@ -163,24 +223,66 @@ export default function AddCreditCard() {
             />
           </div>
 
-          {/* Brand */}
-          <div className="space-y-2">
+          {/* Brand - Horizontal Scroll */}
+          <div className="space-y-3">
             <label className="text-sm text-muted-foreground">Bandeira</label>
-            <div className="flex gap-2 flex-wrap">
+            <div
+              className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               {BRAND_LIST.map(brand => (
                 <button
                   key={brand.key}
                   onClick={() => setCardBrand(brand.name)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
-                    cardBrand === brand.name
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-card text-foreground hover:border-foreground/30"
-                  )}
+                  className="flex flex-col items-center gap-2 min-w-[64px] snap-center group"
                 >
-                  {brand.name}
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 shadow-sm font-bold text-white",
+                    cardBrand === brand.name
+                      ? "ring-2 ring-primary/20 ring-offset-2 scale-110"
+                      : "border-border bg-card group-hover:border-primary/50"
+                  )}
+                    style={{ backgroundColor: brand.color }}
+                  >
+                    {cardBrand === brand.name ? (
+                      <Check className="w-5 h-5 text-white" />
+                    ) : (
+                      <span className="text-xs">{brand.abbr}</span>
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-medium text-center truncate w-full transition-colors",
+                    cardBrand === brand.name ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {brand.name}
+                  </span>
                 </button>
               ))}
+
+              {/* Other Brand */}
+              <button
+                onClick={() => setCardBrand("Outra")}
+                className="flex flex-col items-center gap-2 min-w-[64px] snap-center group"
+              >
+                <div className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-all border-2 shadow-sm font-bold bg-muted",
+                  cardBrand === "Outra"
+                    ? "ring-2 ring-primary/20 ring-offset-2 scale-110 border-primary"
+                    : "border-border group-hover:border-primary/50"
+                )}>
+                  {cardBrand === "Outra" ? (
+                    <Check className="w-5 h-5 text-primary" />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">...</span>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium text-center truncate w-full transition-colors",
+                  cardBrand === "Outra" ? "text-primary" : "text-muted-foreground"
+                )}>
+                  Outra
+                </span>
+              </button>
             </div>
           </div>
 
@@ -242,7 +344,46 @@ export default function AddCreditCard() {
               />
             </div>
           </div>
+
+          {/* Main card toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card border border-border shadow-soft">
+            <div>
+              <p className="text-sm font-medium">Definir como cartão principal</p>
+              <p className="text-xs text-muted-foreground">Usar para gastos automáticos via WhatsApp</p>
+            </div>
+            <Switch
+              checked={isMainCard}
+              onCheckedChange={(checked) => {
+                if (checked && existingCardId) {
+                  setShowConfirm(true);
+                } else {
+                  setIsMainCard(checked);
+                }
+              }}
+            />
+          </div>
         </FadeIn>
+
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Substituir cartão principal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                O cartão <strong>{existingCard?.card_name}</strong> já está definido como principal.
+                Deseja que este novo cartão passe a ser o padrão para o WhatsApp?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsMainCard(false)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                setIsMainCard(true);
+                setShowConfirm(false);
+              }}>
+                Sim, substituir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
 
       {/* Footer */}

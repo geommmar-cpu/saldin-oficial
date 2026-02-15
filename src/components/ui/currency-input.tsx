@@ -26,7 +26,14 @@ export interface CurrencyInputProps
  */
 const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ className, value, onChange, showPrefix = true, inputSize = "default", ...props }, ref) => {
+    const vibrate = () => {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      vibrate();
       const formatted = formatCurrencyInput(e.target.value);
       onChange(formatted);
     };

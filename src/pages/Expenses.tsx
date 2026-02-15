@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
 import { ExpenseList, Expense } from "@/components/ExpenseList";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, Plus, Receipt, MessageCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, Plus, Receipt, MessageCircle, Loader2 } from "lucide-react";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useCardInstallmentsByMonth } from "@/hooks/useCreditCards";
 import { format } from "date-fns";
@@ -17,7 +17,7 @@ type EmotionType = "essencial" | "impulso" | "pilar" | null;
 export const Expenses = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get selected month from navigation state, fallback to current month
   const selectedMonth = useMemo(() => {
     const stateMonth = location.state?.selectedMonth;
@@ -29,7 +29,7 @@ export const Expenses = () => {
   const { data: ccInstallments = [], isLoading: installmentsLoading } = useCardInstallmentsByMonth(selectedMonth);
 
   const isLoading = expensesLoading || installmentsLoading;
-  
+
   // Filter expenses by selected month (including installments projected to future months)
   const expenses = useMemo(() => {
     return getExpensesForMonth(allExpenses, selectedMonth);
@@ -41,7 +41,7 @@ export const Expenses = () => {
       const purchase = inst.purchase;
       const card = purchase?.card;
       const cardLabel = card?.card_name ? `${card.card_name} · ` : "";
-      
+
       return {
         id: `cc-${inst.id}`,
         amount: Number(inst.amount),
@@ -68,8 +68,6 @@ export const Expenses = () => {
   };
 
   const handleExpenseClick = (expense: Expense) => {
-    // Don't navigate for credit card items
-    if (expense.id.startsWith("cc-")) return;
     navigate(`/expenses/${expense.id}`);
   };
 
@@ -113,8 +111,8 @@ export const Expenses = () => {
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="-ml-2">
+              <ChevronLeft className="w-5 h-5" />
             </Button>
             <div>
               <h1 className="font-serif text-xl font-semibold">Gastos</h1>
@@ -167,9 +165,9 @@ export const Expenses = () => {
               <h2 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <span className="text-lg">✅</span> Essenciais
               </h2>
-              <ExpenseList 
-                expenses={essentialItems} 
-                onExpenseClick={handleExpenseClick} 
+              <ExpenseList
+                expenses={essentialItems}
+                onExpenseClick={handleExpenseClick}
               />
             </div>
           </FadeIn>
@@ -182,9 +180,9 @@ export const Expenses = () => {
               <h2 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <span className="text-lg">🎯</span> Pilares
               </h2>
-              <ExpenseList 
-                expenses={obligationItems} 
-                onExpenseClick={handleExpenseClick} 
+              <ExpenseList
+                expenses={obligationItems}
+                onExpenseClick={handleExpenseClick}
               />
             </div>
           </FadeIn>
@@ -197,9 +195,9 @@ export const Expenses = () => {
               <h2 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <span className="text-lg">🔥</span> Impulsos
               </h2>
-              <ExpenseList 
-                expenses={impulseItems} 
-                onExpenseClick={handleExpenseClick} 
+              <ExpenseList
+                expenses={impulseItems}
+                onExpenseClick={handleExpenseClick}
               />
             </div>
           </FadeIn>
@@ -212,9 +210,9 @@ export const Expenses = () => {
               <h2 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <span className="text-lg">💳</span> Cartão de crédito
               </h2>
-              <ExpenseList 
-                expenses={cardItems} 
-                onExpenseClick={handleExpenseClick} 
+              <ExpenseList
+                expenses={cardItems}
+                onExpenseClick={handleExpenseClick}
               />
             </div>
           </FadeIn>
@@ -227,9 +225,9 @@ export const Expenses = () => {
               <h2 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
                 <span className="text-lg">📝</span> Outros
               </h2>
-              <ExpenseList 
-                expenses={otherItems} 
-                onExpenseClick={handleExpenseClick} 
+              <ExpenseList
+                expenses={otherItems}
+                onExpenseClick={handleExpenseClick}
               />
             </div>
           </FadeIn>
@@ -261,21 +259,25 @@ export const Expenses = () => {
 
 // Transform database expense to ExpenseList format
 function transformExpense(e: any): Expense {
+  const installmentLabel = e.total_installments && e.total_installments > 1
+    ? ` (${e.installment_number}/${e.total_installments}x)`
+    : "";
+
   return {
     id: e.id,
     amount: Number(e.amount),
-    description: e.description,
-    category: e.emotion === "essencial" ? "essential" 
-      : e.emotion === "pilar" ? "obligation" 
-      : e.emotion === "impulso" ? "impulse" 
-      : undefined,
+    description: `${e.description}${installmentLabel}`,
+    category: e.emotion === "essencial" ? "essential"
+      : e.emotion === "pilar" ? "obligation"
+        : e.emotion === "impulso" ? "impulse"
+          : undefined,
     wouldDoAgain: undefined,
     source: (e.source as Expense["source"]) || "manual",
     pending: e.status === "pending",
     createdAt: new Date(e.date || e.created_at),
     establishment: undefined,
     installmentNumber: e.installment_number,
-    totalInstallments: e.is_installment ? e.total_installments : undefined,
+    totalInstallments: (e.total_installments && e.total_installments > 1) ? e.total_installments : undefined,
   };
 }
 

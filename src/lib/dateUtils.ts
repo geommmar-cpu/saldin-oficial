@@ -29,11 +29,22 @@ export function localMonthEnd(year: number, month: number): string {
 }
 
 /**
- * Cria uma Date a partir de uma string YYYY-MM-DD sem deslocamento de timezone.
- * new Date("2025-01-15") interpreta como UTC, esta função interpreta como local.
+ * Cria uma Date a partir de uma data sem deslocamento de timezone.
+ * Se for uma string YYYY-MM-DD, interpreta como local.
+ * Se for um ISO completo (com T), usa o default do Date().
  */
 export function parseLocalDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!dateStr) return new Date();
+
+  // Se for um timestamp ISO completo (com T), o construtor Date lida corretamente
+  if (dateStr.includes('T')) {
+    return new Date(dateStr);
+  }
+
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return new Date(dateStr);
+
+  const [year, month, day] = parts.map(Number);
   return new Date(year, month - 1, day);
 }
 

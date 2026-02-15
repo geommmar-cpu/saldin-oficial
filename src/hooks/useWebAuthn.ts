@@ -84,7 +84,7 @@ export function useWebAuthn() {
   // Check if WebAuthn is supported and load credentials
   useEffect(() => {
     const checkSupport = async () => {
-      const isSupported = 
+      const isSupported =
         typeof window !== "undefined" &&
         window.PublicKeyCredential !== undefined &&
         typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function";
@@ -157,7 +157,7 @@ export function useWebAuthn() {
       }
 
       const response = credential.response as AuthenticatorAttestationResponse;
-      
+
       // Store credential
       const newCredential: StoredCredential = {
         credentialId: credential.id,
@@ -201,7 +201,7 @@ export function useWebAuthn() {
       setState(prev => ({ ...prev, isLoading: true }));
 
       const challenge = generateChallenge();
-      
+
       const allowCredentials: PublicKeyCredentialDescriptor[] = credentials.map(cred => ({
         id: base64ToBuffer(cred.rawId),
         type: "public-key",

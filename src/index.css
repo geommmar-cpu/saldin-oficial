@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@500;600;700&display=swap');
 
 /* 
   CONSCIÊNCIA FINANCEIRA - Design System
@@ -81,7 +81,7 @@
     --gradient-calm: linear-gradient(135deg, hsl(145 35% 45%) 0%, hsl(160 30% 50%) 100%);
     --gradient-alert: linear-gradient(135deg, hsl(12 75% 55%) 0%, hsl(25 70% 50%) 100%);
     --gradient-soft: linear-gradient(180deg, hsl(40 30% 97%) 0%, hsl(35 25% 94%) 100%);
-    
+
     /* Shadows */
     --shadow-soft: 0 2px 12px -2px hsl(25 25% 15% / 0.08);
     --shadow-medium: 0 4px 20px -4px hsl(25 25% 15% / 0.12);
@@ -89,63 +89,47 @@
   }
 
   .dark {
-    --background: 220 15% 8%;
-    --foreground: 220 10% 92%;
+    /* Google/GitHub Dark Mode Vibe - Cool Blue-Greys */
+    --background: 222 17% 9%;
+    /* Deep Blue-Black */
+    --foreground: 210 10% 96%;
 
-    --card: 220 12% 12%;
-    --card-foreground: 220 10% 92%;
+    --card: 222 15% 13%;
+    /* Slightly lighter blue-grey */
+    --card-foreground: 210 10% 96%;
 
-    --popover: 220 12% 12%;
-    --popover-foreground: 220 10% 92%;
+    --popover: 222 15% 13%;
+    --popover-foreground: 210 10% 96%;
 
-    --primary: 25 65% 55%;
-    --primary-foreground: 220 15% 8%;
+    --primary: 25 75% 55%;
+    /* Keep terracotta brand color (Contrasts well with blue) */
+    --primary-foreground: 210 15% 98%;
 
-    --secondary: 220 10% 18%;
-    --secondary-foreground: 220 8% 85%;
+    --secondary: 217 15% 18%;
+    --secondary-foreground: 210 10% 90%;
 
-    --muted: 220 8% 20%;
-    --muted-foreground: 220 8% 60%;
+    --muted: 217 15% 18%;
+    --muted-foreground: 215 10% 65%;
 
-    --accent: 38 70% 50%;
-    --accent-foreground: 220 15% 8%;
+    --accent: 38 75% 55%;
+    --accent-foreground: 222 15% 10%;
 
-    --destructive: 12 65% 50%;
-    --destructive-foreground: 220 10% 95%;
+    --border: 217 15% 18%;
+    --input: 217 15% 18%;
+    --ring: 25 75% 55%;
 
-    --essential: 145 30% 50%;
-    --essential-foreground: 220 15% 8%;
+    --sidebar-background: 222 17% 8%;
+    /* Slightly darker than main bg */
+    --sidebar-foreground: 210 10% 90%;
+    --sidebar-border: 217 15% 15%;
 
-    --obligation: 210 25% 55%;
-    --obligation-foreground: 220 15% 8%;
+    /* Updated Gradients for Dark Mode */
+    --gradient-warm: linear-gradient(135deg, hsl(25 75% 55%) 0%, hsl(38 85% 60%) 100%);
 
-    --pleasure: 35 65% 50%;
-    --pleasure-foreground: 220 15% 8%;
-
-    --impulse: 12 65% 50%;
-    --impulse-foreground: 220 10% 95%;
-
-    --border: 220 10% 22%;
-    --input: 220 10% 22%;
-    --ring: 25 65% 55%;
-
-    --sidebar-background: 220 12% 10%;
-    --sidebar-foreground: 220 8% 85%;
-    --sidebar-primary: 25 65% 55%;
-    --sidebar-primary-foreground: 220 15% 8%;
-    --sidebar-accent: 220 10% 18%;
-    --sidebar-accent-foreground: 220 8% 85%;
-    --sidebar-border: 220 10% 22%;
-    --sidebar-ring: 25 65% 55%;
-
-    --gradient-warm: linear-gradient(135deg, hsl(25 65% 55%) 0%, hsl(38 70% 50%) 100%);
-    --gradient-calm: linear-gradient(135deg, hsl(145 30% 50%) 0%, hsl(160 25% 45%) 100%);
-    --gradient-alert: linear-gradient(135deg, hsl(12 65% 50%) 0%, hsl(25 60% 45%) 100%);
-    --gradient-soft: linear-gradient(180deg, hsl(220 15% 8%) 0%, hsl(220 12% 12%) 100%);
-
-    --shadow-soft: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
-    --shadow-large: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+    /* Subtle blue-tinted shadows */
+    --shadow-soft: 0 4px 12px -2px hsl(222 30% 5% / 0.4);
+    --shadow-medium: 0 8px 24px -4px hsl(222 30% 5% / 0.5);
+    --shadow-large: 0 16px 48px -8px hsl(222 30% 5% / 0.6);
   }
 
   /* High Contrast Mode */
@@ -226,26 +210,29 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  h1, h2, h3 {
-    font-family: 'Playfair Display', serif;
+  h1,
+  h2,
+  h3 {
+    font-family: 'DM Sans', sans-serif;
     @apply font-semibold tracking-tight;
   }
 }
 
 @layer components {
+
   /* Emotion category badges */
   .badge-essential {
     @apply bg-essential text-essential-foreground;
   }
-  
+
   .badge-obligation {
     @apply bg-obligation text-obligation-foreground;
   }
-  
+
   .badge-pleasure {
     @apply bg-pleasure text-pleasure-foreground;
   }
-  
+
   .badge-impulse {
     @apply bg-impulse text-impulse-foreground;
   }
@@ -303,5 +290,21 @@
 
   .shadow-large {
     box-shadow: var(--shadow-large);
+  }
+
+  /* Fix for horizontal scrolling on mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    /* Allow vertical page scroll, but let component handle horizontal */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

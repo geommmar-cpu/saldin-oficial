@@ -6,25 +6,13 @@ import { BottomNav } from "@/components/BottomNav";
 import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { formatCurrencyInput, parseCurrency } from "@/lib/currency";
+import { parseCurrency } from "@/lib/currency";
+import { NumericKeypad } from "@/components/ui/numeric-keypad";
 
 export const AddExpense = () => {
   const navigate = useNavigate();
   const { preferences } = useUserPreferences();
   const [amount, setAmount] = useState("");
-
-  const handleKeyPress = (key: string) => {
-    const currentDigits = amount.replace(/[^\d]/g, "");
-    
-    if (key === "backspace") {
-      const newDigits = currentDigits.slice(0, -1);
-      setAmount(newDigits ? formatCurrencyInput(newDigits) : "");
-    } else if (key >= "0" && key <= "9") {
-      if (currentDigits.length >= 12) return;
-      const newDigits = currentDigits + key;
-      setAmount(formatCurrencyInput(newDigits));
-    }
-  };
 
   const handleContinue = () => {
     const numericAmount = parseCurrency(amount);
@@ -37,14 +25,12 @@ export const AddExpense = () => {
     window.open(whatsappUrl, "_blank");
   };
 
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "backspace"];
-
   return (
     <div className="min-h-screen bg-background flex flex-col pb-24">
       {/* Header */}
       <header className="px-5 pt-safe-top">
         <div className="pt-4 pb-2 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} data-testid="btn-back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-serif text-xl font-semibold">Novo Gasto</h1>
@@ -74,11 +60,12 @@ export const AddExpense = () => {
         {/* WhatsApp Alternative */}
         <FadeIn delay={0.1} className="mb-6">
           <div className="flex justify-center">
-            <Button 
-              variant="soft" 
-              size="sm" 
+            <Button
+              variant="soft"
+              size="sm"
               className="gap-2"
               onClick={openWhatsApp}
+              data-testid="btn-whatsapp"
             >
               <MessageCircle className="w-4 h-4" />
               Enviar via WhatsApp
@@ -91,25 +78,7 @@ export const AddExpense = () => {
 
         {/* Keypad */}
         <FadeIn delay={0.2} className="pb-6">
-          <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
-            {keys.map((key) => (
-              <motion.button
-                key={key}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => key !== "," && handleKeyPress(key)}
-                disabled={key === ","}
-                className={`h-16 rounded-xl text-2xl font-medium transition-colors ${
-                  key === "backspace"
-                    ? "bg-muted text-muted-foreground"
-                    : key === ","
-                    ? "bg-card border border-border text-muted-foreground/30 cursor-default"
-                    : "bg-card border border-border hover:bg-secondary"
-                }`}
-              >
-                {key === "backspace" ? "⌫" : key}
-              </motion.button>
-            ))}
-          </div>
+          <NumericKeypad value={amount} onChange={setAmount} />
         </FadeIn>
 
         {/* Continue Button */}
@@ -120,6 +89,7 @@ export const AddExpense = () => {
             className="w-full"
             onClick={handleContinue}
             disabled={parseCurrency(amount) <= 0}
+            data-testid="btn-continue"
           >
             Continuar
           </Button>
@@ -128,6 +98,7 @@ export const AddExpense = () => {
             size="lg"
             className="w-full"
             onClick={() => navigate("/")}
+            data-testid="btn-cancel"
           >
             Cancelar
           </Button>

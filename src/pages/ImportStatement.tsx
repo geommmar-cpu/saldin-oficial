@@ -5,7 +5,7 @@ import { FadeIn } from "@/components/ui/motion";
 import { ArrowLeft, Upload, FileText, Check, Loader2, AlertCircle, X, Tag, CreditCard, Package, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCreditCards, useCreateCreditCardPurchase } from "@/hooks/useCreditCards";
-import { defaultCategories } from "@/lib/categories";
+import { useAllCategories } from "@/hooks/useCategories";
 import { formatCurrency } from "@/lib/balanceCalculations";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +20,7 @@ export default function ImportStatement() {
   const preselectedCardId = (location.state as any)?.preselectedCardId as string | undefined;
   const { data: cards = [] } = useCreditCards();
   const createPurchase = useCreateCreditCardPurchase();
+  const { allCategories } = useAllCategories();
 
   const [step, setStep] = useState<Step>("upload");
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
@@ -108,6 +109,7 @@ export default function ImportStatement() {
           total_amount: totalAmount,
           total_installments: installments,
           purchase_date: tx.date,
+          category_id: tx.categoryId,
         });
         imported++;
         setImportProgress(Math.round((imported / toImport.length) * 100));
@@ -306,7 +308,7 @@ export default function ImportStatement() {
             {/* Transaction list */}
             <div className="space-y-2">
               {transactions.map((tx, idx) => {
-                const cat = tx.categoryId ? defaultCategories.find(c => c.id === tx.categoryId) : null;
+                const cat = tx.categoryId ? allCategories.find(c => c.id === tx.categoryId) : null;
                 return (
                   <div key={idx}>
                     <motion.div
@@ -355,7 +357,7 @@ export default function ImportStatement() {
                           {cat && (
                             <>
                               <span>·</span>
-                              <span className={cat.color}>{cat.name}</span>
+                              <span style={{ color: cat.color }}>{cat.name}</span>
                             </>
                           )}
                           {!cat && tx.selected && tx.type === "purchase" && (
@@ -401,12 +403,12 @@ export default function ImportStatement() {
                           className="overflow-hidden"
                         >
                           <div className="p-3 bg-muted/30 rounded-b-xl border-x border-b border-border flex flex-wrap gap-1.5">
-                            {defaultCategories.slice(0, 24).map(c => (
+                            {allCategories.map(c => (
                               <button
                                 key={c.id}
                                 onClick={() => setCategory(idx, c.id)}
                                 className={cn(
-                                  "px-2 py-1 rounded-full text-xs font-medium border transition-all",
+                                  "px-2 py-1 rounded-full text-[10px] font-medium border transition-all",
                                   tx.categoryId === c.id
                                     ? "border-foreground bg-foreground text-background"
                                     : "border-border bg-card hover:border-foreground/30"

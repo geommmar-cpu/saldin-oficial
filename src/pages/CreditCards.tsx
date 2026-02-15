@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/ui/motion";
 import { BottomNav } from "@/components/BottomNav";
-import { ArrowLeft, Plus, CreditCard as CreditCardIcon, ChevronRight } from "lucide-react";
+import { ChevronLeft, Plus, CreditCard as CreditCardIcon, ChevronRight, Smartphone as PhoneIcon } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 import { useCreditCards } from "@/hooks/useCreditCards";
 import { cn } from "@/lib/utils";
 import { detectBank, detectBrand, getCardColor } from "@/lib/cardBranding";
@@ -14,13 +15,15 @@ const formatCurrency = (value: number) =>
 export default function CreditCards() {
   const navigate = useNavigate();
   const { data: cards = [], isLoading } = useCreditCards();
+  const { data: profile } = useProfile();
+  const defaultCardId = (profile as any)?.wa_default_expense_card_id;
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="-ml-2">
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-serif text-xl font-semibold flex-1">Meus Cartões</h1>
           <Button variant="warm" size="sm" className="gap-1" onClick={() => navigate("/cards/add")}>
@@ -78,6 +81,12 @@ export default function CreditCards() {
                       <span className="text-xs font-bold bg-white/20 backdrop-blur-sm px-2 py-1 rounded-md">
                         {brand.abbr}
                       </span>
+                    )}
+                    {card.id === defaultCardId && (
+                      <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm rounded-md px-2 py-1 border border-white/20">
+                        <PhoneIcon className="w-3 h-3 text-white" />
+                        <span className="text-[10px] font-bold uppercase tracking-tight text-white">Bot</span>
+                      </div>
                     )}
                     <CreditCardIcon className="w-10 h-10 opacity-20" />
                   </div>

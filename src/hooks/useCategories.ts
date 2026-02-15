@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { supabase } from "@/lib/backendClient";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import { defaultCategories, type CategoryConfig } from "@/lib/categories";
+import { defaultCategories, type CategoryConfig, type CategoryGroup } from "@/lib/categories";
 import { Tag, LucideIcon } from "lucide-react";
 
 export type CategoryRow = Tables<"categories">;
@@ -13,12 +14,13 @@ export type CategoryUpdate = TablesUpdate<"categories">;
 // Convert a DB custom category to a CategoryConfig shape
 function toLocalConfig(row: CategoryRow): CategoryConfig {
   return {
-    id: row.id, // UUID from DB
+    id: row.id,
     name: row.name,
-    icon: Tag, // Default icon for custom categories
-    group: "outros",
-    color: row.color || "text-muted-foreground",
-    isCustom: true,
+    icon: Tag, // Default icon for custom
+    group: (row.group_name as CategoryGroup) || "outros",
+    color: row.color || "#94A3B8",
+    nature: row.nature as any || "Variável",
+    isCustom: !row.is_default,
   };
 }
 
@@ -50,17 +52,39 @@ export const useCustomCategories = () => {
 };
 
 /**
- * Returns all categories: default + custom, merged.
+ * Returns all categories: default + custom, merged with database IDs.
+ * Matches default categories from DB with their local rich config (icons, etc.)
  */
 export const useAllCategories = () => {
-  const { data: customCategories = [], isLoading } = useCustomCategories();
+  const { data: dbCategories = [], isLoading } = useCustomCategories();
 
-  const allCategories: CategoryConfig[] = [
-    ...defaultCategories,
-    ...customCategories.map(toLocalConfig),
-  ];
+  const allCategories: CategoryConfig[] = useMemo(() => {
+    // Start with all local default categories from lib
+    const categoriesMap = new Map<string, CategoryConfig>();
+    defaultCategories.forEach(c => categoriesMap.set(c.name.toLowerCase(), { ...c }));
 
-  return { allCategories, customCategories, isLoading };
+    // Merge with DB categories
+    dbCategories.forEach(row => {
+      const nameKey = row.name.toLowerCase();
+      const existing = categoriesMap.get(nameKey);
+
+      if (row.is_default && existing) {
+        // Update the default category with its DB UUID while keeping rich local meta
+        categoriesMap.set(nameKey, {
+          ...existing,
+          id: row.id,
+          isCustom: false,
+        });
+      } else if (!row.is_default) {
+        // It's a custom category, add it using its DB ID as key to avoid name collisions with defaults
+        categoriesMap.set(row.id, toLocalConfig(row));
+      }
+    });
+
+    return Array.from(categoriesMap.values());
+  }, [dbCategories]);
+
+  return { allCategories, customCategories: dbCategories.filter(c => !c.is_default), isLoading };
 };
 
 export const useCreateCategory = () => {
@@ -97,7 +121,10 @@ export const useCreateCategory = () => {
           type: category.type,
           color: category.color || null,
           icon: category.icon || null,
+          group_name: (category as any).group_name || "outros",
+          nature: (category as any).nature || "Variável",
           user_id: user.id,
+          is_default: false,
         })
         .select()
         .single();
@@ -145,6 +172,17 @@ export const useDeleteCategory = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Check if it's default first
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("is_default")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (cat?.is_default) {
+        throw new Error("Não é possível excluir uma categoria padrão");
+      }
+
       const { error } = await supabase
         .from("categories")
         .delete()

@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useCryptoWallets";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { formatCryptoValue, formatCryptoQuantity } from "@/lib/cryptoPrices";
+import { formatCurrency } from "@/lib/balanceCalculations";
 import { CRYPTO_LIST, transactionTypeLabels } from "@/types/cryptoWallet";
 import type { CryptoTransactionType } from "@/types/cryptoWallet";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -105,6 +106,10 @@ export const CryptoWalletDetail = () => {
     setShowTxDialog(true);
   };
 
+  const selectedBank = bankAccounts.find(b => b.id === txBankId);
+  const isInsufficientFunds = txType === "deposit" && selectedBank && txComputedValue > Number(selectedBank.current_balance);
+  const isInsufficientCrypto = txType === "withdraw" && txComputedQuantity > Number(wallet.quantity);
+
   const handleSubmitTx = async () => {
     const qty = txComputedQuantity;
     if (!qty || qty <= 0) return;
@@ -163,13 +168,23 @@ export const CryptoWalletDetail = () => {
         <FadeIn>
           <div className="p-5 rounded-2xl bg-card border border-border shadow-medium">
             <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: color + "20" }}
-              >
-                <span className="text-lg font-bold" style={{ color }}>
-                  {wallet.symbol}
-                </span>
+              <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-background border border-border">
+                {cryptoInfo?.image ? (
+                  <img
+                    src={cryptoInfo.image}
+                    alt={wallet.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ backgroundColor: color + "20" }}
+                  >
+                    <span className="text-lg font-bold" style={{ color }}>
+                      {wallet.symbol}
+                    </span>
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Valor total</p>
@@ -440,11 +455,48 @@ export const CryptoWalletDetail = () => {
               />
             </div>
 
+            {/* Socratic Feedback - Warnings */}
+            {isInsufficientFunds && selectedBank && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-3 rounded-xl bg-impulse/10 border border-impulse/20"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-impulse shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-semibold text-impulse">Saldo insuficiente no banco</p>
+                    <p className="text-muted-foreground mt-0.5">
+                      Este aporte de {formatCryptoValue(txComputedValue, wallet.display_currency)} é maior que o saldo em {selectedBank.bank_name} ({formatCurrency(Number(selectedBank.current_balance))}).
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {isInsufficientCrypto && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-3 rounded-xl bg-impulse/10 border border-impulse/20"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-impulse shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-semibold text-impulse">Quantidade insuficiente</p>
+                    <p className="text-muted-foreground mt-0.5">
+                      Você está tentando resgatar mais {wallet.symbol} do que possui nesta carteira ({formatCryptoQuantity(Number(wallet.quantity), wallet.symbol)}).
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <Button
               variant="warm"
               className="w-full"
               onClick={handleSubmitTx}
-              disabled={createTransaction.isPending || txComputedQuantity <= 0 || (txType !== "adjustment" && (!txBankId || txBankId === "none" || bankAccounts.length === 0))}
+              disabled={createTransaction.isPending || txComputedQuantity <= 0 || (txType !== "adjustment" && (!txBankId || txBankId === "none" || bankAccounts.length === 0)) || (txType === "withdraw" && isInsufficientCrypto)}
             >
               {createTransaction.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />

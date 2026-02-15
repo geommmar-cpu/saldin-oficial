@@ -6,10 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { BottomNav } from "@/components/BottomNav";
 import { FadeIn } from "@/components/ui/motion";
-import { 
-  Plus, 
-  Target, 
-  ChevronRight, 
+import {
+  Plus,
+  Target,
+  ChevronRight,
   Loader2,
   Sparkles,
   PiggyBank,
@@ -17,6 +17,7 @@ import {
   Clock,
   CheckCircle2,
   Users,
+  ChevronLeft,
 } from "lucide-react";
 import { useGoals, useGoalStats } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
@@ -74,15 +75,20 @@ export default function Goals() {
       {/* Header */}
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center justify-between">
-          <FadeIn>
-            <div>
-              <h1 className="font-serif text-xl font-semibold">Metas</h1>
-              <p className="text-sm text-muted-foreground">
-                Organize seu dinheiro em caixinhas
-              </p>
-            </div>
-          </FadeIn>
-          <Button 
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="-ml-2">
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <FadeIn>
+              <div>
+                <h1 className="font-serif text-xl font-semibold">Metas</h1>
+                <p className="text-sm text-muted-foreground">
+                  Organize seu dinheiro em caixinhas
+                </p>
+              </div>
+            </FadeIn>
+          </div>
+          <Button
             onClick={() => navigate("/goals/add")}
             size="sm"
             className="gap-1"
@@ -108,11 +114,11 @@ export default function Goals() {
                 </p>
               </div>
             </div>
-            
+
             {stats && stats.totalTarget > 0 && (
               <>
-                <Progress 
-                  value={Math.min((stats.totalSaved / stats.totalTarget) * 100, 100)} 
+                <Progress
+                  value={Math.min((stats.totalSaved / stats.totalTarget) * 100, 100)}
                   className="h-2 mb-2"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -206,7 +212,7 @@ export default function Goals() {
                           )}>
                             <Icon className={cn("w-6 h-6", colorClasses.text)} />
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <h3 className="font-semibold truncate">{goal.name}</h3>
@@ -224,7 +230,7 @@ export default function Goals() {
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="flex items-baseline gap-1 mb-2">
                               <span className={cn("font-semibold", colorClasses.text)}>
                                 {formatCurrency(Number(goal.current_amount))}
@@ -233,12 +239,12 @@ export default function Goals() {
                                 de {formatCurrency(Number(goal.target_amount))}
                               </span>
                             </div>
-                            
-                            <Progress 
-                              value={progress} 
+
+                            <Progress
+                              value={progress}
                               className="h-2 mb-2"
                             />
-                            
+
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-muted-foreground">
                                 {Math.round(progress)}% guardado
@@ -249,7 +255,7 @@ export default function Goals() {
                                 </span>
                               )}
                             </div>
-                            
+
                             {goal.target_date && goal.status !== 'completed' && (
                               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
@@ -257,7 +263,7 @@ export default function Goals() {
                               </p>
                             )}
                           </div>
-                          
+
                           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                         </div>
                       </Card>

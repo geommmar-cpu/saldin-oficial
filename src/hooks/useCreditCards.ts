@@ -123,7 +123,48 @@ export const useCreateCreditCardPurchase = () => {
     mutationFn: async (purchase: CreditCardPurchaseInsert) => {
       if (!user) throw new Error("Não autenticado");
 
-      // 1. Criar a compra
+      // 1. Verificar Limite Disponível
+      // Buscar dados do cartão (limite)
+      const { data: card, error: cardError } = await db
+        .from("credit_cards")
+        .select("credit_limit, card_name")
+        .eq("id", purchase.card_id)
+        .single();
+
+      if (cardError) throw cardError;
+      if (!card) throw new Error("Cartão não encontrado");
+
+      // Calcular limite já usado (soma de todas as parcelas "open" deste cartão)
+      // Nota: Idealmente isso seria uma RPC ou View no banco para performance, 
+      // mas faremos a soma aqui seguindo o padrão atual do hook useCardUsedLimit
+
+      // a) Buscar IDs de compras deste cartão
+      const { data: cardPurchases } = await db
+        .from("credit_card_purchases")
+        .select("id")
+        .eq("card_id", purchase.card_id);
+
+      const purchaseIds = cardPurchases?.map((p: any) => p.id) || [];
+      let usedLimit = 0;
+
+      if (purchaseIds.length > 0) {
+        // b) Somar parcelas abertas dessas compras
+        const { data: openInstallments } = await db
+          .from("credit_card_installments")
+          .select("amount")
+          .in("purchase_id", purchaseIds)
+          .eq("status", "open");
+
+        usedLimit = openInstallments?.reduce((sum: number, i: any) => sum + Number(i.amount), 0) || 0;
+      }
+
+      // Verificar se a nova compra estoura o limite
+      const availableLimit = Number(card.credit_limit) - usedLimit;
+      if (purchase.total_amount > availableLimit) {
+        throw new Error(`Erro: Limite insuficiente no cartão ${card.card_name}. Disponível: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(availableLimit)}`);
+      }
+
+      // 2. Criar a compra
       const { data: purchaseData, error: purchaseError } = await db
         .from("credit_card_purchases")
         .insert({
@@ -324,5 +365,55 @@ export const useCardUsedLimit = (cardId: string | undefined) => {
         .reduce((sum: number, i: any) => sum + Number(i.amount), 0);
     },
     enabled: !!user && !!cardId,
+  });
+};
+
+export const useCreditCardInstallmentById = (encodedId: string | undefined) => {
+  const { user } = useAuth();
+  // Expect format "cc-{uuid}" or just "{uuid}"
+  const id = encodedId?.replace(/^cc-/, "");
+
+  return useQuery({
+    queryKey: ["cc-installment-detail", id],
+    queryFn: async () => {
+      if (!id) return null;
+
+      // 1. Fetch Installment
+      const { data: installment, error: instError } = await db
+        .from("credit_card_installments")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (instError) throw instError;
+      if (!installment) return null;
+
+      // 2. Fetch Purchase
+      const { data: purchase, error: purchError } = await db
+        .from("credit_card_purchases")
+        .select("*")
+        .eq("id", installment.purchase_id)
+        .single();
+
+      if (purchError) throw purchError;
+
+      // 3. Fetch Card
+      const { data: card, error: cardError } = await db
+        .from("credit_cards")
+        .select("*")
+        .eq("id", purchase.card_id)
+        .single();
+
+      if (cardError) throw cardError;
+
+      return {
+        ...installment,
+        purchase: {
+          ...purchase,
+          card
+        }
+      };
+    },
+    enabled: !!user && !!id,
   });
 };

@@ -12,17 +12,58 @@ import { PasswordStrengthChecklist } from "@/components/PasswordStrengthChecklis
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { supabase } from "@/lib/backendClient";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useCreditCards } from "@/hooks/useCreditCards";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Wallet, Smartphone as PhoneIcon, TrendingUp, CreditCard } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const EditAccount = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
-  
+
   // User data - initialized from auth/profile
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  
+
+  // WhatsApp defaults
+  const [defaultIncomeAcc, setDefaultIncomeAcc] = useState<string>("none");
+  const [defaultExpenseAcc, setDefaultExpenseAcc] = useState<string>("none");
+  const [defaultExpenseCard, setDefaultExpenseCard] = useState<string>("none");
+
+  // Confirmation state
+  const [confirmData, setConfirmData] = useState<{
+    show: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({
+    show: false,
+    title: "",
+    description: "",
+    onConfirm: () => { },
+  });
+
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const { data: creditCards = [] } = useCreditCards();
+
   // Initialize form with user data when available
   useEffect(() => {
     if (profile?.full_name) {
@@ -30,22 +71,28 @@ export const EditAccount = () => {
     } else if (user?.user_metadata?.name || user?.user_metadata?.full_name) {
       setName(user.user_metadata.name || user.user_metadata.full_name || "");
     }
-    
+
     if (user?.email) {
       setEmail(user.email);
     }
+
+    if (profile) {
+      if ((profile as any).wa_default_income_account_id) setDefaultIncomeAcc((profile as any).wa_default_income_account_id);
+      if ((profile as any).wa_default_expense_account_id) setDefaultExpenseAcc((profile as any).wa_default_expense_account_id);
+      if ((profile as any).wa_default_expense_card_id) setDefaultExpenseCard((profile as any).wa_default_expense_card_id);
+    }
   }, [profile, user]);
-  
+
   // Password fields
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   // Password visibility toggles
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Loading states
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -59,7 +106,7 @@ export const EditAccount = () => {
       });
       return;
     }
-    
+
     if (!email.trim() || !email.includes("@")) {
       toast({
         title: "Email inválido",
@@ -68,29 +115,34 @@ export const EditAccount = () => {
       });
       return;
     }
-    
+
     setSavingProfile(true);
-    
+
     try {
       // Update profile name in profiles table
-      await updateProfile.mutateAsync({ full_name: name.trim() });
-      
+      await updateProfile.mutateAsync({
+        full_name: name.trim(),
+        wa_default_income_account_id: defaultIncomeAcc === "none" ? null : defaultIncomeAcc,
+        wa_default_expense_account_id: defaultExpenseAcc === "none" ? null : defaultExpenseAcc,
+        wa_default_expense_card_id: defaultExpenseCard === "none" ? null : defaultExpenseCard,
+      } as any);
+
       // Also update user_metadata in Supabase Auth
       await supabase.auth.updateUser({
         data: { name: name.trim(), full_name: name.trim() },
       });
-      
+
       // Update email if changed
       if (email.trim() !== user?.email) {
         const { error } = await supabase.auth.updateUser({ email: email.trim() });
         if (error) throw error;
       }
-      
+
       toast({
         title: "Dados atualizados",
         description: "Suas informações foram salvas com sucesso.",
       });
-      
+
       // Navigate to settings after successful save
       navigate("/settings");
     } catch (error: any) {
@@ -113,7 +165,7 @@ export const EditAccount = () => {
       });
       return;
     }
-    
+
     const passwordValidation = validatePassword(newPassword);
     if (!passwordValidation.isValid) {
       let message = "A nova senha não atende aos requisitos de segurança.";
@@ -127,7 +179,7 @@ export const EditAccount = () => {
       });
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       toast({
         title: "Senhas não coincidem",
@@ -136,32 +188,32 @@ export const EditAccount = () => {
       });
       return;
     }
-    
+
     setSavingPassword(true);
-    
+
     try {
       // First verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user?.email || "",
         password: currentPassword,
       });
-      
+
       if (signInError) {
         throw new Error("Senha atual incorreta.");
       }
-      
+
       // Update to new password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
-      
+
       if (updateError) throw updateError;
-      
+
       // Clear password fields
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      
+
       toast({
         title: "Senha alterada",
         description: "Sua senha foi atualizada com sucesso.",
@@ -176,7 +228,7 @@ export const EditAccount = () => {
       setSavingPassword(false);
     }
   };
-  
+
   if (profileLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -204,7 +256,7 @@ export const EditAccount = () => {
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
               Informações pessoais
             </h2>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="flex items-center gap-2">
@@ -219,7 +271,7 @@ export const EditAccount = () => {
                   maxLength={50}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground" />
@@ -235,9 +287,9 @@ export const EditAccount = () => {
                 />
               </div>
             </div>
-            
-            <Button 
-              variant="warm" 
+
+            <Button
+              variant="warm"
               className="w-full mt-2"
               onClick={handleSaveProfile}
               disabled={savingProfile}
@@ -254,6 +306,163 @@ export const EditAccount = () => {
           </div>
         </FadeIn>
 
+        {/* WhatsApp Config Section */}
+        <FadeIn delay={0.05}>
+          <div className="bg-card rounded-xl border border-border shadow-soft p-5 space-y-4">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+              <PhoneIcon className="w-4 h-4" />
+              WhatsApp (Saldin AI)
+            </h2>
+
+            <p className="text-sm text-muted-foreground">
+              Configure as contas padrão para quando você registrar transações pelo WhatsApp.
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-essential" />
+                  Conta para Receitas
+                </Label>
+                <Select
+                  value={defaultIncomeAcc}
+                  onValueChange={(val) => {
+                    const existingId = (profile as any)?.wa_default_income_account_id;
+                    if (val !== "none" && existingId && val !== existingId) {
+                      const oldName = bankAccounts.find(a => a.id === existingId)?.bank_name;
+                      const newName = bankAccounts.find(a => a.id === val)?.bank_name;
+                      setConfirmData({
+                        show: true,
+                        title: "Substituir conta de receitas?",
+                        description: `Deseja trocar a conta principal de receitas de ${oldName} para ${newName}?`,
+                        onConfirm: () => setDefaultIncomeAcc(val)
+                      });
+                    } else {
+                      setDefaultIncomeAcc(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione uma conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma (usar padrão geral)</SelectItem>
+                    {bankAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.bank_name} ({acc.account_type === 'checking' ? 'Corrente' : 'Poupança'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-violet-500" />
+                  Cartão para Gastos (Crédito)
+                </Label>
+                <Select
+                  value={defaultExpenseCard}
+                  onValueChange={(val) => {
+                    const existingId = (profile as any)?.wa_default_expense_card_id;
+                    if (val !== "none" && existingId && val !== existingId) {
+                      const oldName = creditCards.find(c => c.id === existingId)?.card_name;
+                      const newName = creditCards.find(c => c.id === val)?.card_name;
+                      setConfirmData({
+                        show: true,
+                        title: "Substituir cartão principal?",
+                        description: `Deseja trocar o cartão principal de gastos de ${oldName} para ${newName}?`,
+                        onConfirm: () => setDefaultExpenseCard(val)
+                      });
+                    } else {
+                      setDefaultExpenseCard(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione um cartão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum (usar conta bancária)</SelectItem>
+                    {creditCards.map((card) => (
+                      <SelectItem key={card.id} value={card.id}>
+                        {card.card_name} (final {card.last_four_digits})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-impulse" />
+                  Conta para Gastos (Débito/Pix)
+                </Label>
+                <Select
+                  value={defaultExpenseAcc}
+                  onValueChange={(val) => {
+                    const existingId = (profile as any)?.wa_default_expense_account_id;
+                    if (val !== "none" && existingId && val !== existingId) {
+                      const oldName = bankAccounts.find(a => a.id === existingId)?.bank_name;
+                      const newName = bankAccounts.find(a => a.id === val)?.bank_name;
+                      setConfirmData({
+                        show: true,
+                        title: "Substituir conta de gastos?",
+                        description: `Deseja trocar a conta principal de gastos (débito) de ${oldName} para ${newName}?`,
+                        onConfirm: () => setDefaultExpenseAcc(val)
+                      });
+                    } else {
+                      setDefaultExpenseAcc(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione uma conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma (usar primeira conta)</SelectItem>
+                    {bankAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.bank_name} ({acc.account_type === 'checking' ? 'Corrente' : 'Poupança'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button
+              variant="warm"
+              className="w-full mt-2"
+              onClick={handleSaveProfile}
+              disabled={savingProfile}
+            >
+              {savingProfile ? "Salvando..." : "Salvar Configurações WhatsApp"}
+            </Button>
+          </div>
+        </FadeIn>
+
+        <AlertDialog
+          open={confirmData.show}
+          onOpenChange={(open) => setConfirmData(prev => ({ ...prev, show: open }))}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{confirmData.title}</AlertDialogTitle>
+              <AlertDialogDescription>{confirmData.description}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Não, manter atual</AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                confirmData.onConfirm();
+                setConfirmData(prev => ({ ...prev, show: false }));
+              }}>
+                Sim, substituir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Security Section */}
         <FadeIn delay={0.1}>
           <div className="bg-card rounded-xl border border-border shadow-soft p-5 space-y-4">
@@ -261,11 +470,11 @@ export const EditAccount = () => {
               <Lock className="w-4 h-4" />
               Segurança
             </h2>
-            
+
             <p className="text-sm text-muted-foreground">
               Para alterar sua senha, preencha os campos abaixo.
             </p>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="currentPassword">Senha atual</Label>
@@ -291,7 +500,7 @@ export const EditAccount = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="newPassword">Nova senha</Label>
                 <div className="relative">
@@ -317,7 +526,7 @@ export const EditAccount = () => {
                 </div>
                 <PasswordStrengthChecklist password={newPassword} />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
                 <div className="relative">
@@ -343,9 +552,9 @@ export const EditAccount = () => {
                 </div>
               </div>
             </div>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               className="w-full mt-2"
               onClick={handleChangePassword}
               disabled={savingPassword || (!currentPassword && !newPassword && !confirmPassword) || (newPassword && !validatePassword(newPassword).isValid)}

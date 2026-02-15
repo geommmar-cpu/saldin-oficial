@@ -62,13 +62,23 @@ export const CryptoSummary = () => {
               onClick={() => navigate(`/crypto/${wallet.id}`)}
               className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors text-left"
             >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ backgroundColor: color + "20" }}
-              >
-                <span className="text-xs font-bold" style={{ color }}>
-                  {wallet.symbol}
-                </span>
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-background border border-border shrink-0">
+                {cryptoInfo?.image ? (
+                  <img
+                    src={cryptoInfo.image}
+                    alt={wallet.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ backgroundColor: color + "20" }}
+                  >
+                    <span className="text-xs font-bold" style={{ color }}>
+                      {wallet.symbol}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{wallet.name}</p>

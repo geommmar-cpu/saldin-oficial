@@ -12,8 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { BottomNav } from "@/components/BottomNav";
 import { FadeIn } from "@/components/ui/motion";
-import { 
-  ArrowLeft, 
+import {
+  ChevronLeft,
   User,
   Mail,
   Crown,
@@ -44,6 +44,9 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useWebAuthn } from "@/hooks/useWebAuthn";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { useCreditCards } from "@/hooks/useCreditCards";
+import { exportToCSV } from "@/lib/exportData";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -56,8 +59,8 @@ export const Settings = () => {
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
   const queryClient = useQueryClient();
-  const { 
-    isSupported: isBiometricSupported, 
+  const {
+    isSupported: isBiometricSupported,
     isEnabled: isBiometricEnabled,
     registerBiometric,
     removeAllCredentials,
@@ -72,7 +75,7 @@ export const Settings = () => {
   const { data: allGoals } = useGoals("all");
   const { data: goalStats } = useGoalStats();
   const { data: ccInstallments = [] } = useCardInstallmentsByMonth(new Date());
-  
+
   // Keep localStorage in sync with DB value
   useEffect(() => {
     if (profile?.ai_name && profile.ai_name !== preferences.aiName) {
@@ -81,7 +84,7 @@ export const Settings = () => {
   }, [profile?.ai_name]);
   const [loggingOut, setLoggingOut] = useState(false);
   const [biometricActivating, setBiometricActivating] = useState(false);
-  
+
   // Mock WhatsApp status
   const whatsappStatus = {
     connected: true,
@@ -120,7 +123,7 @@ export const Settings = () => {
 
   const handleToggleBiometric = async () => {
     if (!user?.id || !user?.email) return;
-    
+
     if (hasBiometricEnabled) {
       // Remove biometric
       removeAllCredentials(user.id);
@@ -133,7 +136,7 @@ export const Settings = () => {
       setBiometricActivating(true);
       const success = await registerBiometric(user.id, user.email);
       setBiometricActivating(false);
-      
+
       if (success) {
         toast({
           title: "Biometria ativada!",
@@ -174,13 +177,37 @@ export const Settings = () => {
     }
   };
 
+  const { data: bankAccounts = [] } = useBankAccounts();
+  const { data: creditCards = [] } = useCreditCards();
+
+  const handleExportData = async () => {
+    try {
+      toast({ title: "Preparando dados..." });
+
+      exportToCSV({
+        incomes: allIncomes || [],
+        expenses: allExpenses || [],
+        debts: allDebts || [],
+        receivables: allReceivables || [],
+        goals: allGoals || [],
+        bankAccounts: bankAccounts,
+        creditCards: creditCards
+      });
+
+      toast({ title: "Arquivo CSV gerado com sucesso!" });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Erro ao exportar dados", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="-ml-2">
+            <ChevronLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-serif text-xl font-semibold">Configurações</h1>
         </div>
@@ -205,7 +232,7 @@ export const Settings = () => {
               label="Plano atual"
               value="Grátis"
               badge="Upgrade"
-              onClick={() => {}}
+              onClick={() => { }}
             />
             <div className="p-3 border-t border-border">
               <Button
@@ -263,7 +290,7 @@ export const Settings = () => {
                 icon={Fingerprint}
                 iconColor={hasBiometricEnabled ? "text-essential" : "text-muted-foreground"}
                 label="Login por biometria"
-                description={hasBiometricEnabled 
+                description={hasBiometricEnabled
                   ? `Ativado • ${userCredentials[0]?.deviceName || "Dispositivo"}`
                   : "Use impressão digital ou Face ID"
                 }
@@ -361,9 +388,16 @@ export const Settings = () => {
           <SettingsSection title="Dados e Relatórios">
             <SettingsItem
               icon={FileText}
-              label="Exportar PDF"
-              description="Relatório completo do mês"
+              label="Relatório PDF"
+              description="Resumo mensal completo"
               onClick={handleExportPdf}
+              showArrow
+            />
+            <SettingsItem
+              icon={FileText}
+              label="Exportar CSV/Excel"
+              description="Planilha para análise detalhada"
+              onClick={handleExportData}
               showArrow
             />
             <SettingsItem
@@ -485,7 +519,7 @@ const SettingsItem = ({
   locked,
 }: SettingsItemProps) => {
   const Wrapper = onClick ? "button" : "div";
-  
+
   return (
     <Wrapper
       onClick={onClick}

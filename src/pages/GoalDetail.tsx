@@ -6,11 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
-import { 
-  ArrowLeft, 
-  Target, 
-  PiggyBank, 
-  TrendingUp, 
+import {
+  ArrowLeft,
+  Target,
+  PiggyBank,
+  TrendingUp,
   Sparkles,
   Plus,
   Minus,
@@ -141,6 +141,78 @@ export default function GoalDetail() {
     navigate('/');
   };
 
+  // Helper to determine theme based on goal name (same as Home)
+  const getGoalTheme = (name: string) => {
+    const lowerName = name.toLowerCase();
+
+    // Images from Unsplash
+    if (lowerName.includes("viagem") || lowerName.includes("férias") || lowerName.includes("trip") || lowerName.includes("passeio") || lowerName.includes("mundo") || lowerName.includes("praia")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-blue-900/40"
+      };
+    }
+    if (lowerName.includes("carro") || lowerName.includes("moto") || lowerName.includes("veículo") || lowerName.includes("uber") || lowerName.includes("automóvel")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-slate-900/50"
+      };
+    }
+    if (lowerName.includes("casa") || lowerName.includes("apt") || lowerName.includes("imóvel") || lowerName.includes("reforma") || lowerName.includes("móveis") || lowerName.includes("construção")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-orange-900/40"
+      };
+    }
+    if (lowerName.includes("reserva") || lowerName.includes("emergência") || lowerName.includes("poupança") || lowerName.includes("investimento") || lowerName.includes("milhão")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1579621970795-87facc2f976d?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-emerald-900/50"
+      };
+    }
+    if (lowerName.includes("pc") || lowerName.includes("computador") || lowerName.includes("notebook") || lowerName.includes("tech") || lowerName.includes("setup")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-indigo-900/60"
+      };
+    }
+    if (lowerName.includes("celular") || lowerName.includes("iphone") || lowerName.includes("samsung")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-zinc-900/50"
+      };
+    }
+    if (lowerName.includes("estudo") || lowerName.includes("faculdade") || lowerName.includes("curso") || lowerName.includes("pós")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-blue-900/50"
+      };
+    }
+    if (lowerName.includes("casamento") || lowerName.includes("festa") || lowerName.includes("aliança")) {
+      return {
+        icon: Icon,
+        image: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=500&auto=format&fit=crop",
+        overlay: "bg-pink-900/40"
+      };
+    }
+
+    // Default Theme (Abstract)
+    return {
+      icon: Icon,
+      image: "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=500&auto=format&fit=crop",
+      overlay: "bg-purple-900/40"
+    };
+  };
+
+  const theme = getGoalTheme(goal.name);
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -167,16 +239,16 @@ export default function GoalDetail() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => navigate(`/goals/${id}/edit`)}
             >
               <Edit className="w-5 h-5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setShowDeleteDialog(true)}
               className="text-destructive"
             >
@@ -189,61 +261,79 @@ export default function GoalDetail() {
       <main className="px-5 py-6 space-y-6">
         {/* Main Card */}
         <FadeIn>
-          <Card className={cn("p-6 border-2", colorClasses.border)}>
-            <div className="flex items-center gap-4 mb-6">
-              <div className={cn(
-                "w-16 h-16 rounded-2xl flex items-center justify-center",
-                colorClasses.bg
-              )}>
-                <Icon className={cn("w-8 h-8", colorClasses.text)} />
+          <div
+            className="relative rounded-2xl overflow-hidden shadow-lg border border-white/10 p-6 min-h-[220px] flex flex-col justify-end text-white"
+          >
+            {/* Background Image */}
+            <div
+              className="absolute inset-0 bg-cover bg-center z-0 transition-transform duration-700 hover:scale-105"
+              style={{ backgroundImage: `url(${theme.image})` }}
+            />
+
+            {/* Overlays */}
+            <div className={cn("absolute inset-0 z-10", theme.overlay)} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
+
+            {/* Content */}
+            <div className="relative z-20">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-sm">
+                  <Icon className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-white/80 font-medium">Guardado</p>
+                  <p className="font-serif text-3xl font-bold text-white drop-shadow-md">
+                    {formatCurrency(Number(goal.current_amount))}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">Guardado</p>
-                <p className={cn("font-serif text-3xl font-bold", colorClasses.text)}>
-                  {formatCurrency(Number(goal.current_amount))}
-                </p>
+
+              <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden backdrop-blur-md mb-3">
+                <div
+                  className="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/90 font-medium">
+                  {Math.round(progress)}% do objetivo
+                </span>
+                <span className="font-medium text-white/90">
+                  Meta: {formatCurrency(Number(goal.target_amount))}
+                </span>
               </div>
             </div>
+          </div>
 
-            <Progress value={progress} className="h-3 mb-3" />
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {Math.round(progress)}% do objetivo
-              </span>
-              <span className="font-medium">
-                Meta: {formatCurrency(Number(goal.target_amount))}
-              </span>
-            </div>
+          {!isCompleted && remaining > 0 && (
+            <p className="text-sm text-muted-foreground mt-3 px-1">
+              Faltam <strong>{formatCurrency(remaining)}</strong> para atingir a meta
+            </p>
+          )}
 
-            {!isCompleted && remaining > 0 && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Faltam <strong>{formatCurrency(remaining)}</strong> para atingir a meta
-              </p>
-            )}
+          {goal.target_date && !isCompleted && (
+            <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1 px-1">
+              <Clock className="w-4 h-4" />
+              Objetivo para {new Date(goal.target_date).toLocaleDateString('pt-BR')}
+            </p>
+          )}
 
-            {goal.target_date && !isCompleted && (
-              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Objetivo para {new Date(goal.target_date).toLocaleDateString('pt-BR')}
-              </p>
-            )}
-          </Card>
         </FadeIn>
 
         {/* Action Buttons */}
         <FadeIn delay={0.1}>
           <div className="flex gap-3">
-            <Button 
-              className="flex-1 gap-2" 
+            <Button
+              className="flex-1 gap-2"
               variant="default"
               onClick={() => setShowDepositDialog(true)}
             >
               <Plus className="w-4 h-4" />
               Guardar valor
             </Button>
-            <Button 
-              className="flex-1 gap-2" 
+            <Button
+              className="flex-1 gap-2"
               variant="outline"
               onClick={() => setShowWithdrawDialog(true)}
               disabled={Number(goal.current_amount) <= 0}
@@ -271,7 +361,7 @@ export default function GoalDetail() {
               <History className="w-4 h-4" />
               Histórico
             </h3>
-            
+
             {transLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -350,8 +440,8 @@ export default function GoalDetail() {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {goal.is_personal !== false 
-                ? "Este valor será subtraído do seu Saldo Livre" 
+              {goal.is_personal !== false
+                ? "Este valor será subtraído do seu Saldo Livre"
                 : "Meta para terceiro — não afeta seu saldo"}
             </p>
           </div>
@@ -359,7 +449,7 @@ export default function GoalDetail() {
             <Button variant="outline" onClick={() => setShowDepositDialog(false)}>
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handleDeposit}
               disabled={addToGoal.isPending || !amount}
             >
@@ -402,8 +492,8 @@ export default function GoalDetail() {
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-500 mt-1 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              {goal.is_personal !== false 
-                ? "Este valor voltará para seu Saldo Livre" 
+              {goal.is_personal !== false
+                ? "Este valor voltará para seu Saldo Livre"
                 : "Meta para terceiro — não afeta seu saldo"}
             </p>
           </div>
@@ -411,7 +501,7 @@ export default function GoalDetail() {
             <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
               Cancelar
             </Button>
-            <Button 
+            <Button
               onClick={handleWithdraw}
               disabled={addToGoal.isPending || !amount || parseFloat(amount.replace(',', '.')) > Number(goal.current_amount)}
             >
@@ -431,7 +521,7 @@ export default function GoalDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir meta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir a meta "{goal.name}"? 
+              Tem certeza que deseja excluir a meta "{goal.name}"?
               {Number(goal.current_amount) > 0 && (
                 <strong className="block mt-2">
                   O valor guardado ({formatCurrency(Number(goal.current_amount))}) voltará para seu Saldo Livre.
@@ -441,7 +531,7 @@ export default function GoalDetail() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

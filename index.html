@@ -1,57 +1,109 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#c97442" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Saldin" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.json" />
-    
-    <!-- SEO -->
-    <title>Saldin</title>
-    <meta name="description" content="Saldin - O app que ajuda você a mudar sua relação com o dinheiro, um gasto por vez.">
-    <meta name="keywords" content="saldin, finanças pessoais, controle de gastos, economia">
-    <meta name="author" content="Saldin" />
-    
-    <!-- Open Graph -->
-    
-    
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@saldin" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <meta property="og:title" content="Saldin">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#c97442" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Saldin" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- SEO -->
+  <title>Saldin</title>
+  <meta name="description"
+    content="Saldin - O app que ajuda você a mudar sua relação com o dinheiro, um gasto por vez.">
+  <meta name="keywords" content="saldin, finanças pessoais, controle de gastos, economia">
+  <meta name="author" content="Saldin" />
+
+  <!-- Open Graph -->
+
+
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@saldin" />
+  <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+  <meta property="og:title" content="Saldin">
   <meta name="twitter:title" content="Saldin">
-  <meta property="og:description" content="Saldin - O app que ajuda você a mudar sua relação com o dinheiro, um gasto por vez.">
-  <meta name="twitter:description" content="Saldin - O app que ajuda você a mudar sua relação com o dinheiro, um gasto por vez.">
+  <meta property="og:description"
+    content="Saldin - O app que ajuda você a mudar sua relação com o dinheiro, um gasto por vez.">
+  <meta name="twitter:description"
+    content="Saldin - O app que ajuda você a mudar sua relação com o dinheiro, um gasto por vez.">
 </head>
 
-  <body>
-    <script>
-      // Apply theme before React renders to prevent flash
-      (function() {
-        try {
-          var prefs = JSON.parse(localStorage.getItem('user_preferences') || '{}');
-          if (prefs.darkMode === true) {
+<body>
+  <script>
+    // Apply theme before React renders to prevent flash
+    (function () {
+      try {
+        var prefs = JSON.parse(localStorage.getItem('user_preferences') || '{}');
+        if (prefs.darkMode === true) {
+          document.documentElement.classList.add('dark');
+        } else if (prefs.darkMode === undefined || prefs.darkMode === null) {
+          // No preference saved: follow system
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
-          } else if (prefs.darkMode === undefined || prefs.darkMode === null) {
-            // No preference saved: follow system
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-              document.documentElement.classList.add('dark');
-            }
           }
-        } catch(e) {}
-      })();
-    </script>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <div id="root"></div>
+
+  <!-- Emergency Loading Fail-safe -->
+  <div id="emergency-fail-safe"
+    style="display: none; position: fixed; inset: 0; background: #000; color: #fff; z-index: 9999; padding: 2rem; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-family: sans-serif;">
+    <h1 style="color: #ef4444; margin-bottom: 1rem;">Opa! O Saldin travou.</h1>
+    <p style="color: #9ca3af; margin-bottom: 2rem; max-width: 400px;">Houve um erro no carregamento da aplicação ou na
+      conexão.</p>
+    <button onclick="window.location.reload()"
+      style="background: #c97442; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer;">Tentar
+      Novamente</button>
+    <div id="emergency-error-log"
+      style="margin-top: 2rem; font-family: monospace; font-size: 0.75rem; color: #6b7280; text-align: left; max-width: 90vw; overflow: auto; background: #111; padding: 1rem; border-radius: 0.5rem; border: 1px solid #222;">
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const failSafe = document.getElementById('emergency-fail-safe');
+      const log = document.getElementById('emergency-error-log');
+
+      function showError(msg, detail) {
+        if (failSafe) {
+          failSafe.style.display = 'flex';
+          if (log) log.innerText += (detail || msg) + '\n';
+        }
+      }
+
+      window.onerror = function (msg, url, lineNo, columnNo, error) {
+        showError('Global Error: ' + msg, (error ? error.stack : msg));
+        return false;
+      };
+
+      window.onunhandledrejection = function (event) {
+        showError('Unhandled Rejection', event.reason);
+      };
+
+      // If after 15s the root still has no content, show the fail-safe
+      setTimeout(() => {
+        const root = document.getElementById('root');
+        if (root && root.innerHTML === '' && failSafe) {
+          showError('Timeout: Carregamento lento ou falha no boot (15s)');
+        }
+      }, 15000);
+    })();
+  </script>
+
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

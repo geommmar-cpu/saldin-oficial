@@ -21,16 +21,16 @@ export const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading, signIn, signUp, resetPassword } = useAuth();
-  const { 
-    isSupported: isBiometricSupported, 
+  const {
+    isSupported: isBiometricSupported,
     isEnabled: isBiometricEnabled,
     authenticateWithBiometric,
     isEnabledForUser,
     isLoading: isBiometricLoading,
   } = useWebAuthn();
-  
+
   const [view, setView] = useState<AuthView>("login");
-  
+
   // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,14 +39,14 @@ export const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Biometric states
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [pendingBiometricUser, setPendingBiometricUser] = useState<{
     userId: string;
     userEmail: string;
   } | null>(null);
-  
+
 
   // Redirect is handled by PublicRoute wrapper in App.tsx
   // Biometric lock screen is now handled by OnboardingRoute in RouteGuards.tsx
@@ -71,7 +71,7 @@ export const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Campos obrigatórios",
@@ -91,18 +91,21 @@ export const Auth = () => {
     }
 
     setIsLoading(true);
-    
+
     const { data, error } = await signIn(email, password);
-    
+
     setIsLoading(false);
-    
+
     if (error) {
-      let message = "Ocorreu um erro ao fazer login.";
+      console.error("Login error:", error);
+      let message = error.message; // Default to showing the actual error
+
       if (error.message.includes("Invalid login credentials")) {
         message = "Email ou senha incorretos.";
       } else if (error.message.includes("Email not confirmed")) {
-        message = "Confirme seu email antes de fazer login.";
+        message = "Confirme seu email antes de fazer login (ou desative a confirmação no Supabase).";
       }
+
       toast({
         title: "Erro no login",
         description: message,
@@ -114,7 +117,7 @@ export const Auth = () => {
     // Check if we should offer biometric setup
     const userId = data?.user?.id;
     const userEmail = data?.user?.email;
-    
+
     if (userId && userEmail && isBiometricSupported && !isEnabledForUser(userId)) {
       // Check if user dismissed the prompt this session
       const dismissed = sessionStorage.getItem("biometric_prompt_dismissed");
@@ -137,13 +140,13 @@ export const Auth = () => {
     if (!isBiometricSupported || !isBiometricEnabled) return;
 
     setIsLoading(true);
-    
+
     const result = await authenticateWithBiometric();
-    
+
     if (result.success && result.userEmail && result.userId) {
       // Biometric verified - check/refresh session
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
         toast({
           title: "Login realizado",
@@ -152,7 +155,7 @@ export const Auth = () => {
       } else {
         // Try to restore session
         const { data, error } = await supabase.auth.refreshSession();
-        
+
         if (data?.session) {
           toast({
             title: "Login realizado",
@@ -174,13 +177,13 @@ export const Auth = () => {
         variant: "destructive",
       });
     }
-    
+
     setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !password || !confirmPassword) {
       toast({
         title: "Campos obrigatórios",
@@ -223,11 +226,11 @@ export const Auth = () => {
     }
 
     setIsLoading(true);
-    
-    const { error } = await signUp(email, password, name);
-    
+
+    const { data, error } = await signUp(email, password, name);
+
     setIsLoading(false);
-    
+
     if (error) {
       let message = "Ocorreu um erro ao criar a conta.";
       if (error.message.includes("User already registered")) {
@@ -243,6 +246,16 @@ export const Auth = () => {
       return;
     }
 
+    // Check if session was created immediately (Email Confirmation Disabled)
+    if (data?.session) {
+      toast({
+        title: "Conta criada",
+        description: "Bem-vindo ao Saldin!",
+      });
+      // Auth listener in App.tsx/RouteGuards will handle navigation
+      return;
+    }
+
     toast({
       title: "Conta criada",
       description: "Verifique seu email para confirmar o cadastro.",
@@ -252,7 +265,7 @@ export const Auth = () => {
 
   const handleRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email) {
       toast({
         title: "Campo obrigatório",
@@ -272,11 +285,11 @@ export const Auth = () => {
     }
 
     setIsLoading(true);
-    
+
     const { error } = await resetPassword(email);
-    
+
     setIsLoading(false);
-    
+
     if (error) {
       toast({
         title: "Erro",
@@ -300,9 +313,9 @@ export const Auth = () => {
       <header className="px-5 pt-safe-top">
         <div className="pt-4 pb-3 flex items-center gap-4">
           {view !== "login" && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => handleViewChange("login")}
             >
               <ArrowLeft className="w-5 h-5" />
@@ -475,6 +488,7 @@ const LoginForm = ({
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10"
             autoComplete="email"
+            data-testid="login-email"
           />
         </div>
       </div>
@@ -491,6 +505,7 @@ const LoginForm = ({
             onChange={(e) => setPassword(e.target.value)}
             className="pl-10 pr-10"
             autoComplete="current-password"
+            data-testid="login-password"
           />
           <button
             type="button"
@@ -503,11 +518,12 @@ const LoginForm = ({
       </div>
     </div>
 
-    <Button 
-      type="submit" 
-      className="w-full" 
+    <Button
+      type="submit"
+      className="w-full"
       size="lg"
       disabled={isLoading}
+      data-testid="login-submit"
     >
       {isLoading ? "Entrando..." : "Entrar"}
     </Button>
@@ -590,6 +606,7 @@ const SignupForm = ({
             className="pl-10"
             autoComplete="name"
             maxLength={50}
+            data-testid="signup-name"
           />
         </div>
       </div>
@@ -606,6 +623,7 @@ const SignupForm = ({
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10"
             autoComplete="email"
+            data-testid="signup-email"
           />
         </div>
       </div>
@@ -622,6 +640,7 @@ const SignupForm = ({
             onChange={(e) => setPassword(e.target.value)}
             className="pl-10 pr-10"
             autoComplete="new-password"
+            data-testid="signup-password"
           />
           <button
             type="button"
@@ -646,6 +665,7 @@ const SignupForm = ({
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="pl-10 pr-10"
             autoComplete="new-password"
+            data-testid="signup-confirm"
           />
           <button
             type="button"
@@ -658,11 +678,12 @@ const SignupForm = ({
       </div>
     </div>
 
-    <Button 
-      type="submit" 
-      className="w-full" 
+    <Button
+      type="submit"
+      className="w-full"
       size="lg"
       disabled={isLoading || !validatePassword(password).isValid}
+      data-testid="signup-submit"
     >
       {isLoading ? "Criando conta..." : "Criar conta"}
     </Button>
@@ -717,16 +738,18 @@ const RecoveryForm = ({
             onChange={(e) => setEmail(e.target.value)}
             className="pl-10"
             autoComplete="email"
+            data-testid="recovery-email"
           />
         </div>
       </div>
     </div>
 
-    <Button 
-      type="submit" 
-      className="w-full" 
+    <Button
+      type="submit"
+      className="w-full"
       size="lg"
       disabled={isLoading}
+      data-testid="recovery-submit"
     >
       {isLoading ? "Enviando..." : "Enviar link de recuperação"}
     </Button>

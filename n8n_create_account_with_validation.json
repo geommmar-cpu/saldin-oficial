@@ -1,0 +1,149 @@
+{
+    "name": "Criar conta (Saldin) - Com Validação WhatsApp",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "webhook-venda-saldin",
+                "options": {}
+            },
+            "id": "webhook-venda",
+            "name": "Webhook (Hotmart/Venda)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                -200,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "create",
+                "email": "={{ $json.body.email }}",
+                "password": "={{ Math.random().toString(36).slice(-8) + \"A1!\" }}",
+                "metadata": {
+                    "full_name": "={{ $json.body.name }}",
+                    "phone": "={{ $json.body.phone_number }}"
+                },
+                "emailConfirm": true
+            },
+            "id": "create-auth-user",
+            "name": "Supabase Create User",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                40,
+                0
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "SEU_CREDENTIAL_ID_AQUI",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "workflowId": "SEU_ID_DO_FLUXO_AMARELO_VALIDAR_ZAP"
+            },
+            "id": "subflow-validar-zap",
+            "name": "Validar Whatsapp (Subfluxo)",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                260,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "table": "profiles",
+                "operation": "update",
+                "matchColumn": "user_id",
+                "matchValue": "={{ $node[\"Supabase Create User\"].json.id }}",
+                "updateFields": {
+                    "phone": "={{ $json.formattedPhone || $node[\"Webhook (Hotmart/Venda)\"].json.body.phone_number }}",
+                    "whatsapp_validated": "={{ $json.isValid || false }}",
+                    "subscription_status": "active",
+                    "subscription_plan": "={{ $node[\"Webhook (Hotmart/Venda)\"].json.body.plan_name || 'premium' }}",
+                    "subscription_start_date": "={{ new Date().toISOString() }}"
+                }
+            },
+            "id": "update-profile",
+            "name": "Supabase Update Profile",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                480,
+                0
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "SEU_CREDENTIAL_ID_AQUI",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\n  \"success\": true,\n  \"message\": \"Usuário criado e validado!\",\n  \"user_id\": \"{{ $node['Supabase Create User'].json.id }}\",\n  \"whatsapp_valid\": {{ $node['Validar Whatsapp (Subfluxo)'].json.isValid }}\n}",
+                "options": {}
+            },
+            "id": "respond-success",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                700,
+                0
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook (Hotmart/Venda)": {
+            "main": [
+                [
+                    {
+                        "node": "Supabase Create User",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Supabase Create User": {
+            "main": [
+                [
+                    {
+                        "node": "Validar Whatsapp (Subfluxo)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validar Whatsapp (Subfluxo)": {
+            "main": [
+                [
+                    {
+                        "node": "Supabase Update Profile",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Supabase Update Profile": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

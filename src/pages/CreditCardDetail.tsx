@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { format, addMonths, subMonths, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getCategoryById } from "@/lib/categories";
+import { getCardGradient } from "@/lib/cardBranding";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -45,6 +46,9 @@ export default function CreditCardDetail() {
 
   const statementTotal = statementItems.reduce((s, i) => s + Number(i.amount), 0);
   const availableLimit = (card?.credit_limit || 0) - usedLimit;
+
+  // Determine gradient: prefer user-selected predefined color, else fallback to brand detection
+  const gradientClass = card ? (CARD_COLORS[card.color] || getCardGradient(card.card_name)) : "";
 
   const handleDelete = async () => {
     if (!id) return;
@@ -79,25 +83,30 @@ export default function CreditCardDetail() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-serif text-xl font-semibold flex-1">{card.card_name}</h1>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  O cartão será desativado. Compras e parcelas existentes serão mantidas.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/cards/${card.id}/edit`)}>
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remover cartão?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O cartão será desativado. Compras e parcelas existentes serão mantidas.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </header>
 
@@ -106,7 +115,7 @@ export default function CreditCardDetail() {
         <FadeIn>
           <div className={cn(
             "rounded-2xl p-5 text-white bg-gradient-to-br shadow-lg relative overflow-hidden",
-            CARD_COLORS[card.color] || "from-violet-500 to-purple-700"
+            gradientClass
           )}>
             <div className="absolute top-4 right-4 opacity-20">
               <CreditCardIcon className="w-16 h-16" />

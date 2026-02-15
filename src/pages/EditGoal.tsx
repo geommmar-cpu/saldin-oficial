@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FadeIn } from "@/components/ui/motion";
-import { 
-  ArrowLeft, 
-  Target, 
-  PiggyBank, 
-  TrendingUp, 
+import {
+  ArrowLeft,
+  Target,
+  PiggyBank,
+  TrendingUp,
   Sparkles,
   Calendar,
   Loader2,
@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useGoalById, useUpdateGoal } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { parseCurrency, formatCurrencyInput } from "@/lib/currency";
 
 // Cores disponíveis
 const colorOptions = [
@@ -55,7 +57,7 @@ export default function EditGoal() {
   useEffect(() => {
     if (goal) {
       setName(goal.name);
-      setTargetAmount(String(goal.target_amount));
+      setTargetAmount(formatCurrencyInput(String(goal.target_amount * 100)));
       setTargetDate(goal.target_date || '');
       setNotes(goal.notes || '');
       setSelectedColor(goal.color || 'green');
@@ -85,8 +87,8 @@ export default function EditGoal() {
   const handleSubmit = async () => {
     if (!name.trim() || !targetAmount) return;
 
-    const newTargetAmount = parseFloat(targetAmount);
-    if (isNaN(newTargetAmount) || newTargetAmount <= 0) return;
+    const newTargetAmount = parseCurrency(targetAmount);
+    if (newTargetAmount <= 0) return;
 
     // Check if goal should be marked as completed
     const isCompleted = Number(goal.current_amount) >= newTargetAmount;
@@ -146,19 +148,11 @@ export default function EditGoal() {
         <FadeIn delay={0.05}>
           <div className="space-y-2">
             <label className="text-sm font-medium">Valor objetivo *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                className="pl-10"
-                placeholder="0,00"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
-              />
-            </div>
-            {parseFloat(targetAmount) < Number(goal.current_amount) && (
+            <CurrencyInput
+              value={targetAmount}
+              onChange={setTargetAmount}
+            />
+            {parseCurrency(targetAmount) < Number(goal.current_amount) && (
               <p className="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 O valor objetivo é menor que o valor já guardado
@@ -195,8 +189,8 @@ export default function EditGoal() {
                   className={cn(
                     "w-10 h-10 rounded-full transition-all",
                     color.class,
-                    selectedColor === color.id 
-                      ? "ring-2 ring-offset-2 ring-foreground scale-110" 
+                    selectedColor === color.id
+                      ? "ring-2 ring-offset-2 ring-foreground scale-110"
                       : "hover:scale-105"
                   )}
                   title={color.label}
@@ -219,8 +213,8 @@ export default function EditGoal() {
                     onClick={() => setSelectedIcon(iconOpt.id)}
                     className={cn(
                       "w-12 h-12 rounded-xl flex items-center justify-center transition-all border-2",
-                      selectedIcon === iconOpt.id 
-                        ? "border-foreground bg-muted scale-105" 
+                      selectedIcon === iconOpt.id
+                        ? "border-foreground bg-muted scale-105"
                         : "border-border hover:border-muted-foreground"
                     )}
                     title={iconOpt.label}
@@ -271,8 +265,8 @@ export default function EditGoal() {
 
         {/* Submit Button */}
         <FadeIn delay={0.3}>
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             size="lg"
             onClick={handleSubmit}
             disabled={!name.trim() || !targetAmount || updateGoal.isPending}

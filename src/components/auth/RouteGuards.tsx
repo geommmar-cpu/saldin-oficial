@@ -11,9 +11,10 @@ import { BiometricLockScreen } from "./BiometricLockScreen";
 const BIOMETRIC_UNLOCKED_KEY = "biometric_unlocked";
 
 // Loading component to avoid repetition
-const LoadingScreen = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="animate-pulse text-muted-foreground">Carregando...</div>
+export const LoadingScreen = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 text-center">
+    <div className="animate-pulse text-primary text-xl font-bold mb-2">Saldin</div>
+    <div className="text-muted-foreground text-sm">Carregando seus dados...</div>
   </div>
 );
 
@@ -30,25 +31,35 @@ const useOnboardingStatus = (userId: string | undefined) => {
         return true;
       }
 
-      const { data, error } = await supabase
+      const fetchPromise = supabase
         .from("profiles")
         .select("onboarding_completed")
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error checking onboarding:", error);
+      const timeoutPromise = new Promise<{ data: any; error: any }>((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout checking onboarding status")), 10000);
+      });
+
+      try {
+        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+        if (error) {
+          console.error("Error checking onboarding:", error);
+          return false;
+        }
+
+        // If no profile yet, return false (trigger should have created it)
+        if (!data) return false;
+
+        return data.onboarding_completed === true;
+      } catch (err) {
+        console.error("Onboarding check failed by exception/timeout:", err);
         return false;
       }
-
-      // If no profile yet, return false (trigger should have created it)
-      if (!data) return false;
-
-      return data.onboarding_completed === true;
     },
     enabled: !!userId,
-    staleTime: 0, // Always refetch to get latest onboarding status
-    refetchOnMount: "always",
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 2,
   });
 };
@@ -83,12 +94,12 @@ export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => 
   const { user, loading: authLoading } = useAuth();
   const { isEnabled: isBiometricEnabled, isEnabledForUser, isLoading: biometricLoading } = useWebAuthn();
   const { data: profile } = useProfile();
-  
+
   // Track if user has unlocked with biometric this session
   const [isUnlocked, setIsUnlocked] = useState(() => {
     return sessionStorage.getItem(BIOMETRIC_UNLOCKED_KEY) === "true";
   });
-  
+
   // IMPORTANT: Only fetch onboarding status when user.id is available
   const { data: onboardingCompleted, isLoading: onboardingLoading } = useOnboardingStatus(
     user?.id
@@ -145,7 +156,7 @@ export const OnboardingRoute = ({ children }: { children: React.ReactNode }) => 
  */
 export const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
-  
+
   // IMPORTANT: Only fetch onboarding status when user.id is available
   const { data: onboardingCompleted, isLoading: onboardingLoading } = useOnboardingStatus(
     user?.id

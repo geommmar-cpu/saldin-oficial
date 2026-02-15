@@ -3,9 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/ui/motion";
-import { 
-  ArrowLeft, 
-  CreditCard, 
+import {
+  ArrowLeft,
+  CreditCard,
   Check,
   Circle,
   Trash2,
@@ -36,16 +36,16 @@ export const DebtDetail = () => {
   // Generate installments from debt data
   const installmentsList = useMemo<DebtInstallment[]>(() => {
     if (!debt || !debt.is_installment) return [];
-    
+
     const installments: DebtInstallment[] = [];
     const startDate = debt.due_date ? new Date(debt.due_date) : new Date();
     const totalInstallments = debt.total_installments || 1;
     const currentInstallment = debt.current_installment || 1;
-    
+
     for (let i = 1; i <= totalInstallments; i++) {
       const dueDate = new Date(startDate);
       dueDate.setMonth(dueDate.getMonth() + i - 1);
-      
+
       installments.push({
         number: i,
         dueDate,
@@ -53,7 +53,7 @@ export const DebtDetail = () => {
         paid: i < currentInstallment,
       });
     }
-    
+
     return installments;
   }, [debt]);
 
@@ -72,7 +72,7 @@ export const DebtDetail = () => {
   const handleToggleInstallment = async (installmentNumber: number, currentlyPaid: boolean) => {
     if (!debt || !id) return;
 
-    const newCurrentInstallment = currentlyPaid 
+    const newCurrentInstallment = currentlyPaid
       ? installmentNumber
       : installmentNumber + 1;
 
@@ -129,7 +129,7 @@ export const DebtDetail = () => {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-5">
         <span className="text-4xl mb-4">🔍</span>
         <p className="text-muted-foreground mb-4">Dívida não encontrada</p>
-        <Button variant="ghost" onClick={() => navigate("/")}>
+        <Button variant="ghost" onClick={() => navigate(-1)}>
           Voltar
         </Button>
       </div>
@@ -147,7 +147,7 @@ export const DebtDetail = () => {
       {/* Header */}
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10">
         <div className="pt-4 pb-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">

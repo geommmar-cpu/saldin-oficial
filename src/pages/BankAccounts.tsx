@@ -2,16 +2,23 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, Plus, Landmark, ArrowLeftRight, Loader2 } from "lucide-react";
+import { ChevronLeft, Plus, Landmark, ArrowLeftRight, Loader2, Smartphone as PhoneIcon } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { detectBank } from "@/lib/cardBranding";
 import { formatCurrency } from "@/lib/balanceCalculations";
 import { accountTypeLabels } from "@/types/bankAccount";
 import { motion } from "framer-motion";
+import { BankLogo } from "@/components/BankLogo";
+
 
 export const BankAccounts = () => {
   const navigate = useNavigate();
   const { data: accounts = [], isLoading } = useBankAccounts();
+  const { data: profile } = useProfile();
+
+  const defaultIncomeId = (profile as any)?.wa_default_income_account_id;
+  const defaultExpenseId = (profile as any)?.wa_default_expense_account_id;
 
   const totalBalance = accounts.reduce((sum, a) => sum + Number(a.current_balance), 0);
 
@@ -26,23 +33,24 @@ export const BankAccounts = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
-        <div className="pt-4 pb-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-5 h-5" />
+        <div className="pt-4 pb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="shrink-0 -ml-2">
+              <ChevronLeft className="w-5 h-5" />
             </Button>
-            <h1 className="font-serif text-xl font-semibold">Contas Bancárias</h1>
+            <h1 className="font-serif text-lg sm:text-xl font-semibold truncate">Contas</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             {accounts.length >= 2 && (
-              <Button variant="outline" size="sm" className="gap-1" onClick={() => navigate("/banks/transfer")}>
-                <ArrowLeftRight className="w-4 h-4" />
-                Transferir
+              <Button variant="outline" size="sm" className="px-3" onClick={() => navigate("/banks/transfer")}>
+                <ArrowLeftRight className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Transferir</span>
               </Button>
             )}
-            <Button variant="warm" size="sm" className="gap-1" onClick={() => navigate("/banks/add")}>
-              <Plus className="w-4 h-4" />
-              Nova
+            <Button variant="warm" size="sm" className="px-3" onClick={() => navigate("/banks/add")}>
+              <Plus className="w-4 h-4 sm:mr-1" />
+              <span className="hidden sm:inline">Nova</span>
+              <span className="sm:hidden">Nova</span>
             </Button>
           </div>
         </div>
@@ -87,28 +95,37 @@ export const BankAccounts = () => {
                   <motion.button
                     whileTap={{ scale: 0.98 }}
                     onClick={() => navigate(`/banks/${account.id}`)}
-                    className="w-full p-4 rounded-xl bg-card border border-border shadow-soft hover:shadow-medium transition-all text-left"
+                    className="w-full p-3 sm:p-4 rounded-xl bg-card border border-border shadow-soft hover:shadow-medium transition-all text-left"
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: color + "20" }}
-                      >
-                        <Landmark className="w-6 h-6" style={{ color }} />
-                      </div>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <BankLogo
+                        bankName={account.bank_name}
+                        color={color}
+                        size="md"
+                        className="sm:w-12 sm:h-12"
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{account.bank_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {accountTypeLabels[account.account_type] || "Corrente"}
-                        </p>
+                        <p className="font-medium text-sm sm:text-base truncate">{account.bank_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                            {accountTypeLabels[account.account_type] || "Corrente"}
+                          </p>
+                          {(account.id === defaultIncomeId || account.id === defaultExpenseId) && (
+                            <div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 border border-primary/10">
+                              <PhoneIcon className="w-2.5 h-2.5" />
+                              <span className="text-[8px] font-bold uppercase tracking-tight">Bot WhatsApp</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold tabular-nums">
+
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold text-sm sm:text-base tabular-nums">
                           {formatCurrency(Number(account.current_balance))}
                         </p>
                         {Number(account.initial_balance) !== Number(account.current_balance) && (
-                          <p className="text-xs text-muted-foreground">
-                            Inicial: {formatCurrency(Number(account.initial_balance))}
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
+                            {formatCurrency(Number(account.initial_balance))}
                           </p>
                         )}
                       </div>

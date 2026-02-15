@@ -1,0 +1,219 @@
+{
+    "name": "Saldin - Webhook Venda (Cria Usuário + Ativa Plano)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "webhook-venda",
+                "options": {}
+            },
+            "id": "webhook-node",
+            "name": "Webhook (Hotmart/Kiwify)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                -200,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "userId": "={{ $json.body.email }}"
+            },
+            "id": "get-user",
+            "name": "Buscar Usuário (Auth)",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                40,
+                0
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "SEU_CREDENTIAL_ID_AQUI",
+                    "name": "Supabase account"
+                }
+            },
+            "continueOnFail": true
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.id ? true : false }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "check-user-exists",
+            "name": "Usuário Existe?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                260,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "create",
+                "email": "={{ $node[\"Webhook (Hotmart/Kiwify)\"].json.body.email }}",
+                "password": "={{ Math.random().toString(36).slice(-8) + \"A1!\" }}",
+                "metadata": {
+                    "full_name": "={{ $node[\"Webhook (Hotmart/Kiwify)\"].json.body.name }}",
+                    "phone": "={{ $node[\"Webhook (Hotmart/Kiwify)\"].json.body.phone_number }}"
+                },
+                "emailConfirm": true
+            },
+            "id": "create-user",
+            "name": "Criar Usuário (Auth)",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                500,
+                140
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "SEU_CREDENTIAL_ID_AQUI",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "workflowId": "SEU_ID_DO_SUBFLUXO_WHATSAPP"
+            },
+            "id": "validate-phone-workflow",
+            "name": "Validar WhatsApp (Subfluxo)",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                780,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "table": "profiles",
+                "operation": "update",
+                "matchColumn": "user_id",
+                "matchValue": "={{ $node[\"Create User OR Get User\"].json.id }}",
+                "updateFields": {
+                    "phone": "={{ $json.formattedPhone || $node[\"Webhook (Hotmart/Kiwify)\"].json.body.phone_number }}",
+                    "whatsapp_validated": true,
+                    "subscription_status": "active",
+                    "subscription_plan": "={{ $node[\"Webhook (Hotmart/Kiwify)\"].json.body.plan_name || 'premium' }}",
+                    "subscription_start_date": "={{ new Date().toISOString() }}"
+                }
+            },
+            "id": "update-profile",
+            "name": "Atualizar Perfil (DB)",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                0
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "SEU_CREDENTIAL_ID_AQUI",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combinationMode": "mergeByPosition",
+                "options": {}
+            },
+            "id": "merge-users",
+            "name": "Create User OR Get User",
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 2,
+            "position": [
+                660,
+                0
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook (Hotmart/Kiwify)": {
+            "main": [
+                [
+                    {
+                        "node": "Buscar Usuário (Auth)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Usuário (Auth)": {
+            "main": [
+                [
+                    {
+                        "node": "Usuário Existe?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Usuário Existe?": {
+            "main": [
+                [
+                    {
+                        "node": "Create User OR Get User",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Criar Usuário (Auth)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Criar Usuário (Auth)": {
+            "main": [
+                [
+                    {
+                        "node": "Create User OR Get User",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Create User OR Get User": {
+            "main": [
+                [
+                    {
+                        "node": "Validar WhatsApp (Subfluxo)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validar WhatsApp (Subfluxo)": {
+            "main": [
+                [
+                    {
+                        "node": "Atualizar Perfil (DB)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

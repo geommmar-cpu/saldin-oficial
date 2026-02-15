@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import logoSaldin from "@/assets/logo-saldin-final.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { ChevronRight, Brain, MessageCircle, Smartphone, Loader2, CreditCard, Upload, SkipForward, Landmark, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, MessageCircle, Smartphone, Loader2, CreditCard, Upload, SkipForward, Landmark, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/backendClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -13,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { BANK_LIST } from "@/lib/cardBranding";
 import { accountTypeOptions, type BankAccountType } from "@/types/bankAccount";
 import { parseCurrency } from "@/lib/currency";
+import { BankLogo } from "@/components/BankLogo";
+
 
 interface BankAccountEntry {
   id: string;
@@ -22,8 +25,19 @@ interface BankAccountEntry {
   initialBalance: string;
 }
 
+// Fallback for environments where crypto.randomUUID is not available (like HTTP on mobile)
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const createEmptyBankAccount = (): BankAccountEntry => ({
-  id: crypto.randomUUID(),
+  id: generateUUID(),
   bankKey: "",
   customBankName: "",
   accountType: "checking",
@@ -80,12 +94,12 @@ export const Onboarding = () => {
     try {
       await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
           ai_name: "Saldin",
           full_name: user.email?.split("@")[0] || "Usuário",
           onboarding_completed: true,
-        })
-        .eq("user_id", user.id);
+        });
 
       // Create bank accounts
       if (!skipBank) {
@@ -142,12 +156,12 @@ export const Onboarding = () => {
     try {
       await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
           ai_name: "Saldin",
           full_name: user.email?.split("@")[0] || "Usuário",
           onboarding_completed: true,
-        })
-        .eq("user_id", user.id);
+        });
 
       markOnboardingComplete();
     } catch (error) {
@@ -199,9 +213,8 @@ export const Onboarding = () => {
           {onboardingSteps.map((_, index) => (
             <div
               key={index}
-              className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                index <= currentStep ? "gradient-warm" : "bg-muted"
-              }`}
+              className={`h-1 flex-1 rounded-full transition-all duration-300 ${index <= currentStep ? "gradient-warm" : "bg-muted"
+                }`}
             />
           ))}
         </div>
@@ -219,18 +232,24 @@ export const Onboarding = () => {
             className="flex-1 flex flex-col"
           >
             {step.id === "welcome" && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-center pb-12">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="w-24 h-24 rounded-full gradient-warm flex items-center justify-center mb-8 shadow-large"
+                  transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
+                  className="mb-10"
                 >
-                  <Brain className="w-12 h-12 text-primary-foreground" />
+                  <img
+                    src={logoSaldin}
+                    alt="Saldin"
+                    className="w-48 h-48 object-contain filter drop-shadow-2xl"
+                  />
                 </motion.div>
-                <h1 className="font-serif text-4xl font-semibold mb-3">Saldin</h1>
-                <p className="text-xl text-primary font-medium mb-4">Seu assistente financeiro inteligente.</p>
-                <p className="text-muted-foreground text-lg max-w-xs">
+
+                <p className="text-xl text-primary font-semibold mb-4 max-w-xs leading-relaxed">
+                  Seu assistente financeiro inteligente.
+                </p>
+                <p className="text-muted-foreground text-base max-w-[280px] leading-relaxed">
                   Ele te ajuda a registrar gastos, entender seus hábitos e mudar sua relação com o dinheiro.
                 </p>
               </div>
@@ -324,42 +343,53 @@ export const Onboarding = () => {
                           <div className="mb-4">
                             <label className="text-xs text-muted-foreground mb-2 block">Banco</label>
                             <div className="grid grid-cols-4 gap-1.5">
-                              {BANK_LIST.filter((b) => b.key !== "outros").slice(0, 7).map((bank) => (
+                              {BANK_LIST.filter((b) => b.key !== "outros").map((bank) => (
                                 <motion.button
                                   key={bank.key}
                                   whileTap={{ scale: 0.95 }}
                                   onClick={() => updateBankAccount(acc.id, { bankKey: bank.key, customBankName: "" })}
                                   className={cn(
-                                    "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                                    "flex flex-col items-center gap-2 p-1 rounded-xl border-2 transition-all",
                                     acc.bankKey === bank.key
-                                      ? "border-primary bg-primary/10"
-                                      : "border-border bg-card hover:bg-secondary"
+                                      ? "border-primary bg-primary/5 shadow-inner"
+                                      : "border-transparent bg-secondary/30 hover:bg-secondary"
                                   )}
                                 >
-                                  <div
-                                    className="w-6 h-6 rounded-md flex items-center justify-center"
-                                    style={{ backgroundColor: bank.color + "20" }}
-                                  >
-                                    <Landmark className="w-3 h-3" style={{ color: bank.color }} />
-                                  </div>
-                                  <span className="text-[10px] font-medium truncate w-full text-center">{bank.name}</span>
+                                  <BankLogo
+                                    bankName={bank.name}
+                                    color={bank.color}
+                                    size="md"
+                                    className={cn("transition-transform", acc.bankKey === bank.key && "scale-110")}
+                                  />
+                                  <span className={cn(
+                                    "text-[10px] font-bold truncate w-full text-center tracking-tight",
+                                    acc.bankKey === bank.key ? "text-primary" : "text-muted-foreground"
+                                  )}>
+                                    {bank.name}
+                                  </span>
                                 </motion.button>
                               ))}
                               <motion.button
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => updateBankAccount(acc.id, { bankKey: "outros" })}
                                 className={cn(
-                                  "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                                  "flex flex-col items-center gap-2 p-1 rounded-xl border-2 transition-all",
                                   acc.bankKey === "outros"
-                                    ? "border-primary bg-primary/10"
-                                    : "border-border bg-card hover:bg-secondary"
+                                    ? "border-primary bg-primary/5 shadow-inner"
+                                    : "border-transparent bg-secondary/30 hover:bg-secondary"
                                 )}
                               >
-                                <div className="w-6 h-6 rounded-md flex items-center justify-center bg-muted">
-                                  <Landmark className="w-3 h-3 text-muted-foreground" />
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-muted/50 border border-muted-foreground/10">
+                                  <Plus className="w-5 h-5 text-muted-foreground" />
                                 </div>
-                                <span className="text-[10px] font-medium">Outro</span>
+                                <span className={cn(
+                                  "text-[10px] font-bold text-center tracking-tight",
+                                  acc.bankKey === "outros" ? "text-primary" : "text-muted-foreground"
+                                )}>
+                                  Outro
+                                </span>
                               </motion.button>
+
                             </div>
                           </div>
 

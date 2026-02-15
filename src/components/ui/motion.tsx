@@ -15,7 +15,7 @@ export const PageTransition = React.forwardRef<HTMLDivElement, PageTransitionPro
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         className={cn("min-h-screen", className)}
         {...props}
       >
@@ -80,3 +80,49 @@ export const SlideUp = React.forwardRef<HTMLDivElement, PageTransitionProps & { 
   }
 );
 SlideUp.displayName = "SlideUp";
+
+export const AnimatedAmount = ({
+  value,
+  className,
+  prefix = "R$ "
+}: {
+  value: number;
+  className?: string;
+  prefix?: string;
+}) => {
+  const [displayValue, setDisplayValue] = React.useState(0);
+
+  React.useEffect(() => {
+    let start = displayValue;
+    const end = value;
+    const duration = 800;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing function: easeOutQuart
+      const easeProgress = 1 - Math.pow(1 - progress, 4);
+
+      const current = start + (end - start) * easeProgress;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value]);
+
+  return (
+    <span className={className}>
+      {prefix}
+      {displayValue.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}
+    </span>
+  );
+};

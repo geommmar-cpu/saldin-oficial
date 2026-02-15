@@ -7,6 +7,7 @@ import type { DebtRow } from "@/hooks/useDebts";
 import type { Goal } from "@/types/goal";
 import type { CreditCard as CreditCardType } from "@/types/creditCard";
 import type { CreditCardInstallment, CreditCardPurchase } from "@/types/creditCard";
+import type { Subscription } from "@/types/subscription";
 
 interface AlertItem {
   id: string;
@@ -22,25 +23,47 @@ interface AlertsSectionProps {
   goals: Goal[];
   creditCards: CreditCardType[];
   installments: (CreditCardInstallment & { purchase: CreditCardPurchase & { card: CreditCardType } })[];
+  subscriptions?: Subscription[];
   selectedMonth: Date;
 }
 
-export const AlertsSection = ({ debts, goals, creditCards, installments, selectedMonth }: AlertsSectionProps) => {
+export const AlertsSection = ({ debts, goals, creditCards, installments, subscriptions = [], selectedMonth }: AlertsSectionProps) => {
   const navigate = useNavigate();
   const today = new Date();
   const alerts: AlertItem[] = [];
+
+  // 0. Subscriptions due soon
+  subscriptions.forEach(sub => {
+    if (sub.status !== 'active') return;
+
+    const billingDay = sub.billing_date;
+    const todayDay = today.getDate();
+    const daysUntil = billingDay - todayDay;
+
+    // Show alert if billing is within 3 days or today
+    if (daysUntil >= 0 && daysUntil <= 3) {
+      alerts.push({
+        id: `sub-due-${sub.id}`,
+        icon: <Calendar className="w-4 h-4" />,
+        title: `${sub.name} vence ${daysUntil === 0 ? 'hoje' : `em ${daysUntil}d`}`,
+        description: `Cobrança de ${formatCurrency(sub.amount)}`,
+        color: daysUntil <= 1 ? "text-impulse bg-impulse/10 border-impulse/20" : "text-pleasure bg-pleasure/10 border-pleasure/20",
+        action: () => navigate(`/subscriptions`),
+      });
+    }
+  });
 
   // 1. Credit card due dates approaching
   creditCards.forEach(card => {
     const dueDay = card.due_day;
     const daysUntilDue = dueDay - today.getDate();
-    
+
     // Check if there are installments for this card this month
     const cardInstallments = installments.filter(
       i => i.purchase?.card?.id === card.id && i.status === "open"
     );
     const statementTotal = cardInstallments.reduce((sum, i) => sum + Number(i.amount), 0);
-    
+
     if (statementTotal > 0 && daysUntilDue >= 0 && daysUntilDue <= 7) {
       alerts.push({
         id: `card-due-${card.id}`,
@@ -58,7 +81,7 @@ export const AlertsSection = ({ debts, goals, creditCards, installments, selecte
     if (debt.due_date) {
       const dueDate = new Date(debt.due_date);
       const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays >= 0 && diffDays <= 5) {
         alerts.push({
           id: `debt-due-${debt.id}`,
@@ -86,9 +109,9 @@ export const AlertsSection = ({ debts, goals, creditCards, installments, selecte
     if (goal.target_date && goal.status === 'in_progress') {
       const targetDate = new Date(goal.target_date);
       const progress = goal.target_amount > 0 ? (goal.current_amount / goal.target_amount) : 0;
-      const timeElapsed = (today.getTime() - new Date(goal.created_at).getTime()) / 
-                          (targetDate.getTime() - new Date(goal.created_at).getTime());
-      
+      const timeElapsed = (today.getTime() - new Date(goal.created_at).getTime()) /
+        (targetDate.getTime() - new Date(goal.created_at).getTime());
+
       if (timeElapsed > 0.5 && progress < timeElapsed * 0.5) {
         alerts.push({
           id: `goal-behind-${goal.id}`,

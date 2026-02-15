@@ -38,7 +38,7 @@ export const IncomeDetail = () => {
 
   const handleDelete = async () => {
     if (!id) return;
-    
+
     try {
       await deleteIncome.mutateAsync(id);
       setShowDeleteDialog(false);
@@ -61,7 +61,7 @@ export const IncomeDetail = () => {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-5">
         <span className="text-4xl mb-4">🔍</span>
         <p className="text-muted-foreground mb-4">Receita não encontrada</p>
-        <Button variant="ghost" onClick={() => navigate("/")}>
+        <Button variant="ghost" onClick={() => navigate(-1)}>
           Voltar
         </Button>
       </div>
@@ -75,7 +75,7 @@ export const IncomeDetail = () => {
       {/* Header */}
       <header className="px-5 pt-safe-top">
         <div className="pt-4 pb-2 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-serif text-xl font-semibold flex-1">Detalhe da Receita</h1>
@@ -153,7 +153,9 @@ export const IncomeDetail = () => {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Origem</p>
-                <p className="text-sm font-medium">Registro manual</p>
+                <p className="text-sm font-medium">
+                  {(income as any).bank_account?.name || (income as any).bank_account?.bank_name || "Registro manual"}
+                </p>
               </div>
             </div>
           </div>

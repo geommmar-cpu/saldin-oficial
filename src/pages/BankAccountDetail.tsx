@@ -9,8 +9,9 @@ import {
   ArrowLeftRight,
   TrendingUp,
   TrendingDown,
+  Settings,
 } from "lucide-react";
-import { useBankAccountById, useDeleteBankAccount } from "@/hooks/useBankAccounts";
+import { useBankAccountById, useDeleteBankAccount, useBankAccountHistory } from "@/hooks/useBankAccounts";
 import { detectBank } from "@/lib/cardBranding";
 import { formatCurrency } from "@/lib/balanceCalculations";
 import { accountTypeLabels } from "@/types/bankAccount";
@@ -21,6 +22,7 @@ export const BankAccountDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { data: account, isLoading } = useBankAccountById(id);
+  const { data: historyItems = [], isLoading: historyLoading } = useBankAccountHistory(id);
   const deleteAccount = useDeleteBankAccount();
   const [showDelete, setShowDelete] = useState(false);
 
@@ -62,9 +64,14 @@ export const BankAccountDetail = () => {
             </Button>
             <h1 className="font-serif text-xl font-semibold">{account.bank_name}</h1>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowDelete(true)}>
-            <Trash2 className="w-5 h-5 text-destructive" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/banks/${account.id}/edit`)}>
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => setShowDelete(true)}>
+              <Trash2 className="w-5 h-5 text-destructive" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -130,6 +137,63 @@ export const BankAccountDetail = () => {
               <ArrowLeftRight className="w-5 h-5" />
               Transferir entre contas
             </Button>
+          </div>
+        </FadeIn>
+
+        {/* Transaction History */}
+        <FadeIn delay={0.15}>
+          <div className="pt-2">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-4">Histórico Recente</h3>
+
+            {historyLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : historyItems.length === 0 ? (
+              <div className="text-center py-8 bg-card rounded-xl border border-border">
+                <span className="text-3xl mb-2 block">📭</span>
+                <p className="text-sm text-muted-foreground">Nenhuma movimentação encontrada</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {historyItems.map((item, idx) => {
+                  const isPositive = item.type === "income" || item.type === "transfer_in";
+
+                  return (
+                    <div
+                      key={`${item.id}-${idx}`}
+                      className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border"
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isPositive ? "bg-essential/10" : "bg-impulse/10"
+                        }`}>
+                        {item.type === "transfer_in" || item.type === "transfer_out" ? (
+                          <ArrowLeftRight className={`w-5 h-5 ${isPositive ? "text-essential" : "text-impulse"}`} />
+                        ) : isPositive ? (
+                          <TrendingUp className="w-5 h-5 text-essential" />
+                        ) : (
+                          <TrendingDown className="w-5 h-5 text-impulse" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.description}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{new Date(item.date).toLocaleDateString('pt-BR')}</span>
+                          <span>•</span>
+                          <span>{item.category}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <p className={`font-semibold text-sm ${isPositive ? "text-essential" : "text-foreground"}`}>
+                          {isPositive ? "+" : "-"} {formatCurrency(item.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </FadeIn>
       </main>

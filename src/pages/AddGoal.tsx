@@ -9,19 +9,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { FadeIn } from "@/components/ui/motion";
 import { BottomNav } from "@/components/BottomNav";
-import { 
-  ArrowLeft, 
-  Target, 
-  PiggyBank, 
-  TrendingUp, 
+import {
+  ArrowLeft,
+  Target,
+  PiggyBank,
+  TrendingUp,
   Sparkles,
   Calendar,
   Loader2,
   Users,
+  Vibrate,
 } from "lucide-react";
 import { useCreateGoal } from "@/hooks/useGoals";
 import { cn } from "@/lib/utils";
 import { formatCurrencyInput, parseCurrency } from "@/lib/currency";
+import { CurrencyInput } from "@/components/ui/currency-input";
+
+const vibrate = () => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(10);
+  }
+};
 
 // Cores disponíveis
 const colorOptions = [
@@ -51,16 +59,15 @@ export default function AddGoal() {
   const [name, setName] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [selectedColor, setSelectedColor] = useState('green');
-  const [selectedIcon, setSelectedIcon] = useState('target');
   const [isPersonal, setIsPersonal] = useState(true);
 
   const targetAmount = parseCurrency(amount);
   const initialAmountNum = parseFloat(initialAmount.replace(',', '.')) || 0;
 
   const handleKeyPress = (key: string) => {
+    vibrate();
     const currentDigits = amount.replace(/[^\d]/g, "");
-    
+
     if (key === "backspace") {
       const newDigits = currentDigits.slice(0, -1);
       setAmount(newDigits ? formatCurrencyInput(newDigits) : "");
@@ -85,8 +92,8 @@ export default function AddGoal() {
       target_amount: targetAmount,
       current_amount: initialAmountNum,
       target_date: targetDate || null,
-      color: selectedColor,
-      icon: selectedIcon,
+      color: 'green',
+      icon: 'target',
       notes: notes.trim() || null,
       is_personal: isPersonal,
       status: initialAmountNum >= targetAmount ? 'completed' : 'in_progress',
@@ -139,24 +146,23 @@ export default function AddGoal() {
           {/* Keypad */}
           <FadeIn delay={0.2} className="pb-6">
             <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto">
-                {keys.map((key) => (
-                  <motion.button
-                    key={key}
-                    type="button"
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => key !== "," && handleKeyPress(key)}
-                    disabled={key === ","}
-                    className={`h-16 rounded-xl text-2xl font-medium transition-colors ${
-                      key === "backspace"
-                        ? "bg-muted text-muted-foreground"
-                        : key === ","
-                        ? "bg-card border border-border text-muted-foreground/30 cursor-default"
-                        : "bg-card border border-border hover:bg-secondary"
+              {keys.map((key) => (
+                <motion.button
+                  key={key}
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => key !== "," && handleKeyPress(key)}
+                  disabled={key === ","}
+                  className={`h-16 rounded-xl text-2xl font-medium transition-colors ${key === "backspace"
+                    ? "bg-muted text-muted-foreground"
+                    : key === ","
+                      ? "bg-card border border-border text-muted-foreground/30 cursor-default"
+                      : "bg-card border border-border hover:bg-secondary"
                     }`}
-                  >
-                    {key === "backspace" ? "⌫" : key}
-                  </motion.button>
-                ))}
+                >
+                  {key === "backspace" ? "⌫" : key}
+                </motion.button>
+              ))}
             </div>
           </FadeIn>
 
@@ -226,15 +232,9 @@ export default function AddGoal() {
               Já tem algum dinheiro guardado para esta meta?
             </p>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                className="pl-10"
-                placeholder="0,00"
+              <CurrencyInput
                 value={initialAmount}
-                onChange={(e) => setInitialAmount(e.target.value)}
+                onChange={setInitialAmount}
               />
             </div>
           </div>
@@ -257,130 +257,41 @@ export default function AddGoal() {
           </div>
         </FadeIn>
 
-        {/* Cor */}
-        <FadeIn delay={0.15}>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Cor da caixinha</label>
-            <div className="flex gap-3 flex-wrap">
-              {colorOptions.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => setSelectedColor(color.id)}
-                  className={cn(
-                    "w-10 h-10 rounded-full transition-all",
-                    color.class,
-                    selectedColor === color.id 
-                      ? "ring-2 ring-offset-2 ring-foreground scale-110" 
-                      : "hover:scale-105"
-                  )}
-                  title={color.label}
-                />
-              ))}
-            </div>
-          </div>
-        </FadeIn>
-
-        {/* Ícone */}
-        <FadeIn delay={0.2}>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Ícone</label>
-            <div className="flex gap-3 flex-wrap">
-              {iconOptions.map((iconOpt) => {
-                const Icon = iconOpt.icon;
-                return (
-                  <button
-                    key={iconOpt.id}
-                    onClick={() => setSelectedIcon(iconOpt.id)}
-                    className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center transition-all border-2",
-                      selectedIcon === iconOpt.id 
-                        ? "border-foreground bg-muted scale-105" 
-                        : "border-border hover:border-muted-foreground"
-                    )}
-                    title={iconOpt.label}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </FadeIn>
-
         {/* Observação */}
-        <FadeIn delay={0.25}>
+        <FadeIn delay={0.15}>
           <div className="space-y-2">
             <label className="text-sm font-medium">Observação (opcional)</label>
             <Textarea
-              placeholder="Adicione uma nota sobre essa meta..."
+              placeholder="Adicione uma nota..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              rows={3}
+              rows={2}
             />
           </div>
         </FadeIn>
 
-        {/* Meta para outra pessoa */}
-        <FadeIn delay={0.28}>
+        {/* Avaliar impacto no saldo */}
+        <FadeIn delay={0.2}>
           <Card className="p-4">
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                  <Users className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Meta para outra pessoa</p>
-                  <p className="text-xs text-muted-foreground">
-                    Não afeta seu saldo livre
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={!isPersonal}
-                onCheckedChange={(checked) => setIsPersonal(!checked)}
-              />
-            </div>
-          </Card>
-        </FadeIn>
-
-        {/* Preview */}
-        <FadeIn delay={0.3}>
-          <Card className={cn(
-            "p-4 border-2",
-            `border-${selectedColor === 'green' ? 'essential' : selectedColor === 'blue' ? 'calm' : selectedColor === 'purple' ? 'pleasure' : selectedColor === 'orange' ? 'obligation' : selectedColor === 'red' ? 'impulse' : 'pink-500'}/30`
-          )}>
-            <p className="text-xs text-muted-foreground mb-2">Prévia da sua caixinha</p>
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
-                colorOptions.find(c => c.id === selectedColor)?.class + '/20'
-              )}>
-                {(() => {
-                  const Icon = iconOptions.find(i => i.id === selectedIcon)?.icon || Target;
-                  return <Icon className={cn(
-                    "w-6 h-6",
-                    selectedColor === 'green' ? 'text-essential' :
-                    selectedColor === 'blue' ? 'text-calm' :
-                    selectedColor === 'purple' ? 'text-pleasure' :
-                    selectedColor === 'orange' ? 'text-obligation' :
-                    selectedColor === 'red' ? 'text-impulse' : 'text-pink-500'
-                  )} />;
-                })()}
-              </div>
               <div>
-                <p className="font-semibold">{name || 'Nome da meta'}</p>
-                <p className="text-sm text-muted-foreground">
-                  {formatCurrency(initialAmountNum)} de {formatCurrency(targetAmount)}
+                <p className="font-medium text-sm">Esta meta afeta meu saldo?</p>
+                <p className="text-xs text-muted-foreground">
+                  {isPersonal ? "Sim, o valor guardado será subtraído do saldo livre." : "Não, é apenas para controle (ex: meta conjunta ou para terceiros)"}
                 </p>
               </div>
+              <Switch
+                checked={isPersonal}
+                onCheckedChange={setIsPersonal}
+              />
             </div>
           </Card>
         </FadeIn>
 
         {/* Submit Button */}
         <FadeIn delay={0.35}>
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             size="lg"
             onClick={handleSubmit}
             disabled={!name.trim() || createGoal.isPending}

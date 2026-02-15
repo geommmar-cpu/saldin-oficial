@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/BottomNav";
 import { IncomeList } from "@/components/IncomeList";
 import { FadeIn } from "@/components/ui/motion";
-import { ArrowLeft, Plus, Wallet, MessageCircle, Loader2 } from "lucide-react";
+import { ChevronLeft, Plus, Wallet, MessageCircle, Loader2 } from "lucide-react";
 import { useIncomes, useIncomeStats, IncomeRow } from "@/hooks/useIncomes";
 import { startOfMonth, endOfMonth, isWithinInterval, isBefore, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -16,31 +16,31 @@ const isVariableType = (type: string) => ["freelance", "investment", "gift", "ot
 export const Income = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get selected month from navigation state, fallback to current month
   const selectedMonth = useMemo(() => {
     const stateMonth = location.state?.selectedMonth;
     return stateMonth ? new Date(stateMonth) : new Date();
   }, [location.state?.selectedMonth]);
-  
+
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
 
   // Fetch real data from Supabase
   const { data: allIncomes = [], isLoading } = useIncomes();
   const { data: stats } = useIncomeStats();
-  
+
   // Filter incomes by selected month (considering recurring)
   const incomes = useMemo(() => {
     return allIncomes.filter(income => {
       const incomeDate = new Date(income.date || income.created_at);
-      
+
       // For recurring incomes: show if the income started before or during this month
       if (income.is_recurring) {
         const incomeStart = startOfMonth(incomeDate);
         return !isBefore(monthStart, incomeStart);
       }
-      
+
       // For non-recurring: only show in the month it was created
       return isWithinInterval(incomeDate, { start: monthStart, end: monthEnd });
     });
@@ -60,7 +60,7 @@ export const Income = () => {
   // Calculate totals from filtered incomes
   const totalFixed = fixedIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
   const totalVariable = variableIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
-  
+
   const totalIncome = totalFixed + totalVariable;
 
   const formatCurrency = (value: number) =>
@@ -108,8 +108,8 @@ export const Income = () => {
       <header className="px-5 pt-safe-top sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border">
         <div className="pt-4 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="-ml-2">
+              <ChevronLeft className="w-5 h-5" />
             </Button>
             <div>
               <h1 className="font-serif text-xl font-semibold">Receitas</h1>
@@ -156,12 +156,12 @@ export const Income = () => {
           <FadeIn delay={0.15}>
             <div>
               <h2 className="font-medium text-sm text-muted-foreground mb-2">Receita Fixa</h2>
-              <IncomeList 
-                incomes={transformedFixedIncomes} 
+              <IncomeList
+                incomes={transformedFixedIncomes}
                 onIncomeClick={(income) => {
                   const original = fixedIncomes.find(i => i.id === income.id);
                   if (original) handleIncomeClick(original);
-                }} 
+                }}
               />
             </div>
           </FadeIn>
@@ -172,12 +172,12 @@ export const Income = () => {
           <FadeIn delay={0.2}>
             <div>
               <h2 className="font-medium text-sm text-muted-foreground mb-2">Receita Variável</h2>
-              <IncomeList 
-                incomes={transformedVariableIncomes} 
+              <IncomeList
+                incomes={transformedVariableIncomes}
                 onIncomeClick={(income) => {
                   const original = variableIncomes.find(i => i.id === income.id);
                   if (original) handleIncomeClick(original);
-                }} 
+                }}
               />
             </div>
           </FadeIn>

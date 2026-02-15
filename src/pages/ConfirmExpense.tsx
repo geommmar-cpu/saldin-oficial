@@ -5,26 +5,28 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FadeIn } from "@/components/ui/motion";
-import { 
-  ArrowLeft, Check, Utensils, Car, Gamepad2, Home, CreditCard, 
+import {
+  ArrowLeft, Check, Utensils, Car, Gamepad2, Home, CreditCard,
   MoreHorizontal, RefreshCw, Calendar, Users, User, ChevronDown,
   Banknote, Smartphone, CreditCard as CreditCardIcon, Loader2, QrCode,
-  Search, Plus
+  Search, Plus, AlertTriangle
 } from "lucide-react";
+import { formatCurrency } from "@/lib/balanceCalculations";
 import { cn } from "@/lib/utils";
-import { useCreateExpense } from "@/hooks/useExpenses";
+import { useCreateExpense, useCreateBulkExpenses } from "@/hooks/useExpenses";
+import { addMonths, format } from "date-fns";
 import { useCreateCreditCardPurchase, useCreditCards } from "@/hooks/useCreditCards";
 import { useCreateReceivable } from "@/hooks/useReceivables";
 import { useBankAccounts, useUpdateBankBalance } from "@/hooks/useBankAccounts";
 import { useCashAccount } from "@/hooks/useCashAccount";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { 
-  defaultCategories, 
-  categoryGroups, 
+import {
+  defaultCategories,
+  categoryGroups,
   getGroupedCategories,
   type CategoryConfig,
-  type CategoryGroup 
+  type CategoryGroup
 } from "@/lib/categories";
 import { useAllCategories } from "@/hooks/useCategories";
 import { Tag } from "lucide-react";
@@ -92,13 +94,14 @@ export const ConfirmExpense = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const createExpense = useCreateExpense();
+  const createBulkExpenses = useCreateBulkExpenses();
   const createCreditCardPurchase = useCreateCreditCardPurchase();
   const { data: creditCards = [] } = useCreditCards();
   const { data: bankAccounts = [] } = useBankAccounts();
   const updateBankBalance = useUpdateBankBalance();
   const createReceivable = useCreateReceivable();
   const { ensureCashAccount, cashAccountId, isCreating: isCreatingCash } = useCashAccount();
-  
+
   const amount = location.state?.amount || 67.50;
   const { allCategories, customCategories } = useAllCategories();
   const isNew = id === "new";
@@ -107,36 +110,51 @@ export const ConfirmExpense = () => {
   const [categorySearch, setCategorySearch] = useState("");
 
   const [step, setStep] = useState<Step>("expense");
-  
+
   // Layer 1 - Basic expense info
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string | undefined>();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | undefined>();
   const [selectedCardId, setSelectedCardId] = useState<string | undefined>();
   const [selectedBankId, setSelectedBankId] = useState<string | undefined>();
-  
+
   // Layer 2 - Time behavior
   const [isRecurring, setIsRecurring] = useState<boolean | undefined>();
   const [installments, setInstallments] = useState<string>("");
-  
+
   // Layer 3 - Reimbursement
   const [isForOtherPerson, setIsForOtherPerson] = useState<boolean | undefined>();
   const [reimbursementPersonName, setReimbursementPersonName] = useState("");
-  
+
   // Confirmation
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionType | undefined>();
   const [wouldDoAgain, setWouldDoAgain] = useState<boolean | undefined>();
 
+  // Insufficient funds check
+  const selectedAccountBalance = (() => {
+    if (paymentMethod === "credit" && selectedCardId) {
+      const card = creditCards.find(c => c.id === selectedCardId);
+      return card ? Number(card.credit_limit) : Infinity;
+    }
+    if ((paymentMethod === "debit" || paymentMethod === "pix") && selectedBankId) {
+      const bank = bankAccounts.find(b => b.id === selectedBankId);
+      return bank ? Number(bank.current_balance) : Infinity;
+    }
+    return Infinity;
+  })();
+
+  const isInsufficient = amount > selectedAccountBalance;
+
   // Filtered categories for search
   const filteredCategories = categorySearch.trim()
-    ? allCategories.filter(c => 
-        c.name.toLowerCase().includes(categorySearch.toLowerCase())
-      )
+    ? allCategories.filter(c =>
+      c.name.toLowerCase().includes(categorySearch.toLowerCase())
+    )
     : allCategories;
 
   // Get selected category object
-  const selectedCategory = category 
-    ? allCategories.find(c => c.id === category) 
+  const selectedCategory = category
+    ? allCategories.find(c => c.id === category)
     : undefined;
 
   // Quick categories to show
@@ -187,9 +205,9 @@ export const ConfirmExpense = () => {
 
   const handleComplete = async () => {
     if (!user || isSubmitting) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const isCreditCard = paymentMethod === "credit" && selectedCardId;
 
@@ -201,7 +219,7 @@ export const ConfirmExpense = () => {
           description: description || selectedCategory?.name || "Compra no cartão",
           total_amount: amount,
           total_installments: totalInstallments,
-          // category_id omitido: categorias locais não são UUIDs válidos para FK
+          category_id: selectedCategory?.id || null,
           purchase_date: toLocalDateString(),
         });
       } else {
@@ -212,17 +230,43 @@ export const ConfirmExpense = () => {
         }
 
         // GASTO NORMAL: Criar expense
-        await createExpense.mutateAsync({
-          amount,
-          description: description || selectedCategory?.name || "Gasto registrado",
-          emotion: selectedEmotion,
-          status: "confirmed",
-          source: "manual",
-          is_installment: isRecurring || false,
-          total_installments: isRecurring && installments ? parseInt(installments) : undefined,
-          installment_number: 1,
-          bank_account_id: bankId || undefined,
-        } as any);
+        const totalInstallments = isRecurring && installments ? parseInt(installments) : 1;
+        const purchaseDate = new Date();
+
+        if (totalInstallments > 1) {
+          const installmentGroupId = crypto.randomUUID();
+          const bulkExpenses = Array.from({ length: totalInstallments }, (_, i) => {
+            const date = addMonths(purchaseDate, i);
+            return {
+              amount: amount,
+              description: description || selectedCategory?.name || "Gasto registrado",
+              emotion: selectedEmotion,
+              status: "confirmed" as const,
+              source: "manual" as const,
+              is_installment: false, // Important: Bulk entries are real rows, not virtual
+              total_installments: totalInstallments,
+              installment_number: i + 1,
+              installment_group_id: installmentGroupId,
+              bank_account_id: bankId || undefined,
+              date: format(date, "yyyy-MM-dd"),
+              category_id: selectedCategory?.id || null,
+            };
+          });
+          await createBulkExpenses.mutateAsync(bulkExpenses as any);
+        } else {
+          await createExpense.mutateAsync({
+            amount,
+            description: description || selectedCategory?.name || "Gasto registrado",
+            emotion: selectedEmotion,
+            status: "confirmed",
+            source: "manual",
+            is_installment: false,
+            installment_number: 1,
+            bank_account_id: bankId || undefined,
+            date: toLocalDateString(),
+            category_id: selectedCategory?.id || null,
+          } as any);
+        }
 
         // Update bank balance if a bank was selected
         if (bankId) {
@@ -339,7 +383,7 @@ export const ConfirmExpense = () => {
               <label className="text-sm text-muted-foreground mb-3 block">
                 Categoria
               </label>
-              
+
               {/* Quick Categories Grid */}
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {quickCategoryObjects.map((cat) => {
@@ -362,12 +406,12 @@ export const ConfirmExpense = () => {
                   );
                 })}
               </div>
-              
+
               {/* See All Categories Button */}
               <Sheet open={categorySheetOpen} onOpenChange={setCategorySheetOpen}>
                 <SheetTrigger asChild>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-between"
                     size="sm"
                   >
@@ -386,7 +430,7 @@ export const ConfirmExpense = () => {
                   <SheetHeader className="pb-4">
                     <SheetTitle>Escolher Categoria</SheetTitle>
                   </SheetHeader>
-                  
+
                   {/* Search */}
                   <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -397,7 +441,7 @@ export const ConfirmExpense = () => {
                       className="pl-9"
                     />
                   </div>
-                  
+
                   <ScrollArea className="h-[calc(80vh-140px)]">
                     <div className="space-y-4 pr-4">
                       {/* Custom categories first */}
@@ -451,11 +495,11 @@ export const ConfirmExpense = () => {
                         const groupCategories = filteredCategories.filter(
                           c => c.group === groupKey && !c.isCustom
                         );
-                        
+
                         if (groupCategories.length === 0) return null;
-                        
+
                         const GroupIcon = groupInfo.icon;
-                        
+
                         return (
                           <div key={groupKey}>
                             <div className="flex items-center gap-2 mb-2">
@@ -675,8 +719,8 @@ export const ConfirmExpense = () => {
               {paymentMethod === "credit" ? "Quantas parcelas?" : "Esse gasto se repete?"}
             </h2>
             <p className="text-center text-sm text-muted-foreground mb-8">
-              {paymentMethod === "credit" 
-                ? "Informe o número de parcelas da compra" 
+              {paymentMethod === "credit"
+                ? "Informe o número de parcelas da compra"
                 : "Ex: academia, streaming, financiamento"}
             </p>
 
@@ -964,6 +1008,28 @@ export const ConfirmExpense = () => {
                 ))}
               </div>
             </div>
+
+            {/* Socratic Feedback - Insufficient Funds Warning */}
+            {isInsufficient && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 rounded-xl bg-impulse/10 border border-impulse/20 mb-6"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-impulse shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-impulse">Atenção: Dinheiro insuficiente</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Este valor de {formattedAmount} é maior do que o seu {paymentMethod === "credit" ? "limite disponível" : "saldo atual"} ({formatCurrency(selectedAccountBalance)}).
+                    </p>
+                    <p className="text-xs font-medium text-impulse/80 mt-2">
+                      Deseja prosseguir mesmo ficando no vermelho?
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </FadeIn>
         )}
       </main>

@@ -11,18 +11,43 @@ import { useCreateBankAccount } from "@/hooks/useBankAccounts";
 import { BANK_LIST, detectBank } from "@/lib/cardBranding";
 import { accountTypeOptions, type BankAccountType } from "@/types/bankAccount";
 import { parseCurrency } from "@/lib/currency";
+import { BankLogo } from "@/components/BankLogo";
+import { useUpdateProfile, useProfile } from "@/hooks/useProfile";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
+
 
 export const AddBankAccount = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const createAccount = useCreateBankAccount();
+  const updateProfile = useUpdateProfile();
   const returnTo = location.state?.returnTo as string | undefined;
   const returnState = location.state?.returnState as Record<string, any> | undefined;
+
+  const { data: profile } = useProfile();
+  const { data: accounts = [] } = useBankAccounts();
 
   const [bankKey, setBankKey] = useState<string>("");
   const [customBankName, setCustomBankName] = useState("");
   const [accountType, setAccountType] = useState<BankAccountType>("checking");
   const [initialBalance, setInitialBalance] = useState("");
+  const [isMainAccount, setIsMainAccount] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Find existing main account names for the confirmation message
+  const existingIncomeAccId = (profile as any)?.wa_default_income_account_id;
+  const existingIncomeAcc = accounts.find(a => a.id === existingIncomeAccId);
 
   const selectedBank = BANK_LIST.find((b) => b.key === bankKey);
   const bankName = bankKey === "outros" ? customBankName : selectedBank?.name || customBankName;
@@ -44,6 +69,14 @@ export const AddBankAccount = () => {
       active: true,
     });
 
+    if (isMainAccount && result?.id) {
+      // Define como padrão para Receita e Gasto (se for conta bancária)
+      await updateProfile.mutateAsync({
+        wa_default_income_account_id: result.id,
+        wa_default_expense_account_id: result.id
+      });
+    }
+
     if (returnTo) {
       navigate(returnTo, { state: { ...returnState, preSelectedBankId: result?.id || "latest" } });
     } else {
@@ -63,10 +96,13 @@ export const AddBankAccount = () => {
       </header>
 
       <main className="flex-1 px-5 py-6 overflow-y-auto pb-32">
-        {/* Bank selector */}
+        {/* Bank selector - Horizontal Scroll */}
         <FadeIn className="mb-6">
-          <label className="text-sm text-muted-foreground mb-3 block">Banco</label>
-          <div className="grid grid-cols-3 gap-2">
+          <label className="text-sm text-muted-foreground mb-3 block">Escolha o banco</label>
+          <div
+            className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {BANK_LIST.filter((b) => b.key !== "outros").map((bank) => (
               <motion.button
                 key={bank.key}
@@ -75,37 +111,56 @@ export const AddBankAccount = () => {
                   setBankKey(bank.key);
                   setCustomBankName("");
                 }}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                  bankKey === bank.key
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card hover:bg-secondary"
-                )}
+                className="flex flex-col items-center gap-2 min-w-[72px] snap-center"
               >
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: bank.color + "20" }}
+                <div className={cn(
+                  "w-14 h-14 rounded-full flex items-center justify-center transition-all border-2 shadow-sm",
+                  bankKey === bank.key
+                    ? "border-primary ring-2 ring-primary/20 ring-offset-2 scale-110"
+                    : "border-border bg-card hover:border-primary/50"
+                )}
+                  style={{ backgroundColor: bankKey === bank.key ? bank.color : (bank.logoUrl ? "#ffffff" : bank.color + "20") }}
                 >
-                  <Landmark className="w-4 h-4" style={{ color: bank.color }} />
+                  {bankKey === bank.key ? (
+                    <Check className="w-6 h-6 text-white" />
+                  ) : (
+                    <BankLogo bankName={bank.name} color={bank.color} size="lg" />
+                  )}
                 </div>
-                <span className="text-xs font-medium truncate w-full text-center">{bank.name}</span>
+                <span className={cn(
+                  "text-xs font-bold text-center truncate w-full transition-colors tracking-tight",
+                  bankKey === bank.key ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {bank.name}
+                </span>
+
               </motion.button>
             ))}
+
             {/* Outro */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => setBankKey("outros")}
-              className={cn(
-                "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                bankKey === "outros"
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-card hover:bg-secondary"
-              )}
+              className="flex flex-col items-center gap-2 min-w-[72px] snap-center"
             >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-muted">
-                <Landmark className="w-4 h-4 text-muted-foreground" />
+              <div className={cn(
+                "w-14 h-14 rounded-full flex items-center justify-center transition-all border-2 shadow-sm bg-muted",
+                bankKey === "outros"
+                  ? "border-primary ring-2 ring-primary/20 ring-offset-2 scale-110"
+                  : "border-border hover:border-primary/50"
+              )}>
+                {bankKey === "outros" ? (
+                  <Check className="w-6 h-6 text-primary" />
+                ) : (
+                  <span className="text-xs font-bold text-muted-foreground">...</span>
+                )}
               </div>
-              <span className="text-xs font-medium">Outro</span>
+              <span className={cn(
+                "text-xs font-medium text-center truncate w-full transition-colors",
+                bankKey === "outros" ? "text-primary" : "text-muted-foreground"
+              )}>
+                Outro
+              </span>
             </motion.button>
           </div>
         </FadeIn>
@@ -156,6 +211,47 @@ export const AddBankAccount = () => {
             Este valor não será contabilizado como receita
           </p>
         </FadeIn>
+
+        {/* Main account toggle */}
+        <FadeIn delay={0.15}>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-card border border-border shadow-soft">
+            <div>
+              <p className="text-sm font-medium">Definir como conta principal</p>
+              <p className="text-xs text-muted-foreground">Usar para transações automáticas via WhatsApp</p>
+            </div>
+            <Switch
+              checked={isMainAccount}
+              onCheckedChange={(checked) => {
+                if (checked && existingIncomeAccId) {
+                  setShowConfirm(true);
+                } else {
+                  setIsMainAccount(checked);
+                }
+              }}
+            />
+          </div>
+        </FadeIn>
+
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Substituir conta principal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                A conta <strong>{existingIncomeAcc?.bank_name}</strong> já está definida como principal.
+                Deseja que esta nova conta passe a ser a padrão para o WhatsApp?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsMainAccount(false)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                setIsMainAccount(true);
+                setShowConfirm(false);
+              }}>
+                Sim, substituir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-background/95 backdrop-blur-sm border-t border-border">

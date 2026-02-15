@@ -1,0 +1,328 @@
+{
+  "name": "Saldin - Subfluxo Registra Dados",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=O seu unico objeto é criar uma mensagem de sucesso sobre o registro dos dados abaixo de no máximo 100 caracter.\n\n*DADOS DA COMPRA*\nquando: {{ $json.data }}\nonde: {{ $json.estabelecimento }}\nvalor: {{ $json.valor }}\ndetalhes: {{ $json.detalhes }}\ncategoria: {{ $json.categoria }}\ntipo: {{ $json.tipo }}\n\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        512,
+        112
+      ],
+      "id": "0b8a4f28-ff61-403c-a3fb-bffccc2be782",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "instanceName": "Financeiro",
+        "options_Create_instance": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        832,
+        112
+      ],
+      "id": "bca42ecd-aba6-4633-8064-688c1e267e0d",
+      "name": "Responde o Cliente",
+      "credentials": {
+        "evolutionApi": {
+          "id": "kuJnKmWbnX2oDcPk",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "estabelecimento"
+            },
+            {
+              "name": "valor",
+              "type": "number"
+            },
+            {
+              "name": "quando"
+            },
+            {
+              "name": "detalhes"
+            },
+            {
+              "name": "whatsapp"
+            },
+            {
+              "name": "tipo"
+            },
+            {
+              "name": "categoria"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        112
+      ],
+      "id": "4c11fb24-66aa-469a-809b-769796009f9d",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "content": "## Registra dados\nRegistra as informações no banco de dados e responde o cliente com uma mensagem de sucesso.\n",
+        "height": 500,
+        "width": 1800,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "5606b28a-6168-4aaa-b928-28f369bea16f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        288
+      ],
+      "id": "54890dea-201d-4931-8cf7-fbbe0a5fc0d4",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "h4bdr0OtRzCJ8LQz",
+          "name": "conexão financeiro"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d0e66d32-363a-44dd-99da-01d8ec7d9178",
+              "name": "estabelecimento",
+              "value": "={{ $json.estabelecimento }}",
+              "type": "string"
+            },
+            {
+              "id": "9412a0d4-078a-4ec3-a4e1-ac2838a2991e",
+              "name": "valor",
+              "value": "={{ $json.valor }}",
+              "type": "string"
+            },
+            {
+              "id": "9b638857-dd2e-49ad-9d00-6956c55f6ca5",
+              "name": "quando",
+              "value": "={{ $json.quando }}",
+              "type": "string"
+            },
+            {
+              "id": "26525693-5aae-48b8-857a-ec9660c06977",
+              "name": "detalhes",
+              "value": "={{ $json.detalhes }}",
+              "type": "string"
+            },
+            {
+              "id": "146697e5-134f-468c-ba93-e9c5f544e56b",
+              "name": "tipo",
+              "value": "={{ $json.tipo }}",
+              "type": "string"
+            },
+            {
+              "id": "da7a2f3f-41ca-418d-a3cc-24912ff384b0",
+              "name": "categoria",
+              "value": "={{ $json.categoria }}",
+              "type": "string"
+            },
+            {
+              "id": "949faa29-e733-46d3-b080-086951c97e59",
+              "name": "whatsapp",
+              "value": "={{ $json.whatsapp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -112,
+        112
+      ],
+      "id": "e3567e3c-e6c6-4d7a-b606-6099b61549a0",
+      "name": "filtraDados"
+    },
+    {
+      "parameters": {
+        "tableId": "expenses",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "description",
+              "fieldValue": "={{ $json.estabelecimento }}"
+            },
+            {
+              "fieldId": "amount",
+              "fieldValue": "={{ $json.valor }}"
+            },
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $json.quando }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.detalhes }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $execution.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        272,
+        112
+      ],
+      "id": "0f2ab8d9-1a7b-40bf-90bb-70600a9ec587",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CcfS2yNYxltWGJ32",
+          "name": "Saldin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "profiles",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "phone",
+              "keyValue": "={{ $json.whatsapp }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        96,
+        112
+      ],
+      "id": "8a95487b-f4a5-43b2-953f-4da0afe82320",
+      "name": "Buscar Usuário",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CcfS2yNYxltWGJ32",
+          "name": "Saldin"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Responde o Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "filtraDados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filtraDados": {
+      "main": [
+        [
+          {
+            "node": "Buscar Usuário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Usuário": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "22dd83ce-4dfe-4af5-bbe8-494d0e9191d5",
+  "meta": {
+    "instanceId": "70881a69f7fc749cf8a0d98961d1de3635fd46147dc831e58a99f5ddce427c57"
+  },
+  "id": "yhVUKEa_TTFVt2h1WHgqV",
+  "tags": []
+}

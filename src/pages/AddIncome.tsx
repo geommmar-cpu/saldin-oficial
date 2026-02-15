@@ -29,7 +29,7 @@ export const AddIncome = () => {
       {/* Header */}
       <header className="px-5 pt-safe-top">
         <div className="pt-4 pb-2 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} data-testid="btn-back">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-serif text-xl font-semibold">Nova Receita</h1>
@@ -48,11 +48,12 @@ export const AddIncome = () => {
         {/* WhatsApp Alternative */}
         <FadeIn delay={0.1} className="mb-6">
           <div className="flex justify-center">
-            <Button 
-              variant="soft" 
-              size="sm" 
+            <Button
+              variant="soft"
+              size="sm"
               className="gap-2"
               onClick={openWhatsApp}
+              data-testid="btn-whatsapp"
             >
               <MessageCircle className="w-4 h-4" />
               Enviar via WhatsApp
@@ -76,6 +77,7 @@ export const AddIncome = () => {
             className="w-full"
             onClick={handleContinue}
             disabled={parseCurrency(amount) <= 0}
+            data-testid="btn-continue"
           >
             Continuar
           </Button>
@@ -84,6 +86,7 @@ export const AddIncome = () => {
             size="lg"
             className="w-full"
             onClick={() => navigate("/")}
+            data-testid="btn-cancel"
           >
             Cancelar
           </Button>

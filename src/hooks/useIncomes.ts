@@ -8,18 +8,33 @@ export type IncomeRow = Tables<"incomes">;
 export type IncomeInsert = TablesInsert<"incomes">;
 export type IncomeUpdate = TablesUpdate<"incomes">;
 
-export const useIncomes = () => {
+const db = supabase as any;
+
+export const useIncomes = (month?: number, year?: number) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["incomes", user?.id],
+    queryKey: ["incomes", user?.id, month, year],
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
+      let query = db
         .from("incomes")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // Apply date filtering if month and year are provided
+      if (month !== undefined && year !== undefined) {
+        const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const nextYear = month === 11 ? year + 1 : year;
+        const nextMonth = month === 11 ? 1 : month + 2;
+        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+
+        // Logic: Return if (is_recurring == true AND started before/on this month) OR (date is within range)
+        query = query.or(`and(is_recurring.eq.true,date.lt.${endDate}),and(date.gte.${startDate},date.lt.${endDate})`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching incomes:", error);
@@ -75,7 +90,7 @@ export const useIncomeStats = (month?: number, year?: number) => {
 
       const allIncomes = [...(monthlyIncomes || []), ...(recurringIncomes || [])];
       const total = allIncomes.reduce((acc, i) => acc + Number(i.amount), 0);
-      
+
       const recurringTotal = (recurringIncomes || []).reduce((acc, i) => acc + Number(i.amount), 0);
       const variableTotal = (monthlyIncomes || []).reduce((acc, i) => acc + Number(i.amount), 0);
 
@@ -205,7 +220,7 @@ export const useIncomeById = (id: string | undefined) => {
     queryFn: async () => {
       if (!id) return null;
 
-      const { data, error } = await supabase
+      const { data: income, error } = await db
         .from("incomes")
         .select("*")
         .eq("id", id)
@@ -216,7 +231,20 @@ export const useIncomeById = (id: string | undefined) => {
         throw error;
       }
 
-      return data;
+      if (!income) return null;
+
+      const enrichedIncome = { ...income } as any;
+
+      if ((income as any).bank_account_id) {
+        const { data: bankAcc } = await db
+          .from("bank_accounts")
+          .select("name, bank_name")
+          .eq("id", (income as any).bank_account_id)
+          .maybeSingle();
+        if (bankAcc) enrichedIncome.bank_account = bankAcc;
+      }
+
+      return enrichedIncome;
     },
     enabled: !!user && !!id,
   });

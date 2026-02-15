@@ -19,7 +19,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["DM Sans", "system-ui", "sans-serif"],
-        serif: ["Playfair Display", "serif"],
+        serif: ["DM Sans", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
