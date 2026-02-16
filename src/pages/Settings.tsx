@@ -51,6 +51,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
+import { useWhatsAppStatus } from "@/hooks/useWhatsAppStatus";
+
 export const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,6 +61,7 @@ export const Settings = () => {
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
   const queryClient = useQueryClient();
+
   const {
     isSupported: isBiometricSupported,
     isEnabled: isBiometricEnabled,
@@ -82,13 +85,28 @@ export const Settings = () => {
       updatePreference("aiName", profile.ai_name);
     }
   }, [profile?.ai_name]);
+
   const [loggingOut, setLoggingOut] = useState(false);
   const [biometricActivating, setBiometricActivating] = useState(false);
 
-  // Mock WhatsApp status
+  const { data: whatsappData, isLoading: isLoadingWhatsApp } = useWhatsAppStatus(user?.id);
+
+  // Formata o número para exibição: 5561993984169 -> +55 61 99398-4169
+  const formatPhoneNumber = (phone: string | null) => {
+    if (!phone) return "Não configurado";
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length === 13) {
+      return `+${cleaned.substring(0, 2)} ${cleaned.substring(2, 4)} ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
+    }
+    if (cleaned.length === 12) {
+      return `+${cleaned.substring(0, 2)} ${cleaned.substring(2, 4)} ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
+    }
+    return `+${cleaned}`;
+  };
+
   const whatsappStatus = {
-    connected: true,
-    number: "+55 11 99999-9999",
+    connected: whatsappData?.connected || false,
+    number: formatPhoneNumber(whatsappData?.number || null),
   };
 
   // Alert preferences (local state for demo)
