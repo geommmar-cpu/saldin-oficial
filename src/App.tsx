@@ -157,9 +157,9 @@ const App = () => (
             <Route path="/banks/transfer" element={<OnboardingRoute><BankTransfer /></OnboardingRoute>} />
 
             {/* Crypto Wallets */}
-            <Route path="/crypto" element={<OnboardingRoute><CryptoWallets /></OnboardingRoute>} />
-            <Route path="/crypto/add" element={<OnboardingRoute><AddCryptoWallet /></OnboardingRoute>} />
-            <Route path="/crypto/:id" element={<OnboardingRoute><CryptoWalletDetail /></OnboardingRoute>} />
+            <Route path="/crypto-wallet" element={<OnboardingRoute><CryptoWallets /></OnboardingRoute>} />
+            <Route path="/crypto-wallet/add" element={<OnboardingRoute><AddCryptoWallet /></OnboardingRoute>} />
+            <Route path="/crypto-wallet/:id" element={<OnboardingRoute><CryptoWalletDetail /></OnboardingRoute>} />
 
             {/* Categories */}
             <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />
