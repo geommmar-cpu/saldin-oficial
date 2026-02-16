@@ -26,15 +26,15 @@ REGRAS:
 4. Para receitas/gastos:
    - Extraia o VALOR numérico.
    - Identifique a CATEGORIA.
-   - Crie uma DESCRIÇÃO curta.
+   - Crie uma DESCRIÇÃO curta. Se o usuário não disser o que foi (ex: "gastei 50"), use algo como "Despesa Geral" ou "Gasto via [Método]".
    - Identifique o MÉTODO DE PAGAMENTO (pix, debito, credito, dinheiro, boleto). Se não for claro, use "indefinido".
-   - Se faltar valor ou descrição, "status": "incompleto".
+   - Se faltar o VALOR, "status": "incompleto". Se tiver valor, defina "status": "ok".
 
 RETORNO OBRIGATÓRIO (JSON):
 {
   "tipo": "receita" | "gasto" | "consulta_saldo" | "consulta_extrato", 
   "valor": number (0 se for consulta), 
-  "descricao": string (vazio se for consulta),
+  "descricao": string (vazio se for consulta, nunca nulo se for gasto/receita),
   "categoria_sugerida": string,
   "metodo_pagamento": "pix" | "debito" | "credito" | "dinheiro" | "boleto" | "indefinido",
   "status": "ok" | "incompleto"
