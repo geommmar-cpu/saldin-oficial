@@ -15,12 +15,16 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 async function sendWhatsApp(phone: string, text: string, instanceName?: string): Promise<void> {
     if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-        console.error("Evolution API URL or Key not set.");
+        console.error("❌ Evolution API URL or Key not set.");
         return;
     }
     try {
         const instance = instanceName || Deno.env.get("EVOLUTION_INSTANCE_NAME") || "Saldin";
-        await fetch(`${EVOLUTION_API_URL}/message/sendText/${instance}`, {
+        const url = `${EVOLUTION_API_URL}/message/sendText/${instance}`;
+
+        console.log(`📤 Sending WhatsApp to ${phone} via ${url}...`);
+
+        const resp = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -31,9 +35,16 @@ async function sendWhatsApp(phone: string, text: string, instanceName?: string):
                 text: text
             })
         });
-        console.log(`✅ WhatsApp sent to ${phone} (Instance: ${instance})`);
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            console.error(`❌ Evolution API Error (${resp.status}): ${errText}`);
+        } else {
+            const data = await resp.json();
+            console.log(`✅ WhatsApp sent:`, data);
+        }
     } catch (e) {
-        console.error("❌ Failed to send WhatsApp:", e);
+        console.error("❌ Failed to send WhatsApp (Network/Code Error):", e);
     }
 }
 
