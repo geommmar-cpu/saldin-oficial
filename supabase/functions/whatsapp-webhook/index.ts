@@ -96,23 +96,24 @@ serve(async (req) => {
         }
 
         const remoteJid = data.key.remoteJid;
-        const phone = remoteJid.split("@")[0];
         const messageId = data.key.id;
         const messageType = data.messageType;
 
-        // 1. Log Request & Deduplicate (Robust Time-Window Strategy)
-        console.log("🚀 [WEBHOOK] Processing ID:", messageId, "From:", phone);
+        // Check if it's a LID message (which ends in @lid) or Phone message (@s.whatsapp.net)
+        const isLid = remoteJid.includes("@lid");
+        const phoneOrLid = remoteJid.split("@")[0];
+
+        // 1. Log Request & Deduplicate
+        console.log("🚀 [WEBHOOK] Processing ID:", messageId, "From:", phoneOrLid, isLid ? "(LID)" : "(Phone)");
 
         const currentHash = getMessageHash(data);
-        const minuteBucket = Math.floor(Date.now() / 60000); // 1-minute time window bucket
-        const dedupKey = `${phone}_${currentHash}_${minuteBucket}`;
-
-        console.log("🔒 Dedup Key:", dedupKey);
+        const minuteBucket = Math.floor(Date.now() / 60000);
+        const dedupKey = `${phoneOrLid}_${currentHash}_${minuteBucket}`;
 
         const { data: logData, error: logError } = await supabaseAdmin
             .from("whatsapp_logs")
             .insert({
-                phone_number: phone,
+                phone_number: phoneOrLid, // Stores either phone or LID
                 message_content: JSON.stringify(data),
                 message_type: messageType,
                 processed: false,
@@ -122,50 +123,73 @@ serve(async (req) => {
             .select()
             .single();
 
-        if (logError) {
-            // Postgres unique violation code (23505)
-            // Checks both message_id AND dedup_key constraints
-            if (logError.code === "23505") {
-                console.log("🔁 Duplicate message blocked by DB:", messageId || dedupKey);
-                return new Response("Duplicate", { status: 200 });
-            }
-            console.error("❌ Failed to log message:", logError);
-            // We continue processing if it's not a duplicate error, but log it.
+        if (logError && logError.code === "23505") {
+            console.log("🔁 Duplicate message blocked by DB:", messageId || dedupKey);
+            return new Response("Duplicate", { status: 200 });
         }
-
         if (logData) logId = logData.id;
 
         // 2. Lookup & Verify User
-        // Handle Brazilian 9th digit variation (55 + DDD + 9 + 8 digits vs 55 + DDD + 8 digits)
-        let phoneVariations = [phone];
-        if (phone.startsWith("55") && phone.length === 13 && phone[4] === "9") {
-            // It's a 13-digit number (55 + DDD + 9 + 8 digits), try the 12-digit version
-            phoneVariations.push("55" + phone.substring(2, 4) + phone.substring(5));
-        } else if (phone.startsWith("55") && phone.length === 12) {
-            // It's a 12-digit number (55 + DDD + 8 digits), try the 13-digit version with '9'
-            phoneVariations.push("55" + phone.substring(2, 4) + "9" + phone.substring(4));
+        let userId = "";
+        let phoneToSend = phoneOrLid; // Default to sender ID
+
+        if (isLid) {
+            // Try to find user by LID
+            const { data: userByLid } = await supabaseAdmin
+                .from("whatsapp_users")
+                .select("user_id, phone_number, is_verified")
+                .eq("lid", phoneOrLid)
+                .maybeSingle();
+
+            if (userByLid && userByLid.is_verified) {
+                userId = userByLid.user_id;
+                phoneToSend = userByLid.phone_number; // Send reply to real phone, not LID
+                console.log(`✅ User identified by LID: ${phoneOrLid} -> ${phoneToSend}`);
+            } else {
+                console.warn(`❌ Unknown LID: ${phoneOrLid}`);
+                if (logId) await supabaseAdmin.from("whatsapp_logs").update({ processed: true, error_message: "Unknown LID" }).eq("id", logId);
+                // Can't send message easily to unknown LID without phone mapping
+                return new Response("Unauthorized LID", { status: 200 });
+            }
+
+        } else {
+            // Standard Phone Lookup (Handle 9th digit variations)
+            let phoneVariations = [phoneOrLid];
+            if (phoneOrLid.startsWith("55") && phoneOrLid.length === 13 && phoneOrLid[4] === "9") {
+                phoneVariations.push("55" + phoneOrLid.substring(2, 4) + phoneOrLid.substring(5));
+            } else if (phoneOrLid.startsWith("55") && phoneOrLid.length === 12) {
+                phoneVariations.push("55" + phoneOrLid.substring(2, 4) + "9" + phoneOrLid.substring(4));
+            }
+
+            const { data: userLink, error: userError } = await supabaseAdmin
+                .from("whatsapp_users")
+                .select("user_id, is_verified, lid")
+                .in("phone_number", phoneVariations)
+                .order("is_verified", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (userError || !userLink || !userLink.is_verified) {
+                console.warn("❌ Unverified user:", phoneOrLid);
+                if (logId) await supabaseAdmin.from("whatsapp_logs").update({ processed: true, error_message: "Unverified" }).eq("id", logId);
+                await sendWhatsApp(phoneOrLid, "❌ Acesso não autorizado. Por favor, vincule seu WhatsApp no app Saldin primeiro.", instanceName);
+                return new Response("Unauthorized", { status: 200 });
+            }
+
+            userId = userLink.user_id;
+            phoneToSend = phoneOrLid;
+
+            // Update LID if present in payload and missing in DB
+            const payloadLid = data.key.previousRemoteJid ? data.key.previousRemoteJid.split("@")[0] : null;
+            if (payloadLid && (!userLink.lid || userLink.lid !== payloadLid)) {
+                console.log(`ℹ️ Updating LID for user ${phoneOrLid}: ${payloadLid}`);
+                await supabaseAdmin.from("whatsapp_users").update({ lid: payloadLid }).eq("user_id", userId);
+            }
         }
-
-        const { data: userLink, error: userError } = await supabaseAdmin
-            .from("whatsapp_users")
-            .select("user_id, is_verified")
-            .in("phone_number", phoneVariations)
-            .order("is_verified", { ascending: false }) // Prioritize verified links
-            .limit(1)
-            .maybeSingle();
-
-        if (userError || !userLink || !userLink.is_verified) {
-            console.warn("❌ Unverified user:", phone);
-            if (logId) await supabaseAdmin.from("whatsapp_logs").update({ processed: true, error_message: "Unverified" }).eq("id", logId);
-            await sendWhatsApp(phone, "❌ Acesso não autorizado. Por favor, vincule seu WhatsApp no app Saldin primeiro.", instanceName);
-            return new Response("Unauthorized", { status: 200 });
-        }
-
-        console.log("✅ User verified:", userLink.user_id);
-        userId = userLink.user_id;
 
         // 3. Process Content
         let textToAnalyze = "";
+
         let intent: any = null;
 
         if (messageType === "conversation" || messageType === "extendedTextMessage") {
@@ -187,7 +211,7 @@ serve(async (req) => {
                 console.log("✅ Audio transcribed:", textToAnalyze);
             } catch (err) {
                 console.error("Audio error:", err);
-                await sendWhatsApp(phone, "❌ Erro ao processar áudio.", instanceName);
+                await sendWhatsApp(phoneToSend, "❌ Erro ao processar áudio.", instanceName);
                 return new Response("Audio Error", { status: 200 });
             }
         }
@@ -198,7 +222,7 @@ serve(async (req) => {
                 console.log("📊 Vision Result:", intent);
             } catch (err) {
                 console.error("Image error:", err);
-                await sendWhatsApp(phone, "❌ Erro ao analisar imagem.", instanceName);
+                await sendWhatsApp(phoneToSend, "❌ Erro ao analisar imagem.", instanceName);
                 return new Response("Image Error", { status: 200 });
             }
         }
@@ -212,16 +236,16 @@ serve(async (req) => {
                 try {
                     const balance = await getBalance(userId);
                     const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance);
-                    await sendWhatsApp(phone, `💰 Seu saldo atual é: *${formatted}*`, instanceName);
+                    await sendWhatsApp(phoneToSend, `💰 Seu saldo atual é: *${formatted}*`, instanceName);
                 } catch (e) {
                     console.error("Cmd Saldo Error:", e);
-                    await sendWhatsApp(phone, "❌ Erro ao consultar saldo.", instanceName);
+                    await sendWhatsApp(phoneToSend, "❌ Erro ao consultar saldo.", instanceName);
                 }
                 return new Response("Command Executed", { status: 200 });
             }
             // EXTRATO
             if (normalizedCmd.match(/^\/?extrato$/)) {
-                await sendExtrato(userId, phone, instanceName);
+                await sendExtrato(userId, phoneToSend, instanceName);
                 return new Response("Command Executed", { status: 200 });
             }
         }
@@ -252,18 +276,18 @@ serve(async (req) => {
             try {
                 const balance = await getBalance(userId);
                 const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance);
-                await sendWhatsApp(phone, `💰 Seu saldo atual é: *${formatted}*`, instanceName);
-            } catch (e) { console.error(e); await sendWhatsApp(phone, "❌ Erro ao consultar saldo.", instanceName); }
+                await sendWhatsApp(phoneToSend, `💰 Seu saldo atual é: *${formatted}*`, instanceName);
+            } catch (e) { console.error(e); await sendWhatsApp(phoneToSend, "❌ Erro ao consultar saldo.", instanceName); }
             return new Response("OK", { status: 200 });
         }
 
         if (intent.tipo === 'consulta_extrato') {
-            await sendExtrato(userId, phone, instanceName);
+            await sendExtrato(userId, phoneToSend, instanceName);
             return new Response("OK", { status: 200 });
         }
 
         if (intent.status === "incompleto") {
-            await sendWhatsApp(phone, "🤔 Não entendi direito. Poderia detalhar o valor e o que foi?\n\nExemplo: _Gastei 50 reais no almoço_", instanceName);
+            await sendWhatsApp(phoneToSend, "🤔 Não entendi direito. Poderia detalhar o valor e o que foi?\n\nExemplo: _Gastei 50 reais no almoço_", instanceName);
             return new Response("Incomplete intent", { status: 200 });
         }
 
@@ -288,7 +312,7 @@ serve(async (req) => {
         const tipoLabel = intent.tipo === "receita" ? "Receita" : (isCard ? "Gasto no Cartão" : "Gasto");
         const msg = `✅ *${tipoLabel} registrado!*\n\n${emoji} *Valor:* R$ ${intent.valor.toFixed(2)}\n📝 *Descrição:* ${intent.descricao}\n🏷️ *Categoria:* ${intent.categoria_sugerida}\n🏦 *Destino:* ${destName}\n\n📊 *Saldo Geral (Cofre):* R$ ${balance.toFixed(2)}`;
 
-        await sendWhatsApp(phone, msg, instanceName);
+        await sendWhatsApp(phoneToSend, msg, instanceName);
 
         const duration = Date.now() - startTime;
         return new Response(JSON.stringify({ success: true, duration }), {

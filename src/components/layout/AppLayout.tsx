@@ -15,7 +15,8 @@ import {
     User,
     Bell,
     Calendar,
-    BarChart4
+    BarChart4,
+    Bitcoin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -35,6 +36,7 @@ const navItems = [
     { label: "Início", icon: Home, path: "/" },
     { label: "Cartões", icon: CreditCard, path: "/cards" },
     { label: "Contas", icon: Wallet, path: "/banks" },
+    { label: "Carteira Cripto", icon: Bitcoin, path: "/crypto-wallet" },
     { label: "Assinaturas", icon: Calendar, path: "/subscriptions" },
     { label: "Metas", icon: Target, path: "/goals" },
     { label: "Relatórios e Análise", icon: BarChart4, path: "/reports" },
