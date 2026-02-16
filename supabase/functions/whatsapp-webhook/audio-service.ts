@@ -184,12 +184,18 @@ async function downloadAudioFromEvolution(
             headers: { 'apikey': evolutionKey, 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: fullPayload, convertToMp4: false })
         });
-        if (resp.ok) {
+
+        const contentType = resp.headers.get("content-type");
+
+        if (resp.ok && contentType && contentType.includes("application/json")) {
             const data = await resp.json();
             if (data?.base64) return base64ToArrayBuffer(data.base64);
+            else errors.push(`Strat1(No base64 field in JSON)`);
+        } else {
+            const text = await resp.text();
+            console.error(`Strat1 Unexpected Response (${resp.status}): ${text.slice(0, 500)}`);
+            errors.push(`Strat1(Status ${resp.status}, Body: ${text.slice(0, 50)}...)`);
         }
-        // Log brief error
-        errors.push(`Strat1(${resp.status})`);
     } catch (e) { errors.push(`Strat1 Err: ${e}`); }
 
     throw new Error(`Manual Decryption & API failed. Errs: ${errors.join(' | ')}`);
