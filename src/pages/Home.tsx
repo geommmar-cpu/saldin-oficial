@@ -40,7 +40,7 @@ import { CryptoSummary } from "@/components/home/CryptoSummary";
 // Hooks
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
-import { useCryptoTotalValue } from "@/hooks/useCryptoWallets";
+import { useCryptoTotalValue, useCryptoInvestedInMonth } from "@/hooks/useCryptoWallets";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -69,6 +69,7 @@ export default function Home() {
   const { data: ccInstallments = [] } = useCardInstallmentsByMonth(selectedMonth);
   const { data: bankAccounts = [] } = useBankAccounts();
   const { totalValue: cryptoTotal } = useCryptoTotalValue();
+  const { data: cryptoInvested = 0 } = useCryptoInvestedInMonth(currentMonthArg, currentYearArg);
   const { data: subscriptions = [] } = useSubscriptions();
 
   const activeSubs = useMemo(() => subscriptions.filter(s => s.status === 'active'), [subscriptions]);
@@ -187,6 +188,7 @@ export default function Home() {
                 <MonthlyResult
                   totalIncome={totalIncome}
                   totalSpent={totalSpent + totalCCInstallments}
+                  investedAmount={preferences.cryptoEnabled ? cryptoInvested : 0}
                   subscriptionsAmount={activeSubs.reduce((sum, s) => sum + Number(s.amount), 0)}
                 />
               </FadeIn>

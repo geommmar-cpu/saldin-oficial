@@ -370,3 +370,31 @@ export const useCryptoTotalValue = () => {
 
   return { totalValue: totalBRL, wallets };
 };
+export const useCryptoInvestedInMonth = (month: number, year: number) => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["crypto-invested", user?.id, month, year],
+    queryFn: async () => {
+      if (!user) return 0;
+      // Construct date range for the month
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0, 23, 59, 59);
+
+      const { data, error } = await db
+        .from("crypto_transactions")
+        .select("total_value")
+        .eq("user_id", user.id)
+        .eq("type", "deposit")
+        .gte("created_at", startDate.toISOString())
+        .lte("created_at", endDate.toISOString());
+
+      if (error) {
+        console.error("Error fetching crypto investments:", error);
+        return 0;
+      }
+
+      return (data || []).reduce((sum: number, tx: any) => sum + Number(tx.total_value || 0), 0);
+    },
+    enabled: !!user,
+  });
+};
