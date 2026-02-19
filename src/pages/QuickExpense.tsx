@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/balanceCalculations";
 import { parseCurrency, formatCurrencyInput } from "@/lib/currency";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { supabase } from "@/lib/backendClient";
+import { defaultCategories } from "@/lib/categories";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useAllCategories } from "@/hooks/useCategories";
@@ -35,14 +36,16 @@ const PAYMENT_OPTIONS: { value: PaymentMethod; label: string; Icon: React.Elemen
     { value: "credit", label: "Crédito", Icon: CreditCard },
 ];
 
-// Names of default quick categories (matched by name, not slug)
-const QUICK_CAT_NAMES = [
-    "Alimentação",
-    "Transporte",
-    "Mercado",
-    "Lazer",
-    "Delivery",
-    "Outros",
+// Slugs das categorias mais usadas em gastos do dia a dia
+const QUICK_CAT_IDS = [
+    "supermercado",
+    "restaurantes_ifood",
+    "uber_apps",
+    "combustivel",
+    "cafe_lanches",
+    "farmacia",
+    "cinema_shows",
+    "outros",
 ];
 
 function isValidUuid(s: string | null | undefined): boolean {
@@ -108,17 +111,17 @@ export const QuickExpense = () => {
     const numericAmount = parseCurrency(amount);
     const selectedCategory = categoryId ? allCategories.find(c => c.id === categoryId) : undefined;
 
-    // Quick categories matched by name
-    const quickCategories = QUICK_CAT_NAMES
-        .map(name => allCategories.find(c => c.name.toLowerCase() === name.toLowerCase()))
+    // Quick categories: use exact slug IDs from defaultCategories.
+    // Prefer the merged allCategories (has real UUIDs after DB load);
+    // fall back to defaultCategories while still loading.
+    const sourceList = allCategories.length > 0 ? allCategories : defaultCategories;
+    const quickCategories = QUICK_CAT_IDS
+        .map(slug => sourceList.find(c => c.id === slug))
         .filter(Boolean) as typeof allCategories;
 
-    // Fallback: if quick cats are empty (still loading), show first 6 of allCategories
-    const quickOrFirst = quickCategories.length > 0
-        ? quickCategories
-        : allCategories.slice(0, 6);
-
-    const displayedCategories = showAllCategories ? allCategories : quickOrFirst;
+    const displayedCategories = showAllCategories
+        ? (allCategories.length > 0 ? allCategories : defaultCategories)
+        : quickCategories;
 
     const isCreditCard = paymentMethod === "credit" && !!selectedCardId;
     const canSubmit = numericAmount > 0 && !!paymentMethod &&
