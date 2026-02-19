@@ -174,21 +174,8 @@ export const useCreateExpense = () => {
       const expenseData = { ...expense } as any;
       const db = supabase as any;
 
-      // Check for sufficient funds if using a bank account
-      if (expenseData.bank_account_id && expenseData.status === "confirmed") {
-        const { data: account } = await db
-          .from("bank_accounts")
-          .select("current_balance, bank_name")
-          .eq("id", expenseData.bank_account_id)
-          .single();
-
-        if (account) {
-          const amount = Number(expenseData.amount);
-          if (Number(account.current_balance) < amount) {
-            throw new Error(`Erro: Saldo insuficiente na conta ${account.bank_name}.`);
-          }
-        }
-      }
+      // Check for sufficient funds removed to allow overdraft (aligned with UI warning)
+      // if (expenseData.bank_account_id && expenseData.status === "confirmed") { ... }
 
       const { data, error } = await supabase
         .from("expenses")
