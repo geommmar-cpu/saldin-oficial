@@ -49,6 +49,8 @@ export const MonthlyResult = ({ totalIncome, totalSpent, investedAmount = 0, sub
                 style={{ width: `${Math.min((investedAmount / (totalIncome || 1)) * 100, 100)}%` }}
               />
             )}
+            {/* O que sobrou (verde) */}
+            <div className="flex-1 bg-essential transition-all duration-500" />
           </div>
         </div>
 
