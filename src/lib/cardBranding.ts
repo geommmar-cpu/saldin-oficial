@@ -31,6 +31,7 @@ export const BANK_THEMES: Record<string, BankTheme> = {
   original: { name: "Original", color: "#00A651", gradient: "from-emerald-500 to-emerald-700", bgClass: "bg-emerald-500", logoUrl: "https://logodownload.org/wp-content/uploads/2018/06/banco-original-logo-1.png" },
   pan: { name: "Banco Pan", color: "#0066CC", gradient: "from-blue-500 to-blue-700", bgClass: "bg-blue-500", logoUrl: "https://logodownload.org/wp-content/uploads/2019/10/banco-pan-logo-1.png" },
   next: { name: "Next", color: "#00E676", gradient: "from-green-400 to-green-600", bgClass: "bg-green-400", logoUrl: "https://logodownload.org/wp-content/uploads/2018/06/banco-next-logo.png" },
+  dinheiro: { name: "Dinheiro", color: "#10B981", gradient: "from-emerald-600 to-teal-800", bgClass: "bg-emerald-600" },
   outros: { name: "Outro", color: "#8B5CF6", gradient: "from-violet-500 to-purple-700", bgClass: "bg-violet-500" },
 };
 

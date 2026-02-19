@@ -33,6 +33,14 @@ const AccountCard = ({ account, isDefault }: AccountCardProps) => {
         bankTheme.gradient || "from-slate-700 to-slate-900"
       )} />
 
+      {/* Special Image for Cash Account (Hands holding money) */}
+      {(account.bank_key === "cash_account" || account.account_type === "cash") && (
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1559589689-577aabd1db4f?q=80&w=400&auto=format&fit=crop')" }}
+        />
+      )}
+
       {/* Textures */}
       <div className="absolute inset-0 bg-black/10" />
       <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
