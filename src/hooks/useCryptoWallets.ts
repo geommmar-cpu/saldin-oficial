@@ -58,14 +58,24 @@ export const useCreateCryptoWallet = () => {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (wallet: Omit<CryptoWalletInsert, "user_id">) => {
-      if (!user) throw new Error("Não autenticado");
+      if (!user) throw new Error("Usuário não autenticado. Faça login novamente.");
 
-      // Fetch initial price
-      const prices = await fetchCryptoPrices([wallet.crypto_id]);
-      const price = prices[wallet.crypto_id];
-      const lastPrice = price
-        ? wallet.display_currency === "USD" ? price.usd : price.brl
-        : 0;
+      let lastPrice = 0;
+      try {
+        // Fetch initial price
+        const idToFetch = wallet.crypto_id?.trim();
+        if (idToFetch) {
+          const prices = await fetchCryptoPrices([idToFetch]);
+          const price = prices[idToFetch];
+          if (price) {
+            lastPrice = wallet.display_currency === "USD" ? price.usd : price.brl;
+          }
+        }
+      } catch (err) {
+        console.warn("Erro ao buscar preço inicial (prosseguindo com 0):", err);
+      }
+
+      console.log("Criando carteira:", { ...wallet, user_id: user.id, last_price: lastPrice });
 
       const { data, error } = await db
         .from("crypto_wallets")
@@ -77,14 +87,21 @@ export const useCreateCryptoWallet = () => {
         })
         .select()
         .single();
-      if (error) throw error;
+
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw new Error(error.message || "Erro ao salvar carteira no banco de dados.");
+      }
       return data as CryptoWallet;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["crypto-wallets"] });
       toast.success("Carteira cripto cadastrada!");
     },
-    onError: () => toast.error("Erro ao cadastrar carteira"),
+    onError: (error: Error) => {
+      console.error("Error creating crypto wallet:", error);
+      toast.error(`Erro ao cadastrar carteira: ${error.message}`);
+    },
   });
 };
 
@@ -256,11 +273,14 @@ export const useCreateCryptoTransaction = () => {
 
       // 3. Update bank balance if bank_account_id is provided
       if (tx.bank_account_id && tx.total_value) {
-        const { data: bank } = await db
+        const { data: bank, error: bankError } = await db
           .from("bank_accounts")
           .select("current_balance")
           .eq("id", tx.bank_account_id)
-          .single();
+          .maybeSingle();
+
+        if (bankError) throw new Error(`Erro ao buscar conta bancária: ${bankError.message}`);
+        if (!bank) throw new Error("Conta bancária não encontrada ou deletada.");
 
         if (bank) {
           const bankBalance = Number(bank.current_balance);
@@ -285,7 +305,10 @@ export const useCreateCryptoTransaction = () => {
       const labels = { deposit: "Aporte registrado!", withdraw: "Resgate registrado!", adjustment: "Ajuste realizado!" };
       toast.success(labels[tx.type]);
     },
-    onError: () => toast.error("Erro na operação"),
+    onError: (error: Error) => {
+      console.error("Tx error:", error);
+      toast.error(`Erro na operação: ${error.message}`);
+    },
   });
 };
 

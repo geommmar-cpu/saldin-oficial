@@ -57,7 +57,7 @@ export const CryptoWallets = () => {
                 <span className="hidden sm:inline">Atualizar</span>
               </Button>
             )}
-            <Button variant="warm" size="sm" className="px-3" onClick={() => navigate("/crypto/add")}>
+            <Button variant="warm" size="sm" className="px-3" onClick={() => navigate("/crypto-wallet/add")}>
               <Plus className="w-4 h-4 sm:mr-1" />
               <span className="hidden sm:inline">Nova</span>
               <span className="sm:hidden">Nova</span>
@@ -86,7 +86,7 @@ export const CryptoWallets = () => {
               <p className="text-sm text-muted-foreground mb-6">
                 Adicione suas criptomoedas para acompanhar seu patrimônio
               </p>
-              <Button variant="warm" onClick={() => navigate("/crypto/add")}>
+              <Button variant="warm" onClick={() => navigate("/crypto-wallet/add")}>
                 <Plus className="w-4 h-4 mr-2" />
                 Cadastrar cripto
               </Button>
@@ -103,7 +103,7 @@ export const CryptoWallets = () => {
                 <FadeIn key={wallet.id} delay={0.05 * index}>
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => navigate(`/crypto/${wallet.id}`)}
+                    onClick={() => navigate(`/crypto-wallet/${wallet.id}`)}
                     className="w-full p-3 sm:p-4 rounded-xl bg-card border border-border shadow-soft hover:shadow-medium transition-all text-left"
                   >
                     <div className="flex items-center gap-3 sm:gap-4">

@@ -18,6 +18,7 @@ import {
   BarChart4,
   HelpCircle,
   LogOut,
+  Bitcoin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +40,7 @@ const mainNavItems: NavItem[] = [
   { path: "/history", icon: History, label: "Movimentações" },
   { path: "/reports", icon: BarChart4, label: "Relatórios e Análise", highlight: true },
   { path: "/banks", icon: Building2, label: "Contas Bancárias" },
+  { path: "/crypto-wallet", icon: Bitcoin, label: "Carteira de Cripto" },
   { path: "/goals", icon: Target, label: "Metas", highlight: true },
   { path: "/subscriptions", icon: Calendar, label: "Assinaturas", highlight: true },
   { path: "/overview", icon: Clock, label: "Parcelas Futuras" },
