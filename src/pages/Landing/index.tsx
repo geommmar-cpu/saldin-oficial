@@ -185,152 +185,16 @@ const PhoneMockup = () => {
     );
 };
 
-// ─── Laptop Mockup Component ───
-const LaptopMockup = () => {
-    return (
-        <div className="relative mx-auto w-[600px] h-[380px] transform scale-[0.6] sm:scale-100 origin-center">
-            {/* Lid / Screen */}
-            <div className="relative bg-[#1a1a1a] rounded-t-2xl p-1.5 shadow-2xl border-[1px] border-gray-600">
-                {/* Camera */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-gray-600 z-20"></div>
-
-                {/* Screen Bezel */}
-                <div className="bg-[#0b141a] rounded-t-xl overflow-hidden relative">
-                    {/* Screen Content - Dashboard */}
-                    <div className="w-full h-[340px] bg-gray-50 flex flex-col overflow-hidden">
-                        {/* Fake Browser Headers */}
-                        <div className="h-6 bg-gray-100 border-b border-gray-200 flex items-center px-3 gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                            <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-                        </div>
-
-                        {/* Sidebar + Main */}
-                        <div className="flex flex-1">
-                            {/* Sidebar */}
-                            <div className="w-12 sm:w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-4">
-                                <div className="w-6 h-6 bg-orange-100 rounded-lg text-orange-600 flex items-center justify-center text-xs font-bold">S</div>
-                                <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                <div className="w-4 h-4 rounded bg-gray-200"></div>
-                            </div>
-
-                            {/* Main Content */}
-                            <div className="flex-1 p-4 sm:p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Bom dia, Geomar!</h3>
-                                        <p className="text-xs text-gray-500">Visão Geral Financeira</p>
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-gray-200"></div>
-                                </div>
-
-                                <div className="grid grid-cols-3 gap-4 mb-6">
-                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                        <p className="text-[10px] text-gray-500">Saldo Livre</p>
-                                        <p className="text-sm font-bold text-emerald-600">R$ 2.450,00</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                        <p className="text-[10px] text-gray-500">A Pagar</p>
-                                        <p className="text-sm font-bold text-red-500">R$ 1.200,00</p>
-                                    </div>
-                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                        <p className="text-[10px] text-gray-500">Cartão</p>
-                                        <p className="text-sm font-bold text-gray-700">R$ 890,00</p>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-32 flex items-end justify-between px-6 pb-2">
-                                    {/* Fake Chart */}
-                                    <div className="w-4 bg-gray-100 h-10 rounded-t"></div>
-                                    <div className="w-4 bg-gray-100 h-16 rounded-t"></div>
-                                    <div className="w-4 bg-orange-200 h-24 rounded-t"></div>
-                                    <div className="w-4 bg-gray-100 h-14 rounded-t"></div>
-                                    <div className="w-4 bg-gray-100 h-20 rounded-t"></div>
-                                    <div className="w-4 bg-gray-100 h-12 rounded-t"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom / Keyboard Area - using perspective to look 3D */}
-            <div className="absolute -bottom-2.5 left-[1%] w-[98%] h-3 bg-[#e2e2e4] rounded-b-xl shadow-[0_15px_30px_rgba(0,0,0,0.2)] border-t border-[#d1d1d4] z-10">
-                <div className="w-16 h-1 bg-gray-400/30 rounded-full mx-auto mt-1"></div>
-            </div>
-        </div>
-    );
-};
-
-// ─── Tablet Mockup Component ───
-const TabletMockup = () => {
-    return (
-        <div className="relative mx-auto w-[360px] h-[480px] scale-[0.6] sm:scale-100 origin-center">
-            <div className="relative h-full w-full bg-[#1c1c1e] rounded-[30px] shadow-2xl p-2 border border-gray-700">
-                {/* Screen */}
-                <div className="w-full h-full bg-white rounded-[24px] overflow-hidden flex flex-col relative">
-                    {/* Header */}
-                    <div className="h-12 bg-white border-b border-gray-100 flex items-center justify-between px-4">
-                        <span className="font-bold text-sm text-gray-800">Transações</span>
-                        <div className="w-6 h-6 rounded-full bg-gray-100"></div>
-                    </div>
-
-                    {/* List */}
-                    <div className="bg-gray-50 p-3 space-y-2 flex-1 relative">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full ${i % 2 === 0 ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}></div>
-                                    <div className="w-16 h-2 bg-gray-100 rounded"></div>
-                                </div>
-                                <div className="w-10 h-2 bg-gray-100 rounded"></div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Navbar */}
-                    <div className="h-12 bg-white border-t border-gray-100 flex items-center justify-around px-2">
-                        <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-                        <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-                        <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ─── Device Showcase Component (3D Layout) ───
+// ─── Device Showcase Component (Phone Only) ───
 const DeviceShowcase = () => {
     return (
-        <div className="relative w-full max-w-[800px] h-[500px] sm:h-[600px] flex items-center justify-center perspective-[2000px]">
-            {/* Tablet - Back Right */}
+        <div className="relative w-full flex items-center justify-center h-[500px] sm:h-[600px]">
+            {/* Phone - Centered */}
             <motion.div
-                initial={{ opacity: 0, x: 50, rotateY: -10 }}
-                animate={{ opacity: 1, x: 0, rotateY: -10 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="absolute right-0 sm:-right-12 top-10 sm:top-12 z-0 transform scale-[0.65] sm:scale-[0.8] blur-[0.5px] hover:blur-0 hover:z-20 hover:scale-[0.85] transition-all duration-300"
-            >
-                <TabletMockup />
-            </motion.div>
-
-            {/* Laptop - Center Back */}
-            <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="absolute left-1/2 -translate-x-1/2 top-4 sm:top-10 z-10 w-full flex justify-center"
-            >
-                <LaptopMockup />
-            </motion.div>
-
-            {/* Phone - Front Left */}
-            <motion.div
-                initial={{ opacity: 0, x: -50, y: 20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="absolute left-0 sm:-left-8 -bottom-10 sm:bottom-0 z-30 transform scale-[0.7] sm:scale-90 hover:scale-95 transition-transform duration-300"
+                className="z-30 transform scale-[0.85] sm:scale-100 hover:scale-[1.02] transition-transform duration-300"
             >
                 <PhoneMockup />
             </motion.div>
