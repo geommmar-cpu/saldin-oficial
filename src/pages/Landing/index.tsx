@@ -197,71 +197,57 @@ const LaptopMockup = () => {
                 {/* Screen Bezel */}
                 <div className="bg-[#0b141a] rounded-t-xl overflow-hidden relative">
                     {/* Screen Content - Dashboard */}
-                    <div className="w-full h-[340px] bg-gray-50 flex flex-col overflow-hidden relative group">
-                        <img
-                            src="/mockups/mockup-laptop.png"
-                            alt="Saldin Dashboard"
-                            className="w-full h-full object-cover object-top z-10 relative"
-                            onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const fallback = document.getElementById('laptop-fallback');
-                                if (fallback) fallback.style.display = 'flex';
-                            }}
-                        />
+                    <div className="w-full h-[340px] bg-gray-50 flex flex-col overflow-hidden">
+                        {/* Fake Browser Headers */}
+                        <div className="h-6 bg-gray-100 border-b border-gray-200 flex items-center px-3 gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                            <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                        </div>
 
-                        {/* Fallback Content (CSS version) - ID for toggle */}
-                        <div id="laptop-fallback" className="absolute inset-0 w-full h-full bg-gray-50 flex flex-col overflow-hidden">
-                            {/* Fake Browser Headers */}
-                            <div className="h-6 bg-gray-100 border-b border-gray-200 flex items-center px-3 gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                                <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                        {/* Sidebar + Main */}
+                        <div className="flex flex-1">
+                            {/* Sidebar */}
+                            <div className="w-12 sm:w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-4">
+                                <div className="w-6 h-6 bg-orange-100 rounded-lg text-orange-600 flex items-center justify-center text-xs font-bold">S</div>
+                                <div className="w-4 h-4 rounded bg-gray-200"></div>
+                                <div className="w-4 h-4 rounded bg-gray-200"></div>
+                                <div className="w-4 h-4 rounded bg-gray-200"></div>
                             </div>
 
-                            {/* Sidebar + Main */}
-                            <div className="flex flex-1">
-                                {/* Sidebar */}
-                                <div className="w-12 sm:w-16 bg-white border-r border-gray-100 flex flex-col items-center py-4 gap-4">
-                                    <div className="w-6 h-6 bg-orange-100 rounded-lg text-orange-600 flex items-center justify-center text-xs font-bold">S</div>
-                                    <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                    <div className="w-4 h-4 rounded bg-gray-200"></div>
-                                    <div className="w-4 h-4 rounded bg-gray-200"></div>
+                            {/* Main Content */}
+                            <div className="flex-1 p-4 sm:p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">Bom dia, Geomar!</h3>
+                                        <p className="text-xs text-gray-500">Visão Geral Financeira</p>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-gray-200"></div>
                                 </div>
 
-                                {/* Main Content */}
-                                <div className="flex-1 p-4 sm:p-6">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">Bom dia, Geomar!</h3>
-                                            <p className="text-xs text-gray-500">Visão Geral Financeira</p>
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full bg-gray-200"></div>
+                                <div className="grid grid-cols-3 gap-4 mb-6">
+                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                        <p className="text-[10px] text-gray-500">Saldo Livre</p>
+                                        <p className="text-sm font-bold text-emerald-600">R$ 2.450,00</p>
                                     </div>
+                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                        <p className="text-[10px] text-gray-500">A Pagar</p>
+                                        <p className="text-sm font-bold text-red-500">R$ 1.200,00</p>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                        <p className="text-[10px] text-gray-500">Cartão</p>
+                                        <p className="text-sm font-bold text-gray-700">R$ 890,00</p>
+                                    </div>
+                                </div>
 
-                                    <div className="grid grid-cols-3 gap-4 mb-6">
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                            <p className="text-[10px] text-gray-500">Saldo Livre</p>
-                                            <p className="text-sm font-bold text-emerald-600">R$ 2.450,00</p>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                            <p className="text-[10px] text-gray-500">A Pagar</p>
-                                            <p className="text-sm font-bold text-red-500">R$ 1.200,00</p>
-                                        </div>
-                                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                            <p className="text-[10px] text-gray-500">Cartão</p>
-                                            <p className="text-sm font-bold text-gray-700">R$ 890,00</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-32 flex items-end justify-between px-6 pb-2">
-                                        {/* Fake Chart */}
-                                        <div className="w-4 bg-gray-100 h-10 rounded-t"></div>
-                                        <div className="w-4 bg-gray-100 h-16 rounded-t"></div>
-                                        <div className="w-4 bg-orange-200 h-24 rounded-t"></div>
-                                        <div className="w-4 bg-gray-100 h-14 rounded-t"></div>
-                                        <div className="w-4 bg-gray-100 h-20 rounded-t"></div>
-                                        <div className="w-4 bg-gray-100 h-12 rounded-t"></div>
-                                    </div>
+                                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-32 flex items-end justify-between px-6 pb-2">
+                                    {/* Fake Chart */}
+                                    <div className="w-4 bg-gray-100 h-10 rounded-t"></div>
+                                    <div className="w-4 bg-gray-100 h-16 rounded-t"></div>
+                                    <div className="w-4 bg-orange-200 h-24 rounded-t"></div>
+                                    <div className="w-4 bg-gray-100 h-14 rounded-t"></div>
+                                    <div className="w-4 bg-gray-100 h-20 rounded-t"></div>
+                                    <div className="w-4 bg-gray-100 h-12 rounded-t"></div>
                                 </div>
                             </div>
                         </div>
@@ -284,33 +270,36 @@ const TabletMockup = () => {
             <div className="relative h-full w-full bg-[#1c1c1e] rounded-[30px] shadow-2xl p-2 border border-gray-700">
                 {/* Screen */}
                 <div className="w-full h-full bg-white rounded-[24px] overflow-hidden flex flex-col relative">
-                    <img
-                        src="/mockups/mockup-tablet.png"
-                        alt="Saldin Settings"
-                        className="w-full h-full object-cover z-10 relative"
-                        onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            const fallback = document.getElementById('tablet-fallback');
-                            if (fallback) fallback.style.display = 'flex';
-                        }}
-                    />
+                    {/* Header */}
+                    <div className="h-12 bg-white border-b border-gray-100 flex items-center justify-between px-4">
+                        <span className="font-bold text-sm text-gray-800">Transações</span>
+                        <div className="w-6 h-6 rounded-full bg-gray-100"></div>
+                    </div>
 
-                    {/* Fallback Content */}
-                    <div id="tablet-fallback" className="absolute inset-0 w-full h-full bg-white flex flex-col">
-                        {/* Header */}
-                        <div className="h-12 bg-white border-b border-gray-100 flex items-center justify-between px-4">
-                            <span className="font-bold text-sm text-gray-800">Transações</span>
-                            <div className="w-6 h-6 rounded-full bg-gray-100"></div>
-                        </div>
-                        <div className="flex-1 flex items-center justify-center p-4 text-center">
-                            <p className="text-gray-400 text-xs">Adicione <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600 font-mono">public/mockups/mockup-tablet.png</code></p>
-                        </div>
+                    {/* List */}
+                    <div className="bg-gray-50 p-3 space-y-2 flex-1 relative">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-full ${i % 2 === 0 ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}></div>
+                                    <div className="w-16 h-2 bg-gray-100 rounded"></div>
+                                </div>
+                                <div className="w-10 h-2 bg-gray-100 rounded"></div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Navbar */}
+                    <div className="h-12 bg-white border-t border-gray-100 flex items-center justify-around px-2">
+                        <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+                        <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+                        <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
                     </div>
                 </div>
             </div>
         </div>
     );
-}
+};
 
 // ─── Device Showcase Component (3D Layout) ───
 const DeviceShowcase = () => {
