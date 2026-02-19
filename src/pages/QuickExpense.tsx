@@ -275,35 +275,47 @@ export const QuickExpense = () => {
             </div>
 
             {/* Scrollable form */}
-            <div className={cn("flex-1 overflow-y-auto px-4 pt-4 space-y-5", bottomOffset)}>
+            <div className={cn("flex-1 overflow-y-auto pt-4 space-y-5", bottomOffset)}>
 
                 {/* ── Amount ── */}
-                <button
-                    onClick={() => setShowKeypad(v => !v)}
-                    className="w-full text-center py-3 rounded-2xl bg-card border border-border"
-                >
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Valor do Gasto</p>
-                    <p className={cn(
-                        "text-5xl font-bold tabular-nums tracking-tight",
-                        numericAmount > 0 ? "text-foreground" : "text-muted-foreground/30"
-                    )}>
-                        {amount ? formatCurrency(numericAmount) : "R$ 0,00"}
-                    </p>
-                    <p className="text-[10px] text-primary mt-1 font-medium">
-                        {showKeypad ? "▼ Fechar teclado" : "▲ Abrir teclado"}
-                    </p>
-                </button>
+                <div className="px-4">
+                    <button
+                        onClick={() => setShowKeypad(v => !v)}
+                        className="w-full text-center py-3 rounded-2xl bg-card border border-border"
+                    >
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Valor do Gasto</p>
+                        <p className={cn(
+                            "text-5xl font-bold tabular-nums tracking-tight",
+                            numericAmount > 0 ? "text-foreground" : "text-muted-foreground/30"
+                        )}>
+                            {amount ? formatCurrency(numericAmount) : "R$ 0,00"}
+                        </p>
+                        <p className="text-[10px] text-primary mt-1 font-medium">
+                            {showKeypad ? "▼ Fechar teclado" : "▲ Abrir teclado"}
+                        </p>
+                    </button>
+                </div>
 
-                {/* ── Categories carousel ── */}
+                {/* ── Categories carousel: full-bleed horizontal scroll ── */}
                 <section>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                        Categoria {selectedCategory && <span className="normal-case font-normal text-primary">· {selectedCategory.name}</span>}
-                    </p>
+                    <div className="px-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                            Categoria {selectedCategory && <span className="normal-case font-normal text-primary">· {selectedCategory.name}</span>}
+                        </p>
+                    </div>
 
                     <div
                         ref={catScrollRef}
-                        className="flex gap-2 overflow-x-auto pb-2 scroll-smooth"
-                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                        className="flex gap-2 pb-2"
+                        style={{
+                            overflowX: "auto",
+                            overflowY: "hidden",
+                            scrollbarWidth: "none",
+                            WebkitOverflowScrolling: "touch" as any,
+                            touchAction: "pan-x",
+                            paddingLeft: "1rem",
+                            paddingRight: "1rem",
+                        }}
                     >
                         {(catsLoading && orderedCategories.length === 0
                             ? Array.from({ length: 8 })
@@ -321,16 +333,16 @@ export const QuickExpense = () => {
                                     key={c.id}
                                     whileTap={{ scale: 0.91 }}
                                     onClick={() => setCategoryId(isSelected ? undefined : c.id)}
+                                    style={{ flexShrink: 0, minWidth: 70 }}
                                     className={cn(
-                                        "flex-shrink-0 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-2xl border transition-all",
-                                        "min-w-[70px] relative",
+                                        "flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-2xl border transition-all relative",
                                         isSelected
                                             ? "border-primary bg-primary/10 text-primary shadow-sm"
-                                            : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                                            : "border-border bg-card text-muted-foreground"
                                     )}
                                 >
                                     {isQuick && !isSelected && (
-                                        <span className="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-primary/50" />
+                                        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary/60" />
                                     )}
                                     <Icon className="w-5 h-5" />
                                     <span className="text-[9px] font-bold text-center leading-tight w-14 line-clamp-2">{c.name}</span>
@@ -341,7 +353,7 @@ export const QuickExpense = () => {
                 </section>
 
                 {/* ── Payment method ── */}
-                <section>
+                <section className="px-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Forma de Pagamento</p>
                     <div className="grid grid-cols-4 gap-2">
                         {PAYMENT_OPTIONS.map(({ value, label, Icon }) => {
@@ -377,6 +389,7 @@ export const QuickExpense = () => {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
+                            className="px-4"
                         >
                             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
                                 {paymentMethod === "credit" ? "Cartão" : "Conta"}
@@ -421,7 +434,7 @@ export const QuickExpense = () => {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-card rounded-2xl border border-border p-3"
+                            className="bg-card rounded-2xl border border-border p-3 mx-4"
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -456,6 +469,7 @@ export const QuickExpense = () => {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
+                            className="px-4"
                         >
                             <button
                                 onClick={() => setIsRecurring(v => !v)}
@@ -501,7 +515,7 @@ export const QuickExpense = () => {
                 </AnimatePresence>
 
                 {/* ── Date & Description ── */}
-                <section className="flex gap-2">
+                <section className="flex gap-2 px-4">
                     <div className="flex-1 flex items-center gap-2 p-3 bg-card rounded-xl border border-border">
                         <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         <input
@@ -511,7 +525,7 @@ export const QuickExpense = () => {
                     </div>
                 </section>
 
-                <section>
+                <section className="px-4">
                     <input
                         type="text" value={description} onChange={e => setDescription(e.target.value)}
                         placeholder="Descrição (opcional)"
@@ -520,7 +534,7 @@ export const QuickExpense = () => {
                 </section>
 
                 {/* ── Gasto meu / Para outra pessoa ── */}
-                <section className="rounded-2xl border border-border overflow-hidden bg-card">
+                <section className="rounded-2xl border border-border overflow-hidden bg-card mx-4">
                     {/* Toggle header */}
                     <div className="flex">
                         <button
@@ -602,7 +616,7 @@ export const QuickExpense = () => {
                 </section>
 
                 {/* Bottom spacer */}
-                <div className="h-4" />
+                <div className="h-4 px-4" />
             </div>
 
             {/* ── Fixed bottom: keypad + button ── */}
