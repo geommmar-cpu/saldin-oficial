@@ -7,7 +7,7 @@ import {
     CheckCircle, ArrowRight, ChevronDown, Star, TrendingUp,
     AlertTriangle, Eye, EyeOff, DollarSign, Users, Lock,
     Smartphone, BarChart3, Wallet, Bomb, Send, X, Menu,
-    ChevronUp, Sparkles, Check, Play
+    ChevronUp, Sparkles, Check, Play, UserCheck, ThumbsUp, Timer
 } from "lucide-react";
 import logoSaldin from "@/assets/logo-saldin-final.png";
 
@@ -294,11 +294,126 @@ const CalculationDemo = () => {
     );
 };
 
+// ─── Countdown Timer Component ───
+const CountdownTimer = () => {
+    const [timeLeft, setTimeLeft] = useState(14400); // 4 hours in seconds
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 14400));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const hours = Math.floor(timeLeft / 3600);
+    const minutes = Math.floor((timeLeft % 3600) / 60);
+    const seconds = timeLeft % 60;
+
+    return (
+        <span className="font-mono font-bold text-orange-200">
+            {String(hours).padStart(2, '0')}:{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+        </span>
+    );
+};
+
+// ─── Marquee Component ───
+const Marquee = () => {
+    return (
+        <div className="bg-gray-900 overflow-hidden py-3 border-y border-gray-800">
+            <div className="relative w-full flex overflow-x-hidden">
+                <div className="animate-marquee whitespace-nowrap flex items-center gap-12 text-gray-400 text-xs sm:text-sm font-bold uppercase tracking-widest">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 text-yellow-500 fill-current" /> Destaque da Semana</span>
+                    <span className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-500" /> +5.000 Usuários Ativos</span>
+                    <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-green-500" /> Segurança Bancária</span>
+                    <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-orange-500" /> Atendimento em 10s</span>
+                    <span className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-purple-500" /> 100% via WhatsApp</span>
+
+                    {/* Duplicate for infinite loop */}
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 text-yellow-500 fill-current" /> Destaque da Semana</span>
+                    <span className="flex items-center gap-2"><Users className="w-4 h-4 text-blue-500" /> +5.000 Usuários Ativos</span>
+                    <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-green-500" /> Segurança Bancária</span>
+                    <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-orange-500" /> Atendimento em 10s</span>
+                    <span className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-purple-500" /> 100% via WhatsApp</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Sale Notification Component ───
+const SaleNotification = () => {
+    const [visible, setVisible] = useState(false);
+    const [data, setData] = useState({ name: "", time: "" });
+
+    const names = ["Ricardo M.", "Ana Paula", "Carlos E.", "Fernanda S.", "João P."];
+    const cities = ["São Paulo", "Rio de Janeiro", "Curitiba", "Belo Horizonte", "Brasília"];
+
+    useEffect(() => {
+        const show = () => {
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            const randomCity = cities[Math.floor(Math.random() * cities.length)];
+            const randomTime = Math.floor(Math.random() * 59) + 1;
+            setData({ name: `${randomName} de ${randomCity}`, time: `${randomTime} min atrás` });
+            setVisible(true);
+            setTimeout(() => setVisible(false), 5000);
+        };
+
+        const interval = setInterval(show, 15000 + Math.random() * 10000);
+        setTimeout(show, 5000); // First show
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <AnimatePresence>
+            {visible && (
+                <motion.div
+                    initial={{ opacity: 0, x: -50, y: 20 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    exit={{ opacity: 0, x: -50, y: 20 }}
+                    className="fixed bottom-4 left-4 z-50 bg-white border border-gray-100 shadow-xl rounded-xl p-3 flex items-center gap-3 max-w-[300px]"
+                >
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                        <Check className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-bold text-gray-900">{data.name}</p>
+                        <p className="text-[10px] text-gray-500">acabou de assinar o plano <span className="text-orange-500 font-bold">Semestral</span></p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">Há {data.time}</p>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+// ─── VSL Placeholder ───
+const VSL = () => (
+    <div className="relative w-full aspect-video bg-black/5 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 group cursor-pointer">
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center shadow-lg relative pl-1">
+                    <Play className="w-6 h-6 text-white fill-current" />
+                </div>
+            </div>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+            <div>
+                <p className="text-white font-bold text-lg sm:text-xl md:text-2xl shadow-black/50 drop-shadow-md">
+                    Descubra como sobrar dinheiro todo mês <span className="text-orange-400">(sem planilhas)</span>
+                </p>
+                <p className="text-white/80 text-sm mt-1">Veja em 2 minutos</p>
+            </div>
+        </div>
+        {/* Fake Thumbnail */}
+        <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1000" alt="VSL Thumbnail" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
+    </div>
+);
+
 // ─── Headlines rotation ───
 const headlines = [
-    "Você não está sem dinheiro.\nVocê está sem visão.",
-    "Parcelas invisíveis\ncomem seu salário.",
-    "Saiba exatamente\nquanto pode gastar.",
+    "Pare de ser roubado pelas 'pequenas parcelas'.",
+    "O fim das planilhas chatas chegou.",
+    "Seu dinheiro está sumindo? Saiba onde.",
 ];
 
 // ─── Testimonials ───
@@ -339,12 +454,15 @@ const Landing = () => {
     return (
         <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-orange-100 selection:text-orange-900 overflow-x-hidden">
             {/* ─── URGENCY NOTICE BAR ─── */}
-            <div className="bg-gray-900 text-white py-2 px-4 text-center text-xs sm:text-sm font-medium relative overflow-hidden">
+            <div className="bg-gray-900 text-white py-2.5 px-4 text-center text-xs sm:text-sm font-medium relative overflow-hidden z-[60]">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-500 animate-gradient-x"></div>
-                <p className="flex items-center justify-center gap-2">
-                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-                    <span className="opacity-90">Oferta de Lançamento: Bônus Exclusivos para os primeiros 100 assinantes.</span>
+                <p className="flex flex-wrap items-center justify-center gap-2">
+                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400 animate-pulse" />
+                    <span className="opacity-90">Oferta de Lançamento: Bônus Exclusivos.</span>
                     <span className="text-orange-300 font-bold ml-1 hidden sm:inline">Restam 14 vagas.</span>
+                    <span className="hidden sm:inline-block w-1 h-1 bg-gray-600 rounded-full mx-1"></span>
+                    <span className="text-gray-400 text-[10px] uppercase tracking-wide mr-1">Expira em:</span>
+                    <CountdownTimer />
                 </p>
             </div>
 
@@ -467,20 +585,61 @@ const Landing = () => {
                         <DeviceShowcase />
                     </div>
                 </div>
-            </section>
 
-            {/* ─── LOGOS SECTION ─── */}
-            <div className="border-y border-gray-100 bg-gray-50 py-8 sm:py-10">
-                <div className="max-w-7xl mx-auto px-4 text-center">
-                    <p className="text-xs sm:text-sm font-medium text-gray-400 mb-6 uppercase tracking-widest">A ferramenta ideal para sua liberdade</p>
-                    <div className="flex flex-wrap justify-center gap-6 md:gap-16 opacity-50 grayscale hover:grayscale-0 transition-all duration-500 text-gray-600">
-                        <span className="text-lg sm:text-xl font-bold font-serif">Freelancers</span>
-                        <span className="text-lg sm:text-xl font-bold font-serif">Autônomos</span>
-                        <span className="text-lg sm:text-xl font-bold font-serif">Estudantes</span>
-                        <span className="text-lg sm:text-xl font-bold font-serif">Trabalhadores CLT</span>
+                {/* VSL Section - Inserting right after Hero intro for maximum retention */}
+                <div className="max-w-4xl mx-auto mt-12 sm:mt-16 mb-16 px-4 relative z-20">
+                    <div className="text-center mb-6">
+                        <span className="inline-block py-1 px-3 rounded-full bg-red-100 text-red-600 text-xs font-bold uppercase tracking-wider mb-2 animate-pulse">
+                            ⚠️ Assista antes que saia do ar
+                        </span>
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                            A verdade que os bancos não querem que você saiba sobre seu saldo.
+                        </h2>
+                    </div>
+                    <VSL />
+                    <div className="mt-8 text-center">
+                        <Button
+                            size="lg"
+                            onClick={() => navigate("/auth")}
+                            className="h-16 px-12 rounded-full text-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-xl shadow-green-600/30 hover:scale-105 transition-all w-full sm:w-auto animate-bounce-slow"
+                        >
+                            QUERO ASSUMIR O CONTROLE AGORA
+                        </Button>
+                        <p className="text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
+                            <Lock className="w-3 h-3" /> Compra segura • Garantia de 7 dias • Acesso imediato
+                        </p>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            <Marquee />
+
+            {/* ─── WHO IS THIS FOR? (SEGMENTATION) ─── */}
+            <Section id="quem-e" className="py-16 bg-white border-y border-gray-100">
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-gray-900">Pra quem é o Saldin?</h2>
+                        <p className="text-gray-500 mt-2">Diga adeus à confusão se você se identifica com um destes:</p>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 text-center hover:scale-105 transition-transform">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">💻</div>
+                            <h3 className="font-bold text-lg text-gray-900 mb-2">Freelancers & Autônomos</h3>
+                            <p className="text-sm text-gray-600">Que nunca sabem exatamente quanto vai entrar e misturam contas PJ com PF.</p>
+                        </div>
+                        <div className="p-6 bg-purple-50/50 rounded-2xl border border-purple-100 text-center hover:scale-105 transition-transform">
+                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🎓</div>
+                            <h3 className="font-bold text-lg text-gray-900 mb-2">Universitários & Estagiários</h3>
+                            <p className="text-sm text-gray-600">Que precisam fazer o dinheiro render até o fim do mês sem abrir mão do lazer.</p>
+                        </div>
+                        <div className="p-6 bg-green-50/50 rounded-2xl border border-green-100 text-center hover:scale-105 transition-transform">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">👔</div>
+                            <h3 className="font-bold text-lg text-gray-900 mb-2">CLT & Assalariados</h3>
+                            <p className="text-sm text-gray-600">Que vivem de salário em salário e são surpreendidos pela fatura do cartão.</p>
+                        </div>
+                    </div>
+                </div>
+            </Section>
 
             {/* ─── PROBLEM SECTION ─── */}
             <Section id="problema" className="py-16 sm:py-24 px-4 bg-white">
@@ -694,8 +853,54 @@ const Landing = () => {
                 </div>
             </Section>
 
+            {/* ─── OBJECTION HANDLING ─── */}
+            <Section className="py-16 bg-white border-t border-gray-100">
+                <div className="max-w-5xl mx-auto px-4">
+                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">🤔 "Mas será que funciona pra mim?"</h2>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div className="flex gap-4">
+                            <div className="shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-xl">🚫</div>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900">"Não tenho tempo pra anotar"</h3>
+                                <p className="text-gray-600 text-sm mt-1">O Saldin foi feito pra isso. Mande um áudio de 5 segundos enquanto caminha. A IA faz o resto.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="shrink-0 w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 font-bold text-xl">📉</div>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900">"Sou péssimo com números"</h3>
+                                <p className="text-gray-600 text-sm mt-1">Você não precisa ser bom. O Saldin traduz tudo: "Você pode gastar R$ X hoje". Simples assim.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-bold text-xl">🔒</div>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900">"Tenho medo de conectar bancos"</h3>
+                                <p className="text-gray-600 text-sm mt-1">Zero risco. O Saldin NÃO conecta no seu banco. Tudo via WhatsApp, você no controle total.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xl">📱</div>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900">"Já tentei apps e planilhas"</h3>
+                                <p className="text-gray-600 text-sm mt-1">Planilhas são chatas. Apps são complicados. O WhatsApp você já usa todo dia. É impossível não usar.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Section>
+
+            {/* ─── URGENCY BANNER ─── */}
+            <div className="bg-red-600 text-white py-4 text-center px-4 animate-pulse">
+                <p className="font-bold text-base sm:text-lg flex items-center justify-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    ATENÇÃO: Os bônus exclusivos encerram hoje às 23:59!
+                </p>
+            </div>
+
             {/* ─── WAITING LIST / PRICING ─── */}
-            <Section id="pricing" className="py-16 sm:py-24 px-4 bg-white">
+            <Section id="pricing" className="py-16 sm:py-24 px-4 bg-gray-50">
+                <SaleNotification />
                 <div className="max-w-5xl mx-auto">
                     <div className="text-center mb-10 sm:mb-12">
                         <span className="text-sm font-bold uppercase tracking-widest text-primary">Oferta de Lançamento</span>
@@ -733,8 +938,9 @@ const Landing = () => {
                             <p className="text-xs text-gray-400 mb-6">Cobrado R$ 89,90 a cada 6 meses</p>
 
                             {/* Bonuses */}
-                            <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
-                                <p className="text-xs font-bold text-orange-300 uppercase tracking-wider mb-3">🎁 Bônus Inclusos:</p>
+                            <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 bg-yellow-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">VALOR: R$ 197 (GRÁTIS)</div>
+                                <p className="text-xs font-bold text-orange-300 uppercase tracking-wider mb-3">🎁 Bônus Exclusivos (HOJE):</p>
                                 <ul className="space-y-2 text-xs text-gray-300">
                                     <li className="flex gap-2 items-start"><Star className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" /> <span>Guia: "Como sair das Dívidas em 30 Dias"</span></li>
                                     <li className="flex gap-2 items-start"><Star className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" /> <span>Planilha Mestra de Planejamento</span></li>
