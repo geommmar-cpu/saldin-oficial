@@ -162,6 +162,10 @@ const App = () => (
             <Route path="/crypto-wallet" element={<OnboardingRoute><CryptoWallets /></OnboardingRoute>} />
             <Route path="/crypto-wallet/add" element={<OnboardingRoute><AddCryptoWallet /></OnboardingRoute>} />
             <Route path="/crypto-wallet/:id" element={<OnboardingRoute><CryptoWalletDetail /></OnboardingRoute>} />
+            {/* Redirects for legacy routes */}
+            <Route path="/crypto" element={<Navigate to="/crypto-wallet" replace />} />
+            <Route path="/crypto/add" element={<Navigate to="/crypto-wallet/add" replace />} />
+            <Route path="/crypto/:id" element={<Navigate to="/crypto-wallet/:id" replace />} />
 
             {/* Categories */}
             <Route path="/categories" element={<OnboardingRoute><Categories /></OnboardingRoute>} />
