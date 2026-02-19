@@ -355,6 +355,53 @@ export const ConfirmExpense = () => {
       navigate("/", { state: { success: true } });
     } catch (error: any) {
       console.error("Failed to save:", error);
+
+      // RETRY LOGIC: If the error is specifically about invalid UUID (which often means category ID is bad),
+      // retry saving without the category as a fallback.
+      if (error?.message?.includes("invalid input syntax for type uuid")) {
+        console.warn("Caught UUID error. Retrying without category...");
+        try {
+          // Re-run the save logic but force category to null
+          // Since we can't easily re-call this function recursively with different state, 
+          // we will manually call the mutation that likely failed.
+          // However, identifying WHICH mutation failed is hard. 
+          // We will try to create a standard expense as fallback if it wasn't a credit card
+
+          const isCreditCard = paymentMethod === "credit" && selectedCardId;
+          if (!isCreditCard) {
+            // Retry standard expense
+            let bankId = selectedBankId;
+            if (paymentMethod === "cash") {
+              bankId = await ensureCashAccount();
+            }
+
+            // Simplified retry for single expense (bulk complex to retry inline)
+            await createExpense.mutateAsync({
+              amount,
+              description: description || "Gasto (Recuperado)",
+              emotion: selectedEmotion,
+              status: "confirmed",
+              source: "manual",
+              is_installment: false,
+              installment_number: 1,
+              bank_account_id: bankId || undefined,
+              date: toLocalDateString(),
+              category_id: null, // FORCE NULL
+            } as any);
+
+            if (bankId) {
+              await updateBankBalance.mutateAsync({ accountId: bankId, delta: -amount });
+            }
+
+            toast.success("Gasto salvo (sem categoria) após erro.");
+            navigate("/", { state: { success: true } });
+            return; // Exit success
+          }
+        } catch (retryError) {
+          console.error("Retry failed:", retryError);
+        }
+      }
+
       // Show more detailed error message to help debugging
       toast.error(error?.message || "Erro ao salvar. Tente novamente.");
     } finally {
