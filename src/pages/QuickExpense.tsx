@@ -95,7 +95,7 @@ export const QuickExpense = () => {
     // UI
     const [showKeypad, setShowKeypad] = useState(true);
     const keypadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [showAllCategories, setShowAllCategories] = useState(false);
+    const catScrollRef = useRef<HTMLDivElement>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -111,17 +111,14 @@ export const QuickExpense = () => {
     const numericAmount = parseCurrency(amount);
     const selectedCategory = categoryId ? allCategories.find(c => c.id === categoryId) : undefined;
 
-    // Quick categories: use exact slug IDs from defaultCategories.
-    // Prefer the merged allCategories (has real UUIDs after DB load);
-    // fall back to defaultCategories while still loading.
+    // All categories carousel: quick picks first, then the rest
     const sourceList = allCategories.length > 0 ? allCategories : defaultCategories;
-    const quickCategories = QUICK_CAT_IDS
+    const quickSet = new Set(QUICK_CAT_IDS);
+    const quickFirst = QUICK_CAT_IDS
         .map(slug => sourceList.find(c => c.id === slug))
         .filter(Boolean) as typeof allCategories;
-
-    const displayedCategories = showAllCategories
-        ? (allCategories.length > 0 ? allCategories : defaultCategories)
-        : quickCategories;
+    const remaining = sourceList.filter(c => !quickSet.has(c.id));
+    const orderedCategories = [...quickFirst, ...remaining];
 
     const isCreditCard = paymentMethod === "credit" && !!selectedCardId;
     const canSubmit = numericAmount > 0 && !!paymentMethod &&
@@ -297,45 +294,50 @@ export const QuickExpense = () => {
                     </p>
                 </button>
 
-                {/* ── Categories ── */}
+                {/* ── Categories carousel ── */}
                 <section>
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Categoria</p>
-                        <button onClick={() => setShowAllCategories(v => !v)} className="text-[11px] text-primary font-semibold">
-                            {showAllCategories ? "Ver menos ▲" : "Ver todas ▼"}
-                        </button>
-                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                        Categoria {selectedCategory && <span className="normal-case font-normal text-primary">· {selectedCategory.name}</span>}
+                    </p>
 
-                    {catsLoading && allCategories.length === 0 ? (
-                        <div className="flex gap-2 overflow-x-auto pb-1">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="flex-shrink-0 w-16 h-16 rounded-2xl bg-muted animate-pulse" />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                            {displayedCategories.map(cat => {
-                                const Icon = cat.icon;
-                                const isSelected = categoryId === cat.id;
-                                return (
-                                    <motion.button
-                                        key={cat.id}
-                                        whileTap={{ scale: 0.93 }}
-                                        onClick={() => setCategoryId(isSelected ? undefined : cat.id)}
-                                        className={cn(
-                                            "flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2.5 rounded-2xl border transition-all min-w-[64px]",
-                                            isSelected
-                                                ? "border-primary bg-primary/10 text-primary shadow-sm"
-                                                : "border-border bg-card text-muted-foreground"
-                                        )}
-                                    >
-                                        <Icon className="w-5 h-5" />
-                                        <span className="text-[9px] font-bold text-center leading-tight w-12 truncate">{cat.name}</span>
-                                    </motion.button>
-                                );
-                            })}
-                        </div>
-                    )}
+                    <div
+                        ref={catScrollRef}
+                        className="flex gap-2 overflow-x-auto pb-2 scroll-smooth"
+                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                    >
+                        {(catsLoading && orderedCategories.length === 0
+                            ? Array.from({ length: 8 })
+                            : orderedCategories
+                        ).map((cat, i) => {
+                            if (!cat) {
+                                return <div key={i} className="flex-shrink-0 w-[70px] h-[72px] rounded-2xl bg-muted animate-pulse" />;
+                            }
+                            const Icon = (cat as typeof allCategories[0]).icon;
+                            const c = cat as typeof allCategories[0];
+                            const isSelected = categoryId === c.id;
+                            const isQuick = quickSet.has(c.id);
+                            return (
+                                <motion.button
+                                    key={c.id}
+                                    whileTap={{ scale: 0.91 }}
+                                    onClick={() => setCategoryId(isSelected ? undefined : c.id)}
+                                    className={cn(
+                                        "flex-shrink-0 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-2xl border transition-all",
+                                        "min-w-[70px] relative",
+                                        isSelected
+                                            ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                            : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                                    )}
+                                >
+                                    {isQuick && !isSelected && (
+                                        <span className="absolute top-1.5 right-1.5 w-1 h-1 rounded-full bg-primary/50" />
+                                    )}
+                                    <Icon className="w-5 h-5" />
+                                    <span className="text-[9px] font-bold text-center leading-tight w-14 line-clamp-2">{c.name}</span>
+                                </motion.button>
+                            );
+                        })}
+                    </div>
                 </section>
 
                 {/* ── Payment method ── */}
