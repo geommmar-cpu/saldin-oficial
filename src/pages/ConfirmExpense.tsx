@@ -268,6 +268,11 @@ export const ConfirmExpense = () => {
         finalCategoryId = null;
       }
 
+      // EXTRA SAFE: If finalCategoryId is "outros" or any string length < 30, kill it.
+      if (typeof finalCategoryId === "string" && finalCategoryId.length < 30) {
+        finalCategoryId = null;
+      }
+
       const isCreditCard = paymentMethod === "credit" && selectedCardId;
 
       if (isCreditCard) {
