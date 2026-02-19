@@ -156,8 +156,14 @@ export async function handleExcluirCommand(userId: string, code: string): Promis
         changed_fields: updatePayload
     });
 
-    // 5. Get Updated Balance (Using V2 function that respects deleted_at)
-    const { data: newBalance } = await supabaseAdmin.rpc('calculate_liquid_balance_v2', { p_user_id: userId });
+    // 5. Get Updated Balance (Sum active bank accounts)
+    const { data: banks } = await supabaseAdmin
+        .from('bank_accounts')
+        .select('current_balance')
+        .eq('user_id', userId)
+        .eq('active', true);
+
+    const newBalance = banks?.reduce((acc: number, b: any) => acc + Number(b.current_balance), 0) || 0;
 
     const balanceVal = newBalance ?? 0;
     const formattedBalance = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balanceVal);

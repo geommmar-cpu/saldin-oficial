@@ -113,43 +113,19 @@ export async function processTransaction(data: TransactionData) {
 }
 
 export async function getBalance(userId: string): Promise<number> {
-    // Use V2 which we will update to use Bank Accounts + Cash logic
-    const { data, error } = await supabaseAdmin.rpc("calculate_liquid_balance_v2", {
-        p_user_id: userId
-    });
+    // Updated Logic: Mirror Frontend "Total Balance"
+    // Sum of all active bank accounts only.
+    // Ignored manual/cash transactions (unlinked) to avoid discrepancies with the App Dashboard.
 
-    if (error) {
-        console.warn("Balance RPC failed, using manual fallback");
-        // Fallback: Sum of Banks + Cash
-        // 1. Get Bank Balances
-        const { data: banks } = await supabaseAdmin.from('bank_accounts').select('current_balance').eq('user_id', userId).eq('active', true);
-        const bankTotal = banks?.reduce((acc, b) => acc + Number(b.current_balance), 0) || 0;
+    const { data: banks } = await supabaseAdmin
+        .from('bank_accounts')
+        .select('current_balance')
+        .eq('user_id', userId)
+        .eq('active', true);
 
-        // 2. Get Cash Balance (Unlinked Transactions)
-        // Note: This matches frontend "Saldo Livre" logic if we assume unlinked = cash
-        // Incomes (Cash)
-        const { data: inc } = await supabaseAdmin.from('incomes')
-            .select('amount')
-            .eq('user_id', userId)
-            .is('bank_account_id', null)
-            .is('deleted_at', null)
-            .or('status.eq.received,status.eq.confirmed');
+    const bankTotal = banks?.reduce((acc: number, b: any) => acc + Number(b.current_balance), 0) || 0;
 
-        // Expenses (Cash)
-        const { data: exp } = await supabaseAdmin.from('expenses')
-            .select('amount')
-            .eq('user_id', userId)
-            .is('bank_account_id', null)
-            .is('deleted_at', null)
-            .neq('status', 'deleted');
-
-        const cashInc = inc?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
-        const cashExp = exp?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-
-        return bankTotal + cashInc - cashExp;
-    }
-
-    return Number(data) || 0;
+    return bankTotal;
 }
 
 export async function getLastTransactions(userId: string, limit = 5) {
@@ -176,8 +152,8 @@ export async function getLastTransactions(userId: string, limit = 5) {
 
     // Merge expenses and incomes
     const all = [
-        ...(exp || []).map(e => ({ ...e, type: 'expense' })),
-        ...(inc || []).map(i => ({ ...i, type: 'income' }))
+        ...(exp || []).map((e: any) => ({ ...e, type: 'expense' })),
+        ...(inc || []).map((i: any) => ({ ...i, type: 'income' }))
     ];
 
     // Sort by date descending

@@ -1,5 +1,4 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { analyzeText } from "./ai-service.ts";
 import { processImage } from "./image-service.ts";
@@ -88,7 +87,7 @@ function getMessageHash(data: any): string {
     return "";
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
     const startTime = Date.now();
     let logId: string | null = null;
     let userId: string = "";
@@ -467,6 +466,6 @@ async function sendExtrato(userId: string, phone: string, instanceName: string) 
     } catch (e) {
         console.error("Extrato Error:", e);
         const errMsg = e instanceof Error ? e.message : String(e);
-        await sendWhatsApp(phone, `❌ Erro ao consultar extrato: ${errMsg}`, instanceName);
+        await sendWhatsApp(phone, `❌ Erro ao consultar saldo: ${errMsg}`, instanceName);
     }
 }
