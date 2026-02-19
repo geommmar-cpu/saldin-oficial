@@ -90,47 +90,55 @@ function formatCurrency(val: number) {
     return new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
 }
 
+
 export async function handleExcluirCommand(userId: string, code: string): Promise<{ success: boolean; message: string }> {
-    // 1. Validate Code Format
-    if (!/^TXN-\d{8}-[A-Z0-9]{6}$/.test(code)) {
+    console.log(`🗑️ Processing DELETE for code: ${code}, User: ${userId}`);
+
+    // 1. Validate Code Format (more lenient: handle optional 'TXN-')
+    // Ensure code has "TXN-" prefix if missing
+    let formattedCode = code.toUpperCase().trim();
+    if (!formattedCode.startsWith('TXN-')) {
+        formattedCode = `TXN-${formattedCode}`;
+    }
+
+    if (!/^TXN-\d{8}-[A-Z0-9]{6}$/.test(formattedCode)) {
+        console.warn(`⚠️ Invalid code format: ${formattedCode}`);
         return { success: false, message: "⚠️ Código inválido. Formato esperado: TXN-YYYYMMDD-XXXXXX" };
     }
 
     // 2. Find Transaction
-    const { data: exp, error: expErr } = await supabaseAdmin
+    const { data: exp } = await supabaseAdmin
         .from('expenses')
         .select('*')
-        .eq('transaction_code', code)
+        .eq('transaction_code', formattedCode)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-    const { data: inc, error: incErr } = await supabaseAdmin
+    const { data: inc } = await supabaseAdmin
         .from('incomes')
         .select('*')
-        .eq('transaction_code', code)
+        .eq('transaction_code', formattedCode)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
     if (!exp && !inc) {
+        console.warn(`❌ Transaction ${formattedCode} not found for user ${userId}`);
         return { success: false, message: "⚠️ Transação não encontrada ou não pertence a você." };
     }
 
     const target = exp || inc;
-    const type = exp ? 'expense' : 'income';
+    const type = exp ? 'expense' : 'income'; // 'expense' | 'income'
 
     if (target.deleted_at) {
-        return { success: false, message: "⚠️ Esta transação já foi excluída." };
+        return { success: true, message: "⚠️ Esta transação já foi excluída anteriormente." };
     }
 
-    // 3. Soft Delete & Revert Balance Logic
-    // For now, we update 'deleted_at' and let the application logic handle balance recalculation dynamically 
-    // (assuming getBalance sums non-deleted transactions).
-    // If 'active' status is used, update it too.
-
+    // 3. Soft Delete
     const updatePayload = { deleted_at: new Date().toISOString(), status: 'deleted' };
+    const tableName = type === 'expense' ? 'expenses' : 'incomes'; // Ensure correct table name
 
     const { error: updateErr } = await supabaseAdmin
-        .from(type === 'expense' ? 'expenses' : 'incomes')
+        .from(tableName)
         .update(updatePayload)
         .eq('id', target.id);
 
@@ -142,22 +150,24 @@ export async function handleExcluirCommand(userId: string, code: string): Promis
     // 4. Log Audit
     await supabaseAdmin.from('transaction_audit_logs').insert({
         transaction_id: target.id,
-        transaction_type: type,
+        transaction_type: type, // 'expense' or 'income'
         action: 'delete',
         user_id: userId,
-        old_values: target,
-        new_values: { ...target, ...updatePayload }
+        changed_fields: updatePayload
     });
 
-    // 5. Get Updated Balance for confirmation
-    // Note: This relies on existing getBalance function which should respect deleted_at/status
-    const { data: newBalance } = await supabaseAdmin.rpc('calculate_liquid_balance', { p_user_id: userId });
+    // 5. Get Updated Balance (Using V2 function that respects deleted_at)
+    const { data: newBalance } = await supabaseAdmin.rpc('calculate_liquid_balance_v2', { p_user_id: userId });
+
+    const balanceVal = newBalance ?? 0;
+    const formattedBalance = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balanceVal);
 
     return {
         success: true,
-        message: `🗑️ Transação ${code} removida com sucesso.\nSaldo atualizado: R$ ${formatCurrency(newBalance || 0)}`
+        message: `🗑️ Transação ${formattedCode} removida com sucesso.\n\n💰 Saldo atualizado: *${formattedBalance}*`
     };
 }
+
 
 export async function handleEditarCommand(userId: string, code: string): Promise<{ success: boolean; message: string }> {
     // 1. Validate Code

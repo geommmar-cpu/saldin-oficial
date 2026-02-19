@@ -40,7 +40,7 @@ export async function processTransaction(data: TransactionData) {
                 created_at: finalDate
             };
             if (categoryId) payload.category_id = categoryId;
-            // if (bankAccountId) payload.bank_account_id = bankAccountId; // Commented out to avoid errors if column missing, add if confident.
+            if (bankAccountId) payload.bank_account_id = bankAccountId;
 
             const { data: exp, error: err } = await supabaseAdmin
                 .from('expenses')
@@ -54,12 +54,14 @@ export async function processTransaction(data: TransactionData) {
                 user_id: userId,
                 amount,
                 description,
-                type: 'variable',
+                type: 'variable', // Default to variable for WhatsApp
                 source: 'whatsapp',
                 transaction_code: transactionCode,
-                created_at: finalDate
+                created_at: finalDate,
+                status: 'received' // Incomes are received
             };
             if (categoryId) payload.category_id = categoryId;
+            if (bankAccountId) payload.bank_account_id = bankAccountId;
 
             const { data: inc, error: err } = await supabaseAdmin
                 .from('incomes')
@@ -73,6 +75,25 @@ export async function processTransaction(data: TransactionData) {
         if (error) {
             console.error("DB Insert Error:", error);
             throw error;
+        }
+
+        // Update Bank Account Balance if linked
+        if (bankAccountId) {
+            const { data: acc } = await supabaseAdmin
+                .from('bank_accounts')
+                .select('current_balance')
+                .eq('id', bankAccountId)
+                .single();
+
+            if (acc) {
+                const currentBal = Number(acc.current_balance) || 0;
+                const newBal = type === 'income' ? (currentBal + amount) : (currentBal - amount);
+
+                await supabaseAdmin
+                    .from('bank_accounts')
+                    .update({ current_balance: newBal })
+                    .eq('id', bankAccountId);
+            }
         }
 
         // Calculate new balance
@@ -92,20 +113,40 @@ export async function processTransaction(data: TransactionData) {
 }
 
 export async function getBalance(userId: string): Promise<number> {
+    // Use V2 which we will update to use Bank Accounts + Cash logic
     const { data, error } = await supabaseAdmin.rpc("calculate_liquid_balance_v2", {
         p_user_id: userId
     });
 
     if (error) {
-        // Fallback to manual sum if RPC missing
-        console.warn("Balance V2 RPC failed, using manual sum fallback");
-        const { data: inc } = await supabaseAdmin.from('incomes').select('amount').eq('user_id', userId).is('deleted_at', null);
-        const { data: exp } = await supabaseAdmin.from('expenses').select('amount').eq('user_id', userId).is('deleted_at', null).neq('status', 'deleted');
+        console.warn("Balance RPC failed, using manual fallback");
+        // Fallback: Sum of Banks + Cash
+        // 1. Get Bank Balances
+        const { data: banks } = await supabaseAdmin.from('bank_accounts').select('current_balance').eq('user_id', userId).eq('active', true);
+        const bankTotal = banks?.reduce((acc, b) => acc + Number(b.current_balance), 0) || 0;
 
-        const totalInc = inc?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
-        const totalExp = exp?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+        // 2. Get Cash Balance (Unlinked Transactions)
+        // Note: This matches frontend "Saldo Livre" logic if we assume unlinked = cash
+        // Incomes (Cash)
+        const { data: inc } = await supabaseAdmin.from('incomes')
+            .select('amount')
+            .eq('user_id', userId)
+            .is('bank_account_id', null)
+            .is('deleted_at', null)
+            .or('status.eq.received,status.eq.confirmed');
 
-        return totalInc - totalExp;
+        // Expenses (Cash)
+        const { data: exp } = await supabaseAdmin.from('expenses')
+            .select('amount')
+            .eq('user_id', userId)
+            .is('bank_account_id', null)
+            .is('deleted_at', null)
+            .neq('status', 'deleted');
+
+        const cashInc = inc?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
+        const cashExp = exp?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+
+        return bankTotal + cashInc - cashExp;
     }
 
     return Number(data) || 0;

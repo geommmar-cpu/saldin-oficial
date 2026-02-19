@@ -250,12 +250,16 @@ serve(async (req) => {
             }
         }
 
+
+
         // 3.1 COMMANDS HANDLING (Fast Path)
-        const normalizedCmd = textToAnalyze?.toLowerCase().trim();
+        // Normalize: lowercase, trim, remove markdown (*, _, `, ~)
+        const normalizedCmd = textToAnalyze?.toLowerCase().trim().replace(/[*_~`]/g, "") || "";
 
         if (!intent && normalizedCmd) {
             // EXCLUIR COMMAND
-            const deleteMatch = normalizedCmd.match(/^excluir\s+(txn-\d{8}-[a-z0-9]{6})/i);
+            // Relaxed regex: "excluir" anywhere, followed by code
+            const deleteMatch = normalizedCmd.match(/excluir.*?(txn-\d{8}-[a-z0-9]{6})/i);
             if (deleteMatch) {
                 const code = deleteMatch[1].toUpperCase().trim();
                 const res = await handleExcluirCommand(userId, code);
@@ -265,7 +269,8 @@ serve(async (req) => {
             }
 
             // EDITAR COMMAND
-            const editMatch = normalizedCmd.match(/^editar\s+(txn-\d{8}-[a-z0-9]{6})/i);
+            // Relaxed regex: "editar" anywhere, followed by code
+            const editMatch = normalizedCmd.match(/editar.*?(txn-\d{8}-[a-z0-9]{6})/i);
             if (editMatch) {
                 const code = editMatch[1].toUpperCase().trim();
                 const res = await handleEditarCommand(userId, code);
